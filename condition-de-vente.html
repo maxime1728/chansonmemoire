@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="fr-CA">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Conditions de vente — Chanson Mémoire</title>
+  <meta name="robots" content="noindex" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Inter:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:        #F7F3EE;
+      --surface:   #FFFFFF;
+      --mauve:     #8B7A9E;
+      --mauve-lt:  #EDE8F3;
+      --ink:       #2B2430;
+      --ink-soft:  #5C5165;
+      --rule:      #D9D3E0;
+      --accent:    #6B5880;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.7;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--rule);
+      padding: 1.5rem 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+    }
+    .brand-mark {
+      width: 36px; height: 36px;
+      background: var(--mauve);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .brand-mark svg { width: 18px; height: 18px; fill: white; }
+    .brand-name {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.3rem;
+      font-weight: 500;
+      color: var(--accent);
+      letter-spacing: 0.02em;
+    }
+    .nav-links {
+      margin-left: auto;
+      display: flex; gap: 1.5rem;
+      list-style: none;
+    }
+    .nav-links a {
+      font-size: 0.8rem;
+      color: var(--ink-soft);
+      text-decoration: none;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .nav-links a:hover { color: var(--accent); }
+    .nav-links a[aria-current] { color: var(--accent); font-weight: 500; }
+
+    /* ── Layout ── */
+    .page-wrap {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 3rem 2rem 5rem;
+    }
+
+    /* ── Page title block ── */
+    .page-header {
+      padding-bottom: 2rem;
+      border-bottom: 1px solid var(--rule);
+      margin-bottom: 2.5rem;
+    }
+    .page-label {
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--mauve);
+      font-weight: 500;
+      margin-bottom: 0.6rem;
+    }
+    .page-title {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: clamp(1.9rem, 5vw, 2.8rem);
+      font-weight: 400;
+      line-height: 1.15;
+      color: var(--ink);
+    }
+    .page-date {
+      margin-top: 0.75rem;
+      font-size: 0.82rem;
+      color: var(--ink-soft);
+    }
+
+    /* ── Notice block ── */
+    .notice {
+      background: var(--mauve-lt);
+      border-left: 3px solid var(--mauve);
+      border-radius: 4px;
+      padding: 1.1rem 1.4rem;
+      margin-bottom: 2.5rem;
+      font-size: 0.88rem;
+      color: var(--ink-soft);
+      line-height: 1.6;
+    }
+    .notice strong { color: var(--ink); }
+
+    /* ── Sections ── */
+    .legal-section {
+      margin-bottom: 2.4rem;
+    }
+    .legal-section h2 {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.25rem;
+      font-weight: 500;
+      color: var(--accent);
+      margin-bottom: 0.8rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--rule);
+    }
+    .legal-section p {
+      margin-bottom: 0.85rem;
+      color: var(--ink);
+    }
+    .legal-section ul, .legal-section ol {
+      padding-left: 1.4rem;
+      margin-bottom: 0.85rem;
+    }
+    .legal-section li {
+      margin-bottom: 0.35rem;
+    }
+    .legal-section strong { color: var(--ink); }
+
+    /* ── Contact card ── */
+    .contact-card {
+      background: var(--surface);
+      border: 1px solid var(--rule);
+      border-radius: 6px;
+      padding: 1.25rem 1.5rem;
+      margin: 1rem 0 2rem;
+      font-size: 0.92rem;
+      line-height: 2;
+    }
+    .contact-card .field { color: var(--ink-soft); font-size: 0.78rem; letter-spacing: 0.06em; text-transform: uppercase; }
+    .contact-card .value { color: var(--ink); font-weight: 500; }
+
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid var(--rule);
+      padding: 2rem;
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--ink-soft);
+    }
+    footer a { color: var(--mauve); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    @media (max-width: 600px) {
+      .nav-links { display: none; }
+      .page-wrap { padding: 2rem 1.25rem 4rem; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="brand-mark">
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 3C7.03 3 3 7.03 3 12s4.03 9 9 9 9-4.03 9-9-4.03-9-9-9zm0 16c-3.86 0-7-3.14-7-7s3.14-7 7-7 7 3.14 7 7-3.14 7-7 7zm1-11h-2v3H8v2h3v3h2v-3h3v-2h-3z"/>
+    </svg>
+  </div>
+  <span class="brand-name">Chanson Mémoire</span>
+  <nav>
+    <ul class="nav-links">
+      <li><a href="conditions-de-vente.html" aria-current="page">Conditions de vente</a></li>
+      <li><a href="politique-de-remboursement.html">Remboursement</a></li>
+      <li><a href="politique-de-confidentialite.html">Confidentialité</a></li>
+    </ul>
+  </nav>
+</header>
+
+<main class="page-wrap">
+
+  <div class="page-header">
+    <p class="page-label">Documents légaux</p>
+    <h1 class="page-title">Conditions de vente</h1>
+    <p class="page-date">Dernière mise à jour : <strong>[DATE]</strong></p>
+  </div>
+
+  <div class="notice">
+    Bienvenue sur Chanson Mémoire, un service exploité par <strong>[NOM LÉGAL]</strong> (NEQ <strong>[NEQ]</strong>), faisant affaire sous le nom « Chanson Mémoire » (« nous », « notre », « nos »). Les présentes conditions régissent votre accès et votre utilisation de nos services. <strong>En passant une commande, vous acceptez d'être lié par ces conditions.</strong>
+  </div>
+
+  <div class="contact-card">
+    <div><span class="field">Commerçant</span><br/><span class="value">[NOM LÉGAL] — faisant affaire sous « Chanson Mémoire »</span></div>
+    <div style="margin-top:.75rem"><span class="field">Adresse</span><br/><span class="value">[ADRESSE COMMERCIALE]</span></div>
+    <div style="margin-top:.75rem"><span class="field">Téléphone</span><br/><span class="value">[TÉLÉPHONE]</span></div>
+    <div style="margin-top:.75rem"><span class="field">Courriel</span><br/><span class="value">[COURRIEL]</span></div>
+  </div>
+
+  <div class="legal-section">
+    <h2>1. Description du service</h2>
+    <p>Chanson Mémoire crée des chansons personnalisées en hommage à un être cher. <strong>Chaque chanson est une œuvre originale créée à l'aide d'intelligence artificielle, à partir des informations que vous nous fournissez.</strong> Chaque création est unique et produite spécifiquement pour votre commande.</p>
+  </div>
+
+  <div class="legal-section">
+    <h2>2. Prix et paiement</h2>
+    <p>Le prix de la chanson est de <strong>139,97 $ CAD</strong>. Les taxes applicables, le cas échéant, sont indiquées avant le paiement. Le paiement est traité de façon sécurisée par Stripe ; vos renseignements bancaires ne transitent pas par nos serveurs. Vous pouvez écouter un aperçu gratuit avant de décider d'acheter ; aucun paiement n'est exigé avant cette étape.</p>
+  </div>
+
+  <div class="legal-section">
+    <h2>3. Commande et engagement du client</h2>
+    <p>En passant une commande, vous confirmez que :</p>
+    <ul>
+      <li>Les informations fournies sont exactes, complètes et à jour ;</li>
+      <li>Vous détenez les droits nécessaires sur le contenu soumis (noms, photos, histoires, etc.), ou que vous avez l'autorisation de les utiliser ;</li>
+      <li>Vous nous autorisez à utiliser ce contenu uniquement pour créer votre commande ;</li>
+      <li>Vous utilisez le service uniquement à des fins légales.</li>
+    </ul>
+    <p>Vous nous dégagez de toute réclamation d'un tiers liée au contenu que vous fournissez. Nous nous réservons le droit de refuser ou d'annuler toute commande non conforme.</p>
+  </div>
+
+  <div class="legal-section">
+    <h2>4. Livraison</h2>
+    <p>La chanson est livrée en format numérique (MP3), par courriel à l'adresse que vous fournissez, <strong>immédiatement après le paiement</strong>. Nous ne pouvons être tenus responsables des retards liés à une adresse courriel incorrecte, à des filtres anti-pourriel ou à des problèmes techniques hors de notre contrôle.</p>
+  </div>
+
+  <div class="legal-section">
+    <h2>5. Nature du produit, révisions et satisfaction</h2>
+    <p>Nos produits sont numériques et personnalisés. Nous offrons une garantie de satisfaction : si vous souhaitez des modifications (style, ambiance, prononciation, paroles), contactez-nous dans les <strong>14 jours</strong> suivant la réception et nous réviserons votre chanson gratuitement. La politique de remboursement est détaillée sur notre page <a href="politique-de-remboursement.html" style="color:var(--accent);">Politique de remboursement</a>.</p>
+  </div>
+
+  <div class="legal-section">
+    <h2>6. Droits d'utilisation</h2>
+    <p>Une fois la chanson livrée, vous bénéficiez d'un droit d'utilisation personnel, non exclusif et non transférable. Vous pouvez :</p>
+    <ul>
+      <li>Écouter, partager et offrir la chanson ;</li>
+      <li>L'utiliser lors d'événements privés (funérailles, cérémonies, commémorations) ;</li>
+      <li>La publier sur vos réseaux sociaux personnels.</li>
+    </ul>
+    <p>Vous n'êtes pas autorisé à :</p>
+    <ul>
+      <li>Revendre, distribuer ou exploiter la chanson à des fins commerciales ;</li>
+      <li>Revendiquer la propriété intellectuelle de la création ;</li>
+      <li>Utiliser la chanson dans de la publicité sans autorisation écrite ;</li>
+      <li>La distribuer sur des plateformes de diffusion en continu à des fins de monétisation.</li>
+    </ul>
+    <p>La chanson créée pour vous ne sera pas revendue à un tiers.</p>
+  </div>
+
+  <div class="legal-section">
+    <h2>7. Propriété intellectuelle</h2>
+    <p>Les éléments du service (technologies, marque, contenus du site) demeurent notre propriété. L'achat d'une chanson n'entraîne pas un transfert de propriété intellectuelle, mais un droit d'utilisation tel que décrit ci-dessus.</p>
+  </div>
+
+  <div class="legal-section">
+    <h2>8. Contenu interdit</h2>
+    <p>Nous refusons toute commande contenant du contenu haineux, discriminatoire, diffamatoire, illégal ou à caractère sexuellement explicite. Aucun remboursement n'est garanti si une commande est refusée pour ces raisons.</p>
+  </div>
+
+  <div class="legal-section">
+    <h2>9. Droit d'annulation</h2>
+    <p>Les ventes en ligne au Québec sont des « contrats conclus à distance » au sens de la <em>Loi sur la protection du consommateur</em>. Vous disposez des droits d'annulation prévus par cette loi, notamment si nous manquons à nos obligations d'information ou de livraison. Pour exercer ce droit, contactez-nous à <strong>[COURRIEL]</strong>.</p>
+  </div>
+
+  <div class="legal-section">
+    <h2>10. Limitation de responsabilité</h2>
+    <p>Les services sont fournis « tels quels ». Dans la mesure permise par la loi, notre responsabilité totale se limite au montant payé pour la commande concernée. Nous ne sommes pas responsables des dommages indirects ou consécutifs.</p>
+  </div>
+
+  <div class="legal-section">
+    <h2>11. Modifications des conditions</h2>
+    <p>Nous pouvons modifier ces conditions à tout moment. Les modifications prennent effet dès leur publication.</p>
+  </div>
+
+  <div class="legal-section">
+    <h2>12. Force majeure</h2>
+    <p>Nous ne pourrons être tenus responsables d'un retard ou d'un manquement résultant de circonstances hors de notre contrôle raisonnable.</p>
+  </div>
+
+  <div class="legal-section">
+    <h2>13. Droit applicable</h2>
+    <p>Les présentes conditions sont régies par les lois du Québec et du Canada. Les protections impératives de la <em>Loi sur la protection du consommateur</em> s'appliquent à tout consommateur résidant au Québec.</p>
+  </div>
+
+  <div class="legal-section">
+    <h2>14. Contact</h2>
+    <p>Pour toute question : <strong>[COURRIEL]</strong></p>
+  </div>
+
+</main>
+
+<footer>
+  <p>
+    <a href="conditions-de-vente.html">Conditions de vente</a> &nbsp;·&nbsp;
+    <a href="politique-de-remboursement.html">Politique de remboursement</a> &nbsp;·&nbsp;
+    <a href="politique-de-confidentialite.html">Politique de confidentialité</a>
+  </p>
+  <p style="margin-top:.75rem;">&copy; <span id="yr"></span> [NOM LÉGAL] — Chanson Mémoire. Tous droits réservés.</p>
+  <script>document.getElementById('yr').textContent = new Date().getFullYear();</script>
+</footer>
+
+</body>
+</html>
