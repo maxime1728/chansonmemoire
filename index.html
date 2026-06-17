@@ -69,7 +69,7 @@ a{color:inherit;}
 .section-in--wide{max-width:760px;margin:0 auto;padding:0 20px;}
 
 /* ─── HERO ─── */
-.cm-hero{text-align:center;padding:32px 20px 8px;position:relative;overflow:hidden;}
+.cm-hero{text-align:center;padding:32px 20px 48px;position:relative;overflow:hidden;}
 .cm-hero::before{
   content:"";position:absolute;top:-90px;left:50%;transform:translateX(-50%);
   width:540px;height:500px;max-width:130%;border-radius:50%;
@@ -77,12 +77,7 @@ a{color:inherit;}
   pointer-events:none;z-index:0;
 }
 .cm-hero .section-in{position:relative;z-index:1;}
-.cm-hero .qc{
-  display:inline-flex;align-items:center;gap:8px;
-  background:#fff;border:1px solid var(--candle-soft);border-radius:999px;
-  padding:6px 14px 6px 8px;font-size:.78rem;font-weight:700;color:var(--plum-deep);
-  margin:0 0 18px;box-shadow:0 2px 8px rgba(46,34,56,.06);
-}
+.cm-hero .qc{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--candle-soft);border-radius:999px;padding:6px 14px 6px 8px;font-size:.78rem;font-weight:700;color:var(--plum-deep);margin:0 0 18px;box-shadow:0 2px 8px rgba(46,34,56,.06);}
 .cm-hero .qc svg{border-radius:3px;display:block;flex:0 0 auto;}
 .cm-hero h1{
   font-family:var(--ff-serif);font-weight:600;color:var(--plum-deep);
@@ -104,7 +99,7 @@ a{color:inherit;}
 .cm-hero .note{font-size:.85rem;color:var(--muted);margin:12px 0 0;}
 
 /* ─── STEPS ─── */
-.cm-steps{text-align:center;padding:8px 20px 48px;}
+.cm-steps{text-align:center;padding:48px 20px 48px;}
 .cm-steps .flame{width:22px;height:30px;margin:0 auto 26px;position:relative;}
 .cm-steps .flame::before{
   content:"";position:absolute;inset:0;margin:auto;width:10px;height:16px;
@@ -269,12 +264,15 @@ a{color:inherit;}
 /* ─── CONSENT ─── */
 /* ⚠️ bottom:76px pour s'asseoir au-dessus du sticky dock */
 .cm-consent{
-  position:fixed;left:12px;right:12px;bottom:76px;z-index:55;
+  position:fixed;left:12px;right:12px;bottom:12px;z-index:55;
   max-width:640px;margin:0 auto;
   background:#fff;border:1px solid var(--line);border-radius:16px;
   box-shadow:0 10px 30px rgba(46,34,56,.16);
   padding:16px 18px;display:none;
+  transition:bottom .28s ease;
 }
+.cm-consent.show{display:block;}
+.cm-consent.docked{bottom:76px;}
 .cm-consent.show{display:block;}
 .cm-consent-txt{font-size:.84rem;line-height:1.5;color:var(--ink);margin:0 0 12px;}
 .cm-consent-txt a{color:var(--plum);font-weight:700;}
@@ -303,9 +301,8 @@ a{color:inherit;}
 <header class="cm-header">
   <div class="cm-header-in">
     <a class="cm-logo" href="/">
-      Chanson Mémoire
-      <span>Entreprise québécoise</span>
-    </a>
+  <img src="https://res.cloudinary.com/dcx1tfm47/image/upload/v1781659915/Logo_Chanson_M%C3%A9moire_jiq5ce.png" alt="Chanson Mémoire" height="40" style="display:block;height:40px;width:auto;">
+</a>
     <nav>
       <a href="#comment">Comment ça marche</a>
       <a href="#exemples">Exemples</a>
@@ -320,17 +317,9 @@ a{color:inherit;}
 <section class="cm-hero">
   <div class="section-in">
     <span class="qc">
-      <svg viewBox="0 0 30 20" width="26" height="18" role="img" aria-label="Drapeau du Québec">
-        <rect width="30" height="20" fill="#095797"/>
-        <rect x="13.5" width="3" height="20" fill="#fff"/>
-        <rect y="8.5" width="30" height="3" fill="#fff"/>
-        <g fill="#fff" font-size="6" text-anchor="middle" font-family="serif">
-          <text x="7" y="7.6">⚜</text><text x="23" y="7.6">⚜</text>
-          <text x="7" y="18">⚜</text><text x="23" y="18">⚜</text>
-        </g>
-      </svg>
-      Entreprise québécoise
-    </span>
+  <span style="font-size:1rem;line-height:1;color:var(--candle);">⚜</span>
+  Entreprise québécoise
+</span>
     <p class="eyebrow">La plus belle façon de garder leur mémoire vivante</p>
     <h1>Une chanson pour quelqu'un que vous n'oublierez jamais</h1>
     <p class="lede">Vous nous parlez d'eux : qui ils étaient, ce qu'ils aimaient, les moments qui comptaient. On compose une chanson qui capture leur âme, pour toujours.</p>
@@ -654,20 +643,32 @@ a{color:inherit;}
 <footer class="cm-footer">
   <p class="logo">Chanson Mémoire</p>
   <p class="tagline">Fait avec ❤️ pour le réconfort</p>
-  <p class="email">Courriel : <a href="mailto:support@chansonmemoire.com">support@chansonmemoire.com</a></p>
+  <p class="email">Courriel : <a href="brigitte@chansonmemoire.com">brigitte@chansonmemoire.com</a></p>
   <nav>
-    <a href="/politique-de-confidentialite">Politique de confidentialité</a>
-    <a href="/conditions-dutilisation">Conditions d'utilisation</a>
-    <a href="/politique-de-remboursement">Politique de remboursement</a>
+    <a href="https://chansonmemoire.com/politique-de-confidentialite">Politique de confidentialité</a>
+    <a href="https://chansonmemoire.com/conditions-dutilisation">Conditions d'utilisation</a>
+    <a href="https://chansonmemoire.com/politique-de-remboursement">Politique de remboursement</a>
   </nav>
   <p class="copy">©2026 Chanson Mémoire. Tous droits réservés.</p>
+  <p class="copy" style="margin-top:8px;">
+    <button type="button" onclick="cmReopenConsent()" style="background:none;border:none;font-size:.78rem;color:var(--muted);cursor:pointer;font-family:var(--ff-sans);text-decoration:underline;padding:0;">Gérer mes préférences de témoins</button>
+  </p>
 </footer>
 
 <!-- ═══ STICKY DOCK ═══ -->
 <div class="cm-sticky" id="cmSticky" aria-hidden="true">
   <a class="cm-sticky-btn" href="https://chansonmemoire.com/survey-chanson-pour-toujours-memories">Créer sa chanson</a>
 </div>
-
+function cmReopenConsent(){
+  var banner=document.getElementById('cmConsent');
+  banner.classList.add('show');
+  // Repositionne correctement selon l'état du dock
+  if(document.getElementById('cmSticky').classList.contains('show')){
+    banner.classList.add('docked');
+  } else {
+    banner.classList.remove('docked');
+  }
+}
 <!-- ═══ CONSENT BANNER ═══ -->
 <div class="cm-consent" id="cmConsent" role="dialog" aria-live="polite" aria-label="Consentement aux témoins">
   <p class="cm-consent-txt">Nous utilisons des témoins (cookies) et des outils de mesure pour améliorer le site et nos publicités. Tu peux accepter ou refuser. Détails dans notre <a href="/politique-de-confidentialite">politique de confidentialité</a>.</p>
@@ -712,9 +713,16 @@ function cmSeek(track,e){
 /* ─── STICKY DOCK ─── */
 (function(){
   var dock=document.getElementById('cmSticky');
+  var consent=document.getElementById('cmConsent');
   function toggle(){
-    if(window.scrollY>500){dock.classList.add('show');dock.setAttribute('aria-hidden','false');}
+    var visible=window.scrollY>500;
+    if(visible){dock.classList.add('show');dock.setAttribute('aria-hidden','false');}
     else{dock.classList.remove('show');dock.setAttribute('aria-hidden','true');}
+    // Ajuste la position du banner consent selon la visibilité du dock
+    if(consent.classList.contains('show')){
+      if(visible){consent.classList.add('docked');}
+      else{consent.classList.remove('docked');}
+    }
   }
   toggle();
   requestAnimationFrame(function(){requestAnimationFrame(function(){dock.classList.add('cm-ready');});});
@@ -722,16 +730,31 @@ function cmSeek(track,e){
 })();
 
 /* ─── CONSENT ─── */
-(function(){
-  var banner=document.getElementById('cmConsent');
-  if(!localStorage.getItem('cm_consent')){banner.classList.add('show');}
-})();
 function cmConsentSet(accepted){
   localStorage.setItem('cm_consent',accepted?'yes':'no');
-  document.getElementById('cmConsent').classList.remove('show');
-  // Déclencher pixel Meta ici si accepted === true
+  var banner=document.getElementById('cmConsent');
+  banner.classList.remove('show');
+  banner.classList.remove('docked');
+  if(accepted){cmLoadPixel();}
 }
 
+function cmLoadPixel(){
+  // Charge le pixel Meta uniquement après consentement explicite
+  !function(f,b,e,v,n,t,s){
+    if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+    n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)
+  }(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+  fbq('init','909919758755200');
+  fbq('track','PageView');
+}
+
+// Au chargement : si déjà consenti, charger le pixel immédiatement
+(function(){
+  if(localStorage.getItem('cm_consent')==='yes'){cmLoadPixel();}
+})();
 /* ─── FAQ ACCORDION ─── */
 function cmFaq(btn){
   var item=btn.closest('.cm-faq-item');
