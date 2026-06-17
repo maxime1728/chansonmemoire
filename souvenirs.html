@@ -670,7 +670,8 @@ body {
   const TOTAL_STEPS  = 9;
   const ATTENTE_URL  = '/revision'; /* ← Changer quand /attente est prête */
   /* Webhook Make — remplacer par votre URL réelle */
-  const MAKE_WEBHOOK = 'VOTRE_WEBHOOK_MAKE_ICI';
+  /* Make déclenché depuis /revision après validation des paroles */
+return Promise.resolve();
 
   /* ── ÉTAT ───────────────────────────────────────── */
   let currentStep = 1;
@@ -814,12 +815,8 @@ body {
 
     fetch('/', { method: 'POST', body: formData })
       .then(function() {
-        /* ── 2. Make Webhook ────────────────────── */
-        return fetch(MAKE_WEBHOOK, {
-          method:  'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify(data)
-        });
+        /* Make déclenché depuis /revision après validation des paroles */
+return Promise.resolve();
       })
       .then(function() {
   /* ── 3. SessionStorage + Redirect ────────── */
