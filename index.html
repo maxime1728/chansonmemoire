@@ -7,462 +7,423 @@
 <meta name="description" content="Personnalisez une chanson unique à partir de vos souvenirs. Aperçu gratuit, vous ne payez que si elle vous touche le cœur.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..600;1,9..144,400..500&family=Mulish:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Mulish:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-/* ─── RESET & TOKENS ─── */
+/* ════════ TOKENS ════════ */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
-  --plum:#4a3b57;
-  --plum-deep:#2e2238;
-  --ink:#2a2330;
-  --muted:#6b6175;
-  --candle:#c39a52;
-  --candle-soft:#ecdcbd;
-  --line:#e3dceb;
-  --card:#fbfafc;
-  --bg:#faf8fc;
-  --bg-alt:#edeaf4;
-  --ff-serif:"Fraunces",Georgia,serif;
+  --paper:#f7f2ea;
+  --mauve-tint:#efeaf5;
+  --mauve-tint-2:#e8e0f0;
+  --gold-cream:#f6eede;
+  --ink:#2f2838;
+  --plum-deep:#3c2e4d;
+  --plum:#5d4a73;
+  --mauve:#7a6494;
+  --muted:#776c83;
+  --candle:#bd8f49;
+  --candle-deep:#a87d3a;
+  --gold-soft:#e7d3a6;
+  --line:#e4dcec;
+  --line-mauve:#ddd2ea;
+  --night:#241a2e;
+  --night-2:#2e2139;
+  --ff-serif:"Newsreader",Georgia,serif;
   --ff-sans:"Mulish",system-ui,sans-serif;
 }
 html{scroll-behavior:smooth;}
-body{font-family:var(--ff-sans);color:var(--ink);background:var(--bg);padding-bottom:84px;}
+body{font-family:var(--ff-sans);color:var(--ink);background:var(--paper);-webkit-font-smoothing:antialiased;line-height:1.6;padding-bottom:78px;}
 img{display:block;max-width:100%;}
 a{color:inherit;}
 
-/* ─── HEADER ─── */
-.cm-header{
-  position:sticky;top:0;z-index:40;
-  background:rgba(250,248,252,.96);
-  backdrop-filter:blur(10px);
-  border-bottom:1px solid var(--line);
-  padding:14px 20px;
-}
-.cm-header-in{
-  max-width:720px;margin:0 auto;
-  display:flex;align-items:center;justify-content:space-between;gap:16px;
-}
-.cm-logo{
-  font-family:var(--ff-serif);font-weight:600;
-  font-size:1.15rem;color:var(--plum-deep);
-  text-decoration:none;line-height:1.1;
-}
-.cm-logo span{display:block;font-size:.62rem;font-family:var(--ff-sans);font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--candle);margin-top:1px;}
-.cm-header nav{display:none;}
-@media(min-width:600px){
-  .cm-header nav{display:flex;gap:20px;align-items:center;}
-  .cm-header nav a{font-size:.85rem;font-weight:700;color:var(--muted);text-decoration:none;transition:color .15s;}
-  .cm-header nav a:hover{color:var(--plum);}
-}
-.cm-header-cta{
-  font-family:var(--ff-sans);font-weight:800;font-size:.88rem;
-  background:var(--plum);color:#fff;
-  text-decoration:none;
-  padding:10px 20px;border-radius:999px;
-  white-space:nowrap;
-  transition:background .15s;
-}
-.cm-header-cta:hover{background:var(--plum-deep);}
+/* ════════ BOUTONS ════════ */
+.btn{display:inline-flex;align-items:center;justify-content:center;background:var(--plum);color:#fff;text-decoration:none;font-family:var(--ff-sans);font-weight:800;font-size:1.04rem;padding:16px 30px;border-radius:14px;box-shadow:0 6px 18px rgba(60,46,77,.18);transition:transform .15s,background .15s;width:100%;}
+.btn:hover{background:var(--plum-deep);transform:translateY(-2px);}
+.btn--gold{background:var(--candle);box-shadow:0 6px 18px rgba(189,143,73,.26);}
+.btn--gold:hover{background:var(--candle-deep);}
+@media(min-width:560px){.btn{width:auto;}}
 
-/* ─── SHARED UTILS ─── */
-.eyebrow{text-transform:uppercase;letter-spacing:.16em;font-size:.72rem;font-weight:800;color:var(--candle);margin:0 0 12px;display:block;}
-.section-in{max-width:640px;margin:0 auto;padding:0 20px;}
-.section-in--wide{max-width:760px;margin:0 auto;padding:0 20px;}
+/* ════════ HEADER ════════ */
+.hd{position:sticky;top:0;z-index:40;background:rgba(247,242,234,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--line);}
+.hd-in{max-width:1080px;margin:0 auto;padding:12px 18px;display:flex;align-items:center;justify-content:space-between;gap:14px;}
+.hd-logo img{height:32px;width:auto;display:block;}
+.hd-nav{display:none;}
+.hd-burger{display:flex;flex-direction:column;justify-content:center;gap:5px;width:42px;height:42px;padding:10px;background:none;border:none;cursor:pointer;}
+.hd-burger span{display:block;height:2px;width:100%;background:var(--plum-deep);border-radius:2px;transition:transform .25s,opacity .2s;}
+.hd-burger.open span:nth-child(1){transform:translateY(7px) rotate(45deg);}
+.hd-burger.open span:nth-child(2){opacity:0;}
+.hd-burger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg);}
+.hd-menu{display:flex;flex-direction:column;max-height:0;overflow:hidden;background:var(--paper);border-bottom:1px solid var(--line);transition:max-height .28s ease;}
+.hd-menu.open{max-height:300px;}
+.hd-menu a{padding:15px 20px;font-weight:600;font-size:.96rem;color:var(--plum-deep);text-decoration:none;border-top:1px solid var(--line);}
+@media(min-width:820px){
+  .hd-logo img{height:34px;}
+  .hd-nav{display:flex;gap:26px;align-items:center;}
+  .hd-nav a{font-size:.88rem;font-weight:600;color:var(--muted);text-decoration:none;transition:color .15s;}
+  .hd-nav a:hover{color:var(--plum);}
+  .hd-burger,.hd-menu{display:none;}
+}
 
-/* ─── HERO ─── */
-.cm-hero{text-align:center;padding:32px 20px 48px;position:relative;overflow:hidden;}
-.cm-hero::before{
-  content:"";position:absolute;top:-90px;left:50%;transform:translateX(-50%);
-  width:540px;height:500px;max-width:130%;border-radius:50%;
-  background:radial-gradient(ellipse at center,rgba(195,154,82,.14) 0%,rgba(195,154,82,.06) 36%,rgba(195,154,82,0) 68%);
-  pointer-events:none;z-index:0;
-}
-.cm-hero .section-in{position:relative;z-index:1;}
-.cm-hero .qc{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--candle-soft);border-radius:999px;padding:6px 14px 6px 8px;font-size:.78rem;font-weight:700;color:var(--plum-deep);margin:0 0 18px;box-shadow:0 2px 8px rgba(46,34,56,.06);}
-.cm-hero .qc svg{border-radius:3px;display:block;flex:0 0 auto;}
-.cm-hero h1{
-  font-family:var(--ff-serif);font-weight:600;color:var(--plum-deep);
-  line-height:1.16;letter-spacing:-.01em;
-  font-size:clamp(2rem,7vw,3rem);margin:0 0 .5em;
-}
-.cm-hero .lede{font-size:1.08rem;color:var(--muted);margin:0 0 18px;line-height:1.6;}
-.cm-hero .risk{font-family:var(--ff-serif);font-style:italic;color:var(--plum);font-size:1.1rem;margin:0 0 22px;}
-.cm-btn{
-  display:inline-flex;align-items:center;justify-content:center;
-  background:var(--plum);color:#fff;text-decoration:none;
-  font-weight:800;font-size:1.06rem;
-  padding:17px 36px;border-radius:999px;
-  box-shadow:0 4px 14px rgba(46,34,56,.12);
-  transition:transform .15s,background .15s;
-}
-.cm-btn:hover{background:var(--plum-deep);transform:translateY(-1px);}
-.cm-btn--wide{width:100%;justify-content:center;}
-.cm-hero .note{font-size:.85rem;color:var(--muted);margin:12px 0 0;}
+/* ════════ HERO ════════ */
+.hero{position:relative;background:var(--paper);overflow:hidden;padding:48px 18px 54px;text-align:center;}
+.hero::before{content:"";position:absolute;top:-20%;left:50%;transform:translateX(-50%);width:680px;height:580px;max-width:180%;border-radius:50%;background:radial-gradient(ellipse at center,rgba(93,74,115,.32) 0%,rgba(93,74,115,.14) 42%,rgba(93,74,115,0) 72%);pointer-events:none;}
+.hero-in{position:relative;z-index:1;max-width:680px;margin:0 auto;}
+.hero-qc{display:inline-flex;align-items:center;gap:9px;font-size:.7rem;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--plum-deep);margin:0 0 22px;}
+.hero-qc::before,.hero-qc::after{content:"";width:24px;height:1.5px;background:var(--plum-deep);}
+.hero h1{font-family:var(--ff-serif);font-weight:500;line-height:1.12;letter-spacing:-.015em;font-size:clamp(2.1rem,8.5vw,3.6rem);color:var(--ink);margin:0 0 .5em;}
+.hero h1 .w-plum{color:var(--plum-deep);}
+.hero h1 .w-gold{color:var(--candle);font-style:italic;font-weight:400;}
+.hero-lede{font-size:1.08rem;color:var(--muted);margin:0 auto 26px;max-width:32em;line-height:1.6;}
+.hero-promise{font-family:var(--ff-serif);font-style:italic;font-size:1.18rem;color:var(--plum);margin:0 0 28px;line-height:1.4;}
+.hero-promise strong{color:var(--candle-deep);font-style:normal;font-weight:600;}
+.hero-cta{margin:0 0 14px;}
+.hero-listen{display:inline-flex;align-items:center;gap:7px;font-size:.92rem;font-weight:700;color:var(--plum);text-decoration:none;border-bottom:1.5px solid var(--gold-soft);padding-bottom:2px;transition:color .15s,border-color .15s;}
+.hero-listen:hover{color:var(--candle-deep);border-color:var(--candle);}
+.hero-note{font-size:.84rem;color:var(--muted);margin:18px 0 0;}
 
-/* ─── STEPS ─── */
-.cm-steps{text-align:center;padding:48px 20px 48px;background:var(--bg-alt);}
-.cm-steps .flame{width:22px;height:30px;margin:0 auto 26px;position:relative;}
-.cm-steps .flame::before{
-  content:"";position:absolute;inset:0;margin:auto;width:10px;height:16px;
-  border-radius:50% 50% 50% 50%/60% 60% 40% 40%;
-  background:linear-gradient(180deg,var(--candle-soft),var(--candle));
-  box-shadow:0 0 18px 4px rgba(195,154,82,.45);
-}
-.cm-steps .flame::after{
-  content:"";position:absolute;left:50%;bottom:0;transform:translateX(-50%);
-  width:2px;height:10px;background:var(--plum-deep);opacity:.5;
-}
-.cm-steps h2{font-family:var(--ff-serif);font-weight:600;color:var(--plum-deep);font-size:clamp(1.5rem,5vw,2.1rem);margin:0 0 6px;}
-.cm-steps .grid{display:grid;gap:16px;margin-top:26px;}
-.cm-step{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:26px 22px;text-align:center;}
-.cm-step .n{
-  font-family:var(--ff-serif);font-size:1.05rem;font-weight:600;color:var(--candle);
-  display:inline-flex;align-items:center;justify-content:center;
-  width:40px;height:40px;border-radius:50%;border:1.5px solid var(--candle-soft);margin:0 0 14px;
-}
-.cm-step h3{font-family:var(--ff-serif);color:var(--plum-deep);font-size:1.18rem;margin:0 0 6px;}
-.cm-step p{color:var(--muted);line-height:1.55;}
+/* ════════ SECTIONS ════════ */
+.sec{padding:54px 18px;}
+/* section avec wave : padding-bottom réduit pour que la wave touche la limite */
+.sec--wave{padding-bottom:0;}
+.sec-in{max-width:680px;margin:0 auto;}
+.sec-in--wide{max-width:1000px;margin:0 auto;}
+.bg-mauve{background:var(--mauve-tint);}
+.bg-paper{background:var(--paper);}
 
-/* ─── USE CASES ─── */
-.cm-uc{text-align:center;padding:48px 20px;}
-.cm-uc h2{font-family:var(--ff-serif);font-weight:600;color:var(--plum-deep);font-size:clamp(1.5rem,5vw,2.1rem);margin:0 0 6px;}
-.cm-uc .grid{display:grid;gap:16px;margin-top:26px;}
-@media(min-width:600px){.cm-uc .grid{grid-template-columns:1fr 1fr;}}
-.cm-uc-card{
-  display:block;text-decoration:none;background:#fff;border:1px solid var(--line);
-  border-radius:18px;padding:24px 22px;text-align:left;
-  transition:transform .15s,box-shadow .15s;
-}
-.cm-uc-card:hover{transform:translateY(-2px);box-shadow:0 10px 30px rgba(46,34,56,.08);}
-.cm-uc-card h3{font-family:var(--ff-serif);color:var(--plum);font-size:1.2rem;margin:0 0 6px;}
-.cm-uc-card p{color:var(--muted);font-size:.96rem;line-height:1.55;}
+.head-l{margin:0 0 30px;padding-left:16px;border-left:3px solid var(--candle);}
+.head-l .kicker{display:block;text-transform:uppercase;letter-spacing:.16em;font-size:.7rem;font-weight:800;color:var(--candle-deep);margin:0 0 8px;}
+.head-l h2{font-family:var(--ff-serif);font-weight:500;font-size:clamp(1.6rem,6vw,2.3rem);color:var(--plum-deep);line-height:1.16;letter-spacing:-.01em;}
+.head-l h2 em{font-style:italic;color:var(--mauve);}
+.head-c{text-align:center;margin:0 auto 34px;max-width:560px;}
+.head-c .kicker{text-transform:uppercase;letter-spacing:.16em;font-size:.7rem;font-weight:800;color:var(--candle-deep);margin:0 0 8px;display:block;}
+.head-c h2{font-family:var(--ff-serif);font-weight:500;font-size:clamp(1.6rem,6vw,2.3rem);color:var(--plum-deep);line-height:1.16;}
+.head-c h2 em{font-style:italic;color:var(--mauve);}
 
-/* ─── PLAYERS ─── */
-.cm-players{text-align:center;padding:48px 20px;background:var(--bg-alt);}
-.cm-players h2{font-family:var(--ff-serif);font-weight:600;color:var(--plum-deep);font-size:clamp(1.5rem,5vw,2.1rem);margin:0 0 26px;}
-.cm-players .list{display:flex;flex-direction:column;gap:18px;}
-.cm-player{
-  background:#fff;border:1px solid var(--line);border-radius:18px;
-  padding:22px 20px;box-shadow:0 4px 14px rgba(46,34,56,.06);text-align:center;
+/* ════════ ÉTAPES ════════ */
+.steps{display:flex;flex-direction:column;}
+.step{display:grid;grid-template-columns:42px 1fr;gap:16px;align-items:start;padding:22px 0;border-bottom:1px solid var(--line-mauve);}
+.step:first-child{padding-top:0;}
+.step:last-child{border-bottom:0;}
+.step-n{font-family:var(--ff-serif);font-style:italic;font-size:1.7rem;font-weight:400;color:var(--candle);line-height:1;}
+.step h3{font-family:var(--ff-serif);font-weight:500;font-size:1.28rem;color:var(--plum-deep);margin:0 0 5px;line-height:1.2;}
+.step p{font-size:.98rem;color:var(--muted);line-height:1.55;}
+
+/* ════════ WAVE PLEINE LARGEUR (séparateur de section) ════════ */
+/* en dehors du sec-in : pleine largeur, collée en bas de section */
+.sec-wave{
+  display:block;width:100%;line-height:0;
+  margin-top:32px;
+  /* déborde des 18px de padding gauche/droite */
+  margin-left:-18px;
+  width:calc(100% + 36px);
 }
-.cm-bars{display:flex;align-items:flex-end;justify-content:center;gap:5px;height:44px;margin:0 auto 14px;}
-.cm-bars span{width:13px;border-radius:5px 5px 2px 2px;background:linear-gradient(180deg,var(--candle),var(--plum));transform-origin:bottom;opacity:.9;}
-.cm-bars span:nth-child(1){height:34%}.cm-bars span:nth-child(2){height:62%}.cm-bars span:nth-child(3){height:46%}.cm-bars span:nth-child(4){height:84%}.cm-bars span:nth-child(5){height:100%}.cm-bars span:nth-child(6){height:40%}.cm-bars span:nth-child(7){height:74%}.cm-bars span:nth-child(8){height:54%}.cm-bars span:nth-child(9){height:38%}
-@keyframes cmpulse{0%,100%{height:28%}50%{height:96%}}
-.cm-player.is-playing .cm-bars span{animation:cmpulse 2s ease-in-out infinite;}
-.cm-player.is-playing .cm-bars span:nth-child(2){animation-duration:1.6s;animation-delay:.24s}
-.cm-player.is-playing .cm-bars span:nth-child(3){animation-duration:2.2s;animation-delay:.1s}
-.cm-player.is-playing .cm-bars span:nth-child(4){animation-duration:1.4s;animation-delay:.4s}
-.cm-player.is-playing .cm-bars span:nth-child(5){animation-duration:1.9s;animation-delay:.16s}
-.cm-player.is-playing .cm-bars span:nth-child(6){animation-duration:2.4s;animation-delay:.3s}
-.cm-player.is-playing .cm-bars span:nth-child(7){animation-duration:1.7s;animation-delay:.04s}
-.cm-player.is-playing .cm-bars span:nth-child(8){animation-duration:2.1s;animation-delay:.36s}
-.cm-player.is-playing .cm-bars span:nth-child(9){animation-duration:1.8s;animation-delay:.2s}
-.cm-pl-title{font-family:var(--ff-serif);font-weight:600;color:var(--plum-deep);font-size:1.12rem;line-height:1.25;margin:0 0 2px;}
-.cm-pl-sub{font-size:.88rem;color:var(--muted);margin:0 0 14px;}
-.cm-pl-controls{display:flex;align-items:center;justify-content:center;gap:12px;max-width:420px;margin:0 auto;}
-.cm-play{
-  flex:0 0 auto;width:44px;height:44px;border-radius:50%;border:0;
-  background:var(--plum);color:#fff;font-size:1rem;cursor:pointer;
+.sec-wave svg{display:block;width:100%;height:28px;}
+.sec-wave path{stroke:var(--candle);stroke-width:1.4;fill:none;opacity:.55;}
+
+/* ════════ CAS D'USAGE ════════ */
+.uc{display:grid;gap:12px;}
+@media(min-width:600px){.uc{grid-template-columns:1fr 1fr;}}
+.uc-card{display:block;text-decoration:none;background:#fff;border:1px solid var(--line);border-radius:16px;padding:22px 20px;transition:transform .15s,box-shadow .15s;}
+.uc-card:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(60,46,77,.08);}
+.uc-card h3{font-family:var(--ff-serif);font-style:italic;font-weight:500;color:var(--plum);font-size:1.22rem;margin:0 0 6px;}
+.uc-card p{color:var(--muted);font-size:.94rem;line-height:1.5;}
+
+/* ════════ LECTEURS (style image 2 : bouton sombre + mini-bars) ════════ */
+.tracklist{display:flex;flex-direction:column;gap:12px;}
+.track{
+  background:#fff;border:1px solid var(--line);border-radius:16px;
+  padding:16px 18px;display:flex;align-items:center;gap:16px;
+  transition:border-color .2s,box-shadow .2s;
+}
+.track.playing{border-color:var(--mauve);box-shadow:0 6px 20px rgba(122,100,148,.14);}
+/* bouton sombre circulaire comme image 2 */
+.track-play{
+  flex:0 0 48px;width:48px;height:48px;border-radius:50%;border:0;
+  background:var(--plum-deep);color:var(--candle-bright,#e8be73);
+  font-size:.85rem;cursor:pointer;
   display:flex;align-items:center;justify-content:center;
   transition:background .15s;
 }
-.cm-play:hover{background:var(--plum-deep);}
-.cm-time{font-size:.8rem;color:var(--muted);font-variant-numeric:tabular-nums;min-width:34px;}
-.cm-track{flex:1;height:6px;border-radius:999px;background:var(--line);cursor:pointer;position:relative;}
-.cm-fill{position:absolute;left:0;top:0;height:100%;width:0;border-radius:999px;background:linear-gradient(90deg,var(--candle),var(--plum));pointer-events:none;}
-.cm-player audio{display:none!important;}
+.track-play:hover{background:var(--plum);}
+.track.playing .track-play{background:var(--mauve);}
+.track-body{flex:1;min-width:0;}
+/* titre + sous-titre */
+.track-name{font-family:var(--ff-serif);font-style:italic;font-weight:500;color:var(--plum-deep);font-size:1.05rem;line-height:1.25;margin-bottom:2px;}
+.track-sub{font-size:.8rem;color:var(--muted);font-weight:600;margin-bottom:10px;}
+/* mini-bars animées + barre de progression superposée */
+.track-bars-wrap{position:relative;height:22px;cursor:pointer;}
+.track-minibars{display:flex;align-items:flex-end;gap:3px;height:22px;}
+.track-minibars span{
+  width:4px;border-radius:2px;
+  background:var(--gold-soft);
+  transform-origin:bottom;
+  transition:background .1s;
+}
+.track-minibars span.lit{background:var(--candle);}
+@keyframes mpulse{0%,100%{transform:scaleY(.45)}50%{transform:scaleY(1)}}
+.track.playing .track-minibars span{animation:mpulse 1.1s ease-in-out infinite;}
+.track.playing .track-minibars span:nth-child(2n){animation-duration:1.5s;animation-delay:.18s;}
+.track.playing .track-minibars span:nth-child(3n){animation-duration:.85s;animation-delay:.32s;}
+.track.playing .track-minibars span:nth-child(5n){animation-duration:1.25s;animation-delay:.12s;}
+/* overlay seek transparent */
+.track-seek{position:absolute;inset:0;cursor:pointer;}
+/* temps */
+.track-time{flex:0 0 auto;font-size:.74rem;color:var(--muted);font-variant-numeric:tabular-nums;text-align:right;min-width:72px;}
+.track audio{display:none!important;}
 
-/* ─── STACK / INCLUS ─── */
-.cm-stack{text-align:center;padding:48px 20px;}
-.cm-stack .card{
-  position:relative;background:#fcf8f1;border-radius:22px;padding:30px 26px;
-  border:1px solid var(--candle-soft);
-  box-shadow:0 0 0 3px rgba(195,154,82,.18),0 14px 36px rgba(46,34,56,.10);
+/* ════════ INCLUS (bordure fine, sans double ring) ════════ */
+.offer{
+  max-width:480px;margin:0 auto;
+  background:var(--gold-cream);
+  border:2px solid var(--gold-soft);
+  border-radius:20px;padding:32px 26px;
+  box-shadow:0 10px 32px rgba(60,46,77,.10);
 }
-.cm-stack h2{font-family:var(--ff-serif);font-weight:600;color:var(--plum-deep);font-size:clamp(1.5rem,5vw,2rem);margin:0 0 20px;}
-.cm-stack ul{list-style:none;text-align:left;margin:0 0 18px;}
-.cm-stack li{display:flex;gap:12px;align-items:flex-start;padding:11px 0;border-bottom:1px solid var(--line);color:var(--ink);line-height:1.55;}
-.cm-stack li:last-child{border-bottom:0;}
-.cm-stack .check{color:var(--candle);flex:0 0 auto;margin-top:2px;}
-.cm-stack .compare{font-family:var(--ff-serif);font-style:italic;color:var(--plum);margin:0 0 22px;line-height:1.5;}
-.cm-stack .reassure{display:flex;flex-wrap:wrap;gap:6px 16px;justify-content:center;margin-top:16px;font-size:.82rem;color:var(--muted);}
+.offer .kicker{display:block;text-align:center;text-transform:uppercase;letter-spacing:.16em;font-size:.7rem;font-weight:800;color:var(--candle-deep);margin:0 0 10px;}
+.offer h2{font-family:var(--ff-serif);font-weight:500;font-size:1.6rem;text-align:center;color:var(--plum-deep);margin:0 0 22px;}
+.offer ul{list-style:none;margin:0 0 22px;}
+.offer li{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid rgba(189,143,73,.2);color:var(--ink);font-size:.96rem;line-height:1.5;}
+.offer li:last-child{border-bottom:0;}
+.offer .ck{color:var(--candle-deep);flex:0 0 auto;margin-top:2px;}
+.offer .compare{
+  font-family:var(--ff-serif);font-style:italic;font-weight:600;
+  color:var(--plum-deep);text-align:center;
+  margin:0 0 24px;font-size:1.06rem;line-height:1.5;
+}
+.offer-cta{text-align:center;}
+.offer-cta .btn{width:auto;}
+.offer .reassure{display:flex;flex-wrap:wrap;gap:7px 16px;justify-content:center;margin-top:18px;font-size:.78rem;color:var(--muted);}
 
-/* ─── TÉMOIGNAGES ─── */
-.cm-temoignages{text-align:center;padding:48px 20px;background:var(--bg-alt);}
-.cm-temoignages h2{font-family:var(--ff-serif);font-weight:600;color:var(--plum-deep);font-size:clamp(1.5rem,5vw,2.1rem);margin:0 0 6px;}
-.cm-temoignages .sub{color:var(--muted);font-size:1rem;margin:0 0 28px;line-height:1.5;}
-.cm-temoignages .grid{display:grid;gap:16px;}
-@media(min-width:640px){.cm-temoignages .grid{grid-template-columns:1fr 1fr;}}
-@media(min-width:960px){.cm-temoignages .grid{grid-template-columns:1fr 1fr 1fr;}}
-.cm-temoignage{
-  background:#fff;border:1px solid var(--line);border-radius:18px;
-  padding:24px 22px;text-align:left;
-}
-.cm-temoignage .stars{color:var(--candle);font-size:.95rem;margin:0 0 12px;}
-.cm-temoignage blockquote{font-size:.95rem;color:var(--ink);line-height:1.6;font-style:italic;margin:0 0 16px;}
-.cm-temoignage .attrib{font-size:.82rem;font-weight:700;color:var(--muted);}
-.cm-temoignage .attrib span{display:block;font-weight:400;font-style:italic;margin-top:2px;}
-.cm-temoignages .cta-wrap{margin-top:32px;}
+/* ════════ TÉMOIGNAGES ════════ */
+.temoin-feat{background:#fff;border:1px solid var(--line-mauve);border-radius:20px;padding:32px 28px;margin:0 0 18px;position:relative;}
+.temoin-feat::before{content:"\201C";position:absolute;top:6px;left:20px;font-family:var(--ff-serif);font-size:5rem;color:var(--gold-soft);line-height:1;}
+.temoin-feat blockquote{font-family:var(--ff-serif);font-size:1.22rem;font-style:italic;color:var(--ink);line-height:1.5;margin:14px 0 18px;position:relative;}
+.temoin-feat .stars{color:var(--candle);letter-spacing:3px;font-size:.92rem;margin:0 0 4px;}
+.temoin-feat .attrib{font-size:.88rem;font-weight:700;color:var(--plum-deep);}
+.temoin-feat .attrib span{display:block;font-weight:400;font-style:italic;color:var(--muted);margin-top:2px;}
+.temoin-grid{display:grid;gap:14px;}
+@media(min-width:640px){.temoin-grid{grid-template-columns:1fr 1fr;}}
+.temoin{background:#fff;border:1px solid var(--line);border-radius:16px;padding:22px 20px;}
+.temoin .stars{color:var(--candle);letter-spacing:2px;font-size:.84rem;margin:0 0 12px;}
+.temoin blockquote{font-family:var(--ff-serif);font-style:italic;font-size:1rem;color:var(--ink);line-height:1.55;margin:0 0 14px;}
+.temoin .attrib{font-size:.8rem;font-weight:700;color:var(--plum-deep);}
+.temoin .attrib span{display:block;font-weight:400;font-style:italic;color:var(--muted);margin-top:2px;}
+.temoin-cta{text-align:center;margin-top:30px;}
 
-/* ─── FAQ ─── */
-.cm-faq{text-align:center;padding:48px 20px 56px;}
-.cm-faq h2{font-family:var(--ff-serif);font-weight:600;color:var(--plum-deep);font-size:clamp(1.5rem,5vw,2.1rem);margin:0 0 28px;}
-.cm-faq .list{text-align:left;display:flex;flex-direction:column;gap:0;}
-.cm-faq-item{border-bottom:1px solid var(--line);}
-.cm-faq-item:first-child{border-top:1px solid var(--line);}
-.cm-faq-q{
-  width:100%;background:none;border:none;cursor:pointer;
-  display:flex;justify-content:space-between;align-items:center;
-  padding:18px 4px;gap:16px;text-align:left;
-}
-.cm-faq-q span:first-child{font-family:var(--ff-serif);font-weight:600;color:var(--plum-deep);font-size:1.05rem;line-height:1.35;flex:1;}
-.cm-faq-icon{flex:0 0 auto;width:24px;height:24px;border-radius:50%;border:1.5px solid var(--candle-soft);display:flex;align-items:center;justify-content:center;font-size:.9rem;color:var(--candle);transition:transform .25s;}
-.cm-faq-item.open .cm-faq-icon{transform:rotate(45deg);}
-.cm-faq-a{
-  max-height:0;overflow:hidden;
-  padding:0 4px;
-  font-size:.95rem;color:var(--muted);line-height:1.65;
-  transition:max-height .3s ease,padding .3s ease;
-}
-.cm-faq-item.open .cm-faq-a{max-height:300px;padding:0 4px 18px;}
+/* ════════ FAQ ════════ */
+.faq-item{border-bottom:1px solid var(--line-mauve);}
+.faq-item:first-child{border-top:1px solid var(--line-mauve);}
+.faq-q{width:100%;background:none;border:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:14px;padding:18px 2px;text-align:left;}
+.faq-q span:first-child{font-family:var(--ff-serif);font-weight:500;color:var(--plum-deep);font-size:1.06rem;line-height:1.3;flex:1;}
+.faq-ic{flex:0 0 auto;width:24px;height:24px;border-radius:50%;border:1.5px solid var(--gold-soft);color:var(--candle-deep);display:flex;align-items:center;justify-content:center;font-size:.95rem;transition:transform .25s,background .2s;}
+.faq-item.open .faq-ic{transform:rotate(45deg);background:var(--candle);color:#fff;border-color:var(--candle);}
+.faq-a{max-height:0;overflow:hidden;padding:0 2px;color:var(--muted);font-size:.95rem;line-height:1.65;transition:max-height .3s ease,padding .3s ease;}
+.faq-item.open .faq-a{max-height:340px;padding:0 2px 18px;}
 
-/* ─── FOOTER ─── */
-.cm-footer{
-  text-align:center;padding:40px 20px 32px;
-  border-top:1px solid var(--line);background:#fff;
-}
-.cm-footer .logo{font-family:var(--ff-serif);font-weight:600;font-size:1.3rem;color:var(--plum-deep);margin:0 0 6px;}
-.cm-footer .tagline{font-size:.88rem;color:var(--muted);margin:0 0 20px;}
-.cm-footer .email{font-size:.88rem;color:var(--muted);margin:0 0 20px;}
-.cm-footer .email a{color:var(--plum);font-weight:700;text-decoration:none;}
-.cm-footer nav{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 16px;margin:0 0 20px;}
-.cm-footer nav a{font-size:.82rem;color:var(--muted);text-decoration:none;font-weight:700;}
-.cm-footer nav a:hover{color:var(--plum);}
-.cm-footer .copy{font-size:.78rem;color:var(--muted);}
+/* ════════ CTA FINAL ════════ */
+.final{text-align:center;padding:62px 18px;background:var(--mauve-tint-2);}
+.final-in{max-width:560px;margin:0 auto;}
+.final h2{font-family:var(--ff-serif);font-weight:500;font-style:italic;font-size:clamp(1.7rem,6vw,2.5rem);color:var(--plum-deep);line-height:1.2;margin:0 0 12px;}
+.final p{color:var(--muted);font-size:1.02rem;margin:0 0 26px;}
 
-/* ─── STICKY DOCK ─── */
-.cm-sticky{
-  position:fixed;left:0;right:0;bottom:0;z-index:50;
-  display:flex;justify-content:center;
-  padding:10px 16px calc(10px + env(safe-area-inset-bottom));
-  background:rgba(245,241,248,.94);backdrop-filter:blur(8px);
-  border-top:1px solid var(--line);
-  transform:translateY(130%);opacity:0;visibility:hidden;pointer-events:none;
-}
-.cm-sticky.cm-ready{transition:transform .28s ease,opacity .28s ease,visibility .28s;}
-.cm-sticky.show{transform:none;opacity:1;visibility:visible;pointer-events:auto;}
-.cm-sticky-btn{
-  font-family:var(--ff-sans);display:flex;width:100%;max-width:440px;
-  align-items:center;justify-content:center;
-  background:var(--plum);color:#fff;text-decoration:none;
-  font-weight:800;font-size:1.04rem;padding:15px 28px;border-radius:999px;
-  box-shadow:0 4px 14px rgba(46,34,56,.18);
-}
-.cm-sticky.cm-ready .cm-sticky-btn{transition:background .15s,transform .15s;}
-.cm-sticky-btn:hover{background:var(--plum-deep);transform:translateY(-1px);}
+/* ════════ FOOTER FONCÉ ════════ */
+.ft{background:var(--night);border-top:none;text-align:center;padding:44px 20px 34px;}
+.ft-logo{height:36px;width:auto;margin:0 auto 14px;}
+.ft .tag{font-family:var(--ff-serif);font-style:italic;font-size:.92rem;color:rgba(255,255,255,.5);margin:0 0 18px;}
+.ft .em{font-size:.84rem;color:rgba(255,255,255,.5);margin:0 0 20px;}
+.ft .em a{color:var(--candle);font-weight:700;text-decoration:none;}
+.ft nav{display:flex;flex-wrap:wrap;justify-content:center;gap:8px 18px;margin:0 0 20px;}
+.ft nav a{font-size:.8rem;color:rgba(255,255,255,.45);text-decoration:none;font-weight:600;transition:color .15s;}
+.ft nav a:hover{color:var(--candle);}
+.ft .copy{font-size:.76rem;color:rgba(255,255,255,.28);}
+.ft .manage{margin-top:10px;}
+.ft .manage button{background:none;border:none;font-size:.76rem;color:rgba(255,255,255,.4);cursor:pointer;font-family:var(--ff-sans);text-decoration:underline;padding:0;}
 
-/* ─── CONSENT ─── */
-/* ⚠️ bottom:76px pour s'asseoir au-dessus du sticky dock */
-.cm-consent{
-  position:fixed;left:12px;right:12px;bottom:12px;z-index:55;
-  max-width:640px;margin:0 auto;
-  background:#fff;border:1px solid var(--line);border-radius:16px;
-  box-shadow:0 10px 30px rgba(46,34,56,.16);
-  padding:16px 18px;display:none;
-  transition:bottom .28s ease;
-}
-.cm-consent.show{display:block;}
-.cm-consent.docked{bottom:76px;}
-.cm-consent.show{display:block;}
-.cm-consent-txt{font-size:.84rem;line-height:1.5;color:var(--ink);margin:0 0 12px;}
-.cm-consent-txt a{color:var(--plum);font-weight:700;}
-.cm-consent-row{display:flex;gap:10px;}
-.cm-consent-btn{
-  flex:1;font-family:var(--ff-sans);font-weight:800;font-size:.92rem;
-  padding:12px 18px;border-radius:999px;cursor:pointer;
-  border:1.5px solid var(--plum);transition:background .15s,color .15s;
-}
-.cm-consent-accept{background:var(--plum);color:#fff;}
-.cm-consent-accept:hover{background:var(--plum-deep);border-color:var(--plum-deep);}
-.cm-consent-refuse{background:transparent;color:var(--plum);}
-.cm-consent-refuse:hover{background:#f5f1f8;}
-@media(min-width:520px){
-  .cm-consent-row{justify-content:flex-end;}
-  .cm-consent-btn{flex:0 0 auto;min-width:130px;}
-}
+/* ════════ STICKY (fond blanc) ════════ */
+.sticky{position:fixed;left:0;right:0;bottom:0;z-index:50;display:flex;justify-content:center;padding:9px 14px calc(9px + env(safe-area-inset-bottom));background:#fff;border-top:1px solid var(--line-mauve);box-shadow:0 -4px 16px rgba(60,46,77,.06);transform:translateY(130%);opacity:0;visibility:hidden;pointer-events:none;}
+.sticky.ready{transition:transform .28s ease,opacity .28s ease,visibility .28s;}
+.sticky.show{transform:none;opacity:1;visibility:visible;pointer-events:auto;}
+.sticky a{font-family:var(--ff-sans);display:flex;width:100%;max-width:440px;align-items:center;justify-content:center;background:var(--plum);color:#fff;text-decoration:none;font-weight:800;font-size:1rem;padding:14px 26px;border-radius:12px;box-shadow:0 4px 14px rgba(60,46,77,.22);}
+.sticky.ready a{transition:background .15s,transform .15s;}
+.sticky a:hover{background:var(--plum-deep);transform:translateY(-1px);}
 
-/* ─── DIVIDER ─── */
-.cm-divider{border:none;border-top:1px solid var(--line);margin:0;}
+/* ════════ CONSENT ════════ */
+.consent{position:fixed;left:12px;right:12px;bottom:12px;z-index:55;max-width:640px;margin:0 auto;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 10px 30px rgba(60,46,77,.18);padding:15px 17px;display:none;transition:bottom .28s ease;}
+.consent.show{display:block;}
+.consent.docked{bottom:74px;}
+.consent-txt{font-size:.82rem;line-height:1.5;color:var(--ink);margin:0 0 11px;}
+.consent-txt a{color:var(--plum);font-weight:700;}
+.consent-row{display:flex;gap:9px;}
+.consent-btn{flex:1;font-family:var(--ff-sans);font-weight:800;font-size:.9rem;padding:11px 16px;border-radius:11px;cursor:pointer;border:1.5px solid var(--plum);transition:background .15s,color .15s;}
+.consent-accept{background:var(--plum);color:#fff;}
+.consent-accept:hover{background:var(--plum-deep);}
+.consent-refuse{background:transparent;color:var(--plum);}
+.consent-refuse:hover{background:var(--mauve-tint);}
+@media(min-width:520px){.consent-row{justify-content:flex-end;}.consent-btn{flex:0 0 auto;min-width:128px;}}
+
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
 </style>
 </head>
 <body>
 
-<!-- ═══ HEADER ═══ -->
-<header class="cm-header">
-  <div class="cm-header-in">
-    <a class="cm-logo" href="/">
-  <img src="https://res.cloudinary.com/dcx1tfm47/image/upload/v1781659915/Logo_Chanson_M%C3%A9moire_jiq5ce.png" alt="Chanson Mémoire" height="40" style="display:block;height:40px;width:auto;">
-</a>
-    <nav>
+<!-- HEADER -->
+<header class="hd">
+  <div class="hd-in">
+    <a class="hd-logo" href="/"><img src="https://res.cloudinary.com/dcx1tfm47/image/upload/v1781659915/Logo_Chanson_M%C3%A9moire_jiq5ce.png" alt="Chanson Mémoire"></a>
+    <nav class="hd-nav">
       <a href="#comment">Comment ça marche</a>
       <a href="#exemples">Exemples</a>
       <a href="#temoignages">Témoignages</a>
       <a href="#faq">Questions</a>
     </nav>
-    <a class="cm-header-cta" href="https://chansonmemoire.com/survey-chanson-pour-toujours-memories">Créer sa chanson</a>
+    <button class="hd-burger" id="hdBurger" type="button" aria-label="Menu" aria-expanded="false" onclick="toggleMenu()">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+  <div class="hd-menu" id="hdMenu">
+    <a href="#comment" onclick="closeMenu()">Comment ça marche</a>
+    <a href="#exemples" onclick="closeMenu()">Exemples</a>
+    <a href="#temoignages" onclick="closeMenu()">Témoignages</a>
+    <a href="#faq" onclick="closeMenu()">Questions</a>
   </div>
 </header>
 
-<!-- ═══ HERO ═══ -->
-<section class="cm-hero">
-  <div class="section-in">
-    <p class="eyebrow">Entreprise québécoise</p>
-    <p class="eyebrow">La plus belle façon de garder leur mémoire vivante</p>
-    <h1>Une chanson pour quelqu'un que vous n'oublierez jamais</h1>
-    <p class="lede">Vous nous parlez d'eux : qui ils étaient, ce qu'ils aimaient, les moments qui comptaient. On compose une chanson qui capture leur âme, pour toujours.</p>
-    <p class="risk">Aperçu gratuit. Vous ne payez uniquement que si elle vous touche le cœur.</p>
-    <a class="cm-btn" href="https://chansonmemoire.com/survey-chanson-pour-toujours-memories">Créer sa chanson</a>
-    <p class="note">Votre aperçu est prêt en quelques minutes — sans engagement.</p>
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-in">
+    <span class="hero-qc">Entreprise québécoise</span>
+<p class="hero-sub">Gardez sa mémoire vivante</p>
+<h1>Une <span class="w-plum">chanson</span> pour quelqu'un que vous <span class="w-gold">n'oublierez jamais</span></h1>
+    <p class="hero-lede">Vous nous parlez d'eux : qui ils étaient, ce qu'ils aimaient, les moments qui comptaient. On compose une chanson qui capture leur âme, pour toujours.</p>
+    <p class="hero-promise"><strong>Aperçu gratuit.</strong> Vous ne payez que si elle vous touche le cœur.</p>
+    <div class="hero-cta"><a class="btn" href="https://chansonmemoire.com/survey-chanson-pour-toujours-memories">Créer sa chanson</a></div>
+    <a class="hero-listen" href="#exemples">♪ Écoutez d'abord nos exemples</a>
+    <p class="hero-note">Votre aperçu est prêt en quelques minutes — sans engagement.</p>
   </div>
 </section>
 
-<hr class="cm-divider">
+<!-- COMMENT ÇA MARCHE — wave pleine largeur collée en bas -->
+<section class="sec sec--wave bg-mauve" id="comment">
+  <div class="sec-in">
+    <div class="head-l">
+      <span class="kicker">Comment ça marche</span>
+      <h2>Trois étapes, <em>quelques minutes</em></h2>
+    </div>
+    <div class="steps">
+      <div class="step"><div class="step-n">i</div><div><h3>Racontez-nous qui il ou elle était</h3><p>Son prénom, ses passions, vos souvenirs ensemble. Quelques phrases suffisent.</p></div></div>
+      <div class="step"><div class="step-n">ii</div><div><h3>On compose sa chanson</h3><p>Nos outils d'intelligence artificielle composent les paroles et la mélodie sur mesure, à partir de vos souvenirs, pour honorer sa mémoire.</p></div></div>
+      <div class="step"><div class="step-n">iii</div><div><h3>Recevez-la en quelques minutes</h3><p>Vous découvrirez un aperçu sur une page dédiée. Vous écoutez avant de décider.</p></div></div>
+    </div>
+  </div>
+  <!-- wave pleine largeur, hors sec-in, collée en bas -->
+  <div aria-hidden="true" style="width:100%;line-height:0;margin-top:32px;">
+    <svg viewBox="0 0 1440 28" preserveAspectRatio="none" style="display:block;width:100%;height:28px;">
+      <path d="M0,14 Q36,4 72,14 T144,14 T216,14 T288,14 T360,14 T432,14 T504,14 T576,14 T648,14 T720,14 T792,14 T864,14 T936,14 T1008,14 T1080,14 T1152,14 T1224,14 T1296,14 T1368,14 T1440,14" stroke="var(--candle)" stroke-width="1.4" fill="none" opacity=".55"/>
+    </svg>
+  </div>
+</section>
 
-<!-- ═══ ÉTAPES ═══ -->
-<section class="cm-steps" id="comment">
-  <div class="section-in">
-    <div class="flame" aria-hidden="true"></div>
-    <span class="eyebrow">Comment ça marche</span>
-    <h2>Trois étapes, quelques minutes</h2>
-    <div class="grid">
-      <div class="cm-step">
-        <div class="n">1</div>
-        <h3>Racontez-nous qui il ou elle était</h3>
-        <p>Son prénom, ses passions, vos souvenirs ensemble. Quelques phrases suffisent.</p>
-      </div>
-      <div class="cm-step">
-        <div class="n">2</div>
-        <h3>On compose sa chanson</h3>
-        <p>Nos outils d'intelligence artificielle composent les paroles et la mélodie sur mesure, à partir de vos souvenirs, pour honorer sa mémoire.</p>
-      </div>
-      <div class="cm-step">
-        <div class="n">3</div>
-        <h3>Recevez-la en quelques minutes</h3>
-        <p>Vous découvrirez un aperçu sur une page dédiée. Vous écoutez avant de décider.</p>
-      </div>
+<!-- CAS D'USAGE -->
+<section class="sec bg-paper">
+  <div class="sec-in">
+    <div class="head-l">
+      <span class="kicker">Pour chaque moment</span>
+      <h2>Une chanson qui <em>leur ressemble</em></h2>
+    </div>
+    <div class="uc">
+      <a class="uc-card" href="https://chansonmemoire.com/survey-chanson-pour-toujours-memories"><h3>Pour des funérailles</h3><p>Une chanson à jouer pendant la cérémonie, qui capture leur rire, leur chaleur, ce qui faisait d'eux ce qu'ils étaient.</p></a>
+      <a class="uc-card" href="https://chansonmemoire.com/survey-chanson-pour-toujours-memories"><h3>Célébration de vie</h3><p>Honorez leur mémoire avec une chanson qui évoque les moments qui les ont rendus si spéciaux.</p></a>
+      <a class="uc-card" href="https://chansonmemoire.com/survey-chanson-pour-toujours-memories"><h3>Anniversaire de décès</h3><p>Célébrez cette journée avec quelque chose de beau plutôt que de lourd, année après année.</p></a>
+      <a class="uc-card" href="https://chansonmemoire.com/survey-chanson-pour-toujours-memories"><h3>Guérison musicale</h3><p>Exprimez vos sentiments en chanson quand les mots ne suffisent pas.</p></a>
     </div>
   </div>
 </section>
 
-<hr class="cm-divider">
-
-<!-- ═══ CAS D'USAGE ═══ -->
-<section class="cm-uc">
-  <div class="section-in--wide">
-    <span class="eyebrow">Pour chaque moment</span>
-    <h2>Une chanson qui leur ressemble</h2>
-    <div class="grid">
-      <a class="cm-uc-card" href="https://chansonmemoire.com/survey-chanson-pour-toujours-memories">
-        <h3>Pour des funérailles</h3>
-        <p>Une chanson à jouer pendant la cérémonie, qui capture leur rire, leur chaleur, ce qui faisait d'eux ce qu'ils étaient.</p>
-      </a>
-      <a class="cm-uc-card" href="https://chansonmemoire.com/survey-chanson-pour-toujours-memories">
-        <h3>Célébration de vie</h3>
-        <p>Honorez leur mémoire avec une chanson qui évoque les moments qui les ont rendus si spéciaux.</p>
-      </a>
-      <a class="cm-uc-card" href="https://chansonmemoire.com/survey-chanson-pour-toujours-memories">
-        <h3>Anniversaire de décès</h3>
-        <p>Célébrez cette journée avec quelque chose de beau plutôt que de lourd, année après année.</p>
-      </a>
-      <a class="cm-uc-card" href="https://chansonmemoire.com/survey-chanson-pour-toujours-memories">
-        <h3>Guérison musicale</h3>
-        <p>Exprimez vos sentiments en chanson quand les mots ne suffisent pas.</p>
-      </a>
+<!-- EXEMPLES -->
+<section class="sec bg-mauve" id="exemples">
+  <div class="sec-in">
+    <div class="head-l">
+      <span class="kicker">Écoute des exemples</span>
+      <h2>Des exemples de ce <em>qu'on crée</em></h2>
     </div>
-  </div>
-</section>
+    <div class="tracklist">
 
-<hr class="cm-divider">
-
-<!-- ═══ PLAYERS ═══ -->
-<section class="cm-players" id="exemples">
-  <div class="section-in">
-    <span class="eyebrow">Écoute des exemples</span>
-    <h2>Des exemples de ce qu'on crée</h2>
-    <div class="list">
-
-      <div class="cm-player">
-        <div class="cm-bars" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
-        <p class="cm-pl-title">Pour Maman — Merci</p>
-        <p class="cm-pl-sub">Orchestre gospel mélancolique</p>
-        <div class="cm-pl-controls">
-          <button class="cm-play" type="button" aria-label="Lecture" onclick="cmToggle(this)">▶</button>
-          <span class="cm-time cm-cur">0:00</span>
-          <div class="cm-track" onclick="cmSeek(this,event)"><div class="cm-fill"></div></div>
-          <span class="cm-time cm-dur">0:00</span>
+      <div class="track">
+        <button class="track-play" type="button" aria-label="Lecture" onclick="tToggle(this)">▶</button>
+        <div class="track-body">
+          <p class="track-name">Pour Maman — Merci</p>
+          <span class="track-sub">Orchestre gospel mélancolique</span>
+          <div class="track-bars-wrap">
+            <div class="track-minibars"></div>
+            <div class="track-seek" onclick="tSeek(this,event)"></div>
+          </div>
         </div>
-        <audio preload="metadata" onloadedmetadata="cmDur(this)" ontimeupdate="cmTick(this)" onplay="cmPlay(this)" onpause="cmPause(this)" onended="cmEnd(this)">
+        <div class="track-time"><span class="t-cur">0:00</span> / <span class="t-dur">0:00</span></div>
+        <audio preload="metadata" onloadedmetadata="tDur(this)" ontimeupdate="tTick(this)" onplay="tPlay(this)" onpause="tPause(this)" onended="tEnd(this)">
           <source src="https://assets.cdn.filesafe.space/2aEvL7jAfKfV4D45pRD5/media/69fbe2de7c0e0f0a9e662313.mp3" type="audio/mpeg">
         </audio>
       </div>
 
-      <div class="cm-player">
-        <div class="cm-bars" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
-        <p class="cm-pl-title">Pour Grand-Maman — La bonne crème glacée</p>
-        <p class="cm-pl-sub">Douce mélodie émotionnelle</p>
-        <div class="cm-pl-controls">
-          <button class="cm-play" type="button" aria-label="Lecture" onclick="cmToggle(this)">▶</button>
-          <span class="cm-time cm-cur">0:00</span>
-          <div class="cm-track" onclick="cmSeek(this,event)"><div class="cm-fill"></div></div>
-          <span class="cm-time cm-dur">0:00</span>
+      <div class="track">
+        <button class="track-play" type="button" aria-label="Lecture" onclick="tToggle(this)">▶</button>
+        <div class="track-body">
+          <p class="track-name">Pour Grand-Maman — La bonne crème glacée</p>
+          <span class="track-sub">Douce mélodie émotionnelle</span>
+          <div class="track-bars-wrap">
+            <div class="track-minibars"></div>
+            <div class="track-seek" onclick="tSeek(this,event)"></div>
+          </div>
         </div>
-        <audio preload="metadata" onloadedmetadata="cmDur(this)" ontimeupdate="cmTick(this)" onplay="cmPlay(this)" onpause="cmPause(this)" onended="cmEnd(this)">
+        <div class="track-time"><span class="t-cur">0:00</span> / <span class="t-dur">0:00</span></div>
+        <audio preload="metadata" onloadedmetadata="tDur(this)" ontimeupdate="tTick(this)" onplay="tPlay(this)" onpause="tPause(this)" onended="tEnd(this)">
           <source src="https://assets.cdn.filesafe.space/2aEvL7jAfKfV4D45pRD5/media/69fbe2de7c0e0f0a9e662314.mp3" type="audio/mpeg">
         </audio>
       </div>
 
-      <div class="cm-player">
-        <div class="cm-bars" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
-        <p class="cm-pl-title">En mémoire à mon père — Au bord du lac avec toi</p>
-        <p class="cm-pl-sub">Acoustique inspirant</p>
-        <div class="cm-pl-controls">
-          <button class="cm-play" type="button" aria-label="Lecture" onclick="cmToggle(this)">▶</button>
-          <span class="cm-time cm-cur">0:00</span>
-          <div class="cm-track" onclick="cmSeek(this,event)"><div class="cm-fill"></div></div>
-          <span class="cm-time cm-dur">0:00</span>
+      <div class="track">
+        <button class="track-play" type="button" aria-label="Lecture" onclick="tToggle(this)">▶</button>
+        <div class="track-body">
+          <p class="track-name">En mémoire à mon père — Au bord du lac avec toi</p>
+          <span class="track-sub">Acoustique inspirant</span>
+          <div class="track-bars-wrap">
+            <div class="track-minibars"></div>
+            <div class="track-seek" onclick="tSeek(this,event)"></div>
+          </div>
         </div>
-        <audio preload="metadata" onloadedmetadata="cmDur(this)" ontimeupdate="cmTick(this)" onplay="cmPlay(this)" onpause="cmPause(this)" onended="cmEnd(this)">
+        <div class="track-time"><span class="t-cur">0:00</span> / <span class="t-dur">0:00</span></div>
+        <audio preload="metadata" onloadedmetadata="tDur(this)" ontimeupdate="tTick(this)" onplay="tPlay(this)" onpause="tPause(this)" onended="tEnd(this)">
           <source src="https://assets.cdn.filesafe.space/2aEvL7jAfKfV4D45pRD5/media/69e50a5850b9a3263a17f1e6.mp3" type="audio/mpeg">
         </audio>
       </div>
 
-      <div class="cm-player">
-        <div class="cm-bars" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
-        <p class="cm-pl-title">Pour Grand-Papa — Roxanne</p>
-        <p class="cm-pl-sub">Jazz inspirant</p>
-        <div class="cm-pl-controls">
-          <button class="cm-play" type="button" aria-label="Lecture" onclick="cmToggle(this)">▶</button>
-          <span class="cm-time cm-cur">0:00</span>
-          <div class="cm-track" onclick="cmSeek(this,event)"><div class="cm-fill"></div></div>
-          <span class="cm-time cm-dur">0:00</span>
+      <div class="track">
+        <button class="track-play" type="button" aria-label="Lecture" onclick="tToggle(this)">▶</button>
+        <div class="track-body">
+          <p class="track-name">Pour Grand-Papa — Roxanne</p>
+          <span class="track-sub">Jazz inspirant</span>
+          <div class="track-bars-wrap">
+            <div class="track-minibars"></div>
+            <div class="track-seek" onclick="tSeek(this,event)"></div>
+          </div>
         </div>
-        <audio preload="metadata" onloadedmetadata="cmDur(this)" ontimeupdate="cmTick(this)" onplay="cmPlay(this)" onpause="cmPause(this)" onended="cmEnd(this)">
+        <div class="track-time"><span class="t-cur">0:00</span> / <span class="t-dur">0:00</span></div>
+        <audio preload="metadata" onloadedmetadata="tDur(this)" ontimeupdate="tTick(this)" onplay="tPlay(this)" onpause="tPause(this)" onended="tEnd(this)">
           <source src="https://assets.cdn.filesafe.space/2aEvL7jAfKfV4D45pRD5/media/69fbe2dea6982c16559b6423.mp3" type="audio/mpeg">
         </audio>
       </div>
 
-      <div class="cm-player">
-        <div class="cm-bars" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
-        <p class="cm-pl-title">Pour mon ami — Road trip pour le fun</p>
-        <p class="cm-pl-sub">Country inspirant</p>
-        <div class="cm-pl-controls">
-          <button class="cm-play" type="button" aria-label="Lecture" onclick="cmToggle(this)">▶</button>
-          <span class="cm-time cm-cur">0:00</span>
-          <div class="cm-track" onclick="cmSeek(this,event)"><div class="cm-fill"></div></div>
-          <span class="cm-time cm-dur">0:00</span>
+      <div class="track">
+        <button class="track-play" type="button" aria-label="Lecture" onclick="tToggle(this)">▶</button>
+        <div class="track-body">
+          <p class="track-name">Pour mon ami — Road trip pour le fun</p>
+          <span class="track-sub">Country inspirant</span>
+          <div class="track-bars-wrap">
+            <div class="track-minibars"></div>
+            <div class="track-seek" onclick="tSeek(this,event)"></div>
+          </div>
         </div>
-        <audio preload="metadata" onloadedmetadata="cmDur(this)" ontimeupdate="cmTick(this)" onplay="cmPlay(this)" onpause="cmPause(this)" onended="cmEnd(this)">
+        <div class="track-time"><span class="t-cur">0:00</span> / <span class="t-dur">0:00</span></div>
+        <audio preload="metadata" onloadedmetadata="tDur(this)" ontimeupdate="tTick(this)" onplay="tPlay(this)" onpause="tPause(this)" onended="tEnd(this)">
           <source src="https://assets.cdn.filesafe.space/2aEvL7jAfKfV4D45pRD5/media/69fbe2de516b813067e8268e.mp3" type="audio/mpeg">
         </audio>
       </div>
@@ -471,303 +432,177 @@ a{color:inherit;}
   </div>
 </section>
 
-<hr class="cm-divider">
-
-<!-- ═══ CE QUI EST INCLUS ═══ -->
-<section class="cm-stack">
-  <div class="section-in" style="max-width:480px;">
-    <div class="card">
-      <span class="eyebrow">Ce qui est inclus</span>
+<!-- INCLUS -->
+<section class="sec bg-paper">
+  <div class="sec-in">
+    <div class="offer">
+      <span class="kicker">Ce qui est inclus</span>
       <h2>Bien plus qu'une simple chanson</h2>
       <ul>
-        <li><span class="check">✦</span><span>Une chanson originale, composée uniquement pour honorer sa mémoire</span></li>
-        <li><span class="check">✦</span><span>Une page privée à partager avec toute la famille — pour garder sa mémoire vivante</span></li>
-        <li><span class="check">✦</span><span>Fichier MP3 à télécharger et garder pour toujours</span></li>
-        <li><span class="check">✦</span><span>Qualité studio professionnelle</span></li>
-        <li><span class="check">✦</span><span>Révisions jusqu'à satisfaction, sans frais</span></li>
+        <li><span class="ck">✦</span><span>Une chanson originale, composée uniquement pour honorer sa mémoire</span></li>
+        <li><span class="ck">✦</span><span>Une page privée à partager avec toute la famille — pour garder sa mémoire vivante</span></li>
+        <li><span class="ck">✦</span><span>Fichier MP3 à télécharger et garder pour toujours</span></li>
+        <li><span class="ck">✦</span><span>Qualité studio professionnelle</span></li>
+        <li><span class="ck">✦</span><span>Révisions jusqu'à satisfaction, sans frais</span></li>
       </ul>
       <p class="compare">Une œuvre sur mesure, sans les semaines d'attente ni la facture d'un compositeur professionnel.</p>
-      <a class="cm-btn cm-btn--wide" href="https://chansonmemoire.com/survey-chanson-pour-toujours-memories">Créer sa chanson</a>
-      <div class="reassure">
-        <span>♥ Révisions jusqu'à satisfaction</span>
-        <span>✦ Aperçu gratuit, sans engagement</span>
-        <span>⏱ Livraison en quelques minutes</span>
-      </div>
+      <div class="offer-cta"><a class="btn btn--gold" href="https://chansonmemoire.com/survey-chanson-pour-toujours-memories">Créer sa chanson</a></div>
+      <div class="reassure"><span>♥ Révisions jusqu'à satisfaction</span><span>✦ Aperçu gratuit</span><span>⏱ Quelques minutes</span></div>
     </div>
   </div>
 </section>
 
-<hr class="cm-divider">
-
-<!-- ═══ TÉMOIGNAGES ═══ -->
-<section class="cm-temoignages" id="temoignages">
-  <div class="section-in--wide">
-    <span class="eyebrow">De vraies histoires de familles d'ici</span>
-    <h2>Des chansons qui ont aidé à guérir</h2>
-    <p class="sub">De vraies histoires de familles qui ont mis leurs souvenirs dans une chanson</p>
-    <div class="grid">
-
-      <div class="cm-temoignage">
-        <p class="stars">★★★★★</p>
-        <blockquote>« J'ai perdu ma maman il y a trois mois. Quand j'ai entendu la chanson pour la première fois, j'ai éclaté en sanglots, mais des larmes de gratitude. C'était elle. C'était exactement ce qu'elle aurait dit si elle avait pu me parler une dernière fois. »</blockquote>
-        <p class="attrib">Marie-France L., Québec <span>Chanson en hommage à sa mère</span></p>
-      </div>
-
-      <div class="cm-temoignage">
-        <p class="stars">★★★★★</p>
-        <blockquote>« Mon père était un homme de peu de mots. Cette chanson a dit tout ce qu'on n'a jamais réussi à se dire. Je la mets en boucle dans l'auto, là où on passait nos meilleurs moments ensemble. »</blockquote>
-        <p class="attrib">Pierre B., Montréal <span>Chanson pour son père décédé</span></p>
-      </div>
-
-      <div class="cm-temoignage">
-        <p class="stars">★★★★★</p>
-        <blockquote>« Nous l'avons jouée aux funérailles de papa et personne n'a pu retenir ses larmes. Elle reflétait parfaitement qui il était : son humour, sa chaleur, tout. »</blockquote>
-        <p class="attrib">Sophie H., Montréal <span>Chanson pour le service de son père</span></p>
-      </div>
-
-      <div class="cm-temoignage">
-        <p class="stars">★★★★★</p>
-        <blockquote>« Perdre son mari après 38 ans ensemble, c'est perdre une moitié de soi. Cette chanson m'a rendu quelque chose, sa voix dans les mots, ses habitudes dans les images. Je la joue chaque matin. »</blockquote>
-        <p class="attrib">Sophie C., Laval <span>Chanson pour son mari décédé</span></p>
-      </div>
-
-      <div class="cm-temoignage">
-        <p class="stars">★★★★★</p>
-        <blockquote>« Maman aurait adoré. Les paroles évoquaient son jardin et son rire, des choses que nous seuls connaissions. C'était tellement personnel. »</blockquote>
-        <p class="attrib">Mélanie G., Brossard <span>Chanson en hommage à sa mère</span></p>
-      </div>
-
-      <div class="cm-temoignage">
-        <p class="stars">★★★★★</p>
-        <blockquote>« Ma grand-mère aimait chanter en faisant la cuisine. J'ai mentionné ça dans le formulaire, et la chanson a capturé cette image avec une douceur incroyable. Toute la famille a pleuré et ri en même temps. »</blockquote>
-        <p class="attrib">Josée T., Sherbrooke <span>Chanson pour son anniversaire de décès</span></p>
-      </div>
-
-      <div class="cm-temoignage">
-        <p class="stars">★★★★★</p>
-        <blockquote>« Je suis pas du genre à parler de mes émotions. Mais là, j'ai envoyé la chanson à mes frères et sœurs sans un mot. En deux minutes, ils m'appelaient tous en pleurant. On avait jamais eu ce moment-là ensemble depuis son départ. »</blockquote>
-        <p class="attrib">Réjean D., Saguenay <span>Chanson en mémoire de son père</span></p>
-      </div>
-
-      <div class="cm-temoignage">
-        <p class="stars">★★★★★</p>
-        <blockquote>« J'avais peur que ce soit générique. Mais quand j'ai rempli le formulaire avec tous ses petits détails — son café trop fort, son rire sonore, ses mauvaises blagues — la chanson les a tous mis dedans. »</blockquote>
-        <p class="attrib">Isabelle B., Chicoutimi <span>Chanson pour sa mère</span></p>
-      </div>
-
-      <div class="cm-temoignage">
-        <p class="stars">★★★★★</p>
-        <blockquote>« J'ai offert la chanson à mon beau-père pour honorer sa femme décédée. Il a mis ses mains sur son visage et n'a plus bougé pendant toute la durée de la chanson. Après, il m'a dit : "C'est comme si elle était dans la pièce." »</blockquote>
-        <p class="attrib">France L., Longueuil <span>Chanson pour une épouse décédée</span></p>
-      </div>
-
+<!-- TÉMOIGNAGES -->
+<section class="sec bg-mauve" id="temoignages">
+  <div class="sec-in--wide">
+    <div class="head-c">
+      <span class="kicker">De vraies histoires de familles d'ici</span>
+      <h2>Des chansons qui ont <em>aidé à guérir</em></h2>
     </div>
-    <div class="cta-wrap">
-      <a class="cm-btn" href="https://chansonmemoire.com/survey-chanson-pour-toujours-memories">Créer sa chanson</a>
+    <div class="temoin-feat">
+      <p class="stars">★★★★★</p>
+      <blockquote>J'ai perdu ma maman il y a trois mois. Quand j'ai entendu la chanson pour la première fois, j'ai éclaté en sanglots, mais des larmes de gratitude. C'était elle. C'était exactement ce qu'elle aurait dit si elle avait pu me parler une dernière fois.</blockquote>
+      <p class="attrib">Marie-France L., Québec<span>Chanson en hommage à sa mère</span></p>
+    </div>
+    <div class="temoin-grid">
+      <div class="temoin"><p class="stars">★★★★★</p><blockquote>« Mon père était un homme de peu de mots. Cette chanson a dit tout ce qu'on n'a jamais réussi à se dire. Je la mets en boucle dans l'auto, là où on passait nos meilleurs moments ensemble. »</blockquote><p class="attrib">Pierre B., Montréal<span>Chanson pour son père décédé</span></p></div>
+      <div class="temoin"><p class="stars">★★★★★</p><blockquote>« Nous l'avons jouée aux funérailles de papa et personne n'a pu retenir ses larmes. Elle reflétait parfaitement qui il était : son humour, sa chaleur, tout. »</blockquote><p class="attrib">Sophie H., Montréal<span>Chanson pour le service de son père</span></p></div>
+      <div class="temoin"><p class="stars">★★★★★</p><blockquote>« Perdre son mari après 38 ans ensemble, c'est perdre une moitié de soi. Cette chanson m'a rendu quelque chose, sa voix dans les mots, ses habitudes dans les images. Je la joue chaque matin. »</blockquote><p class="attrib">Sophie C., Laval<span>Chanson pour son mari décédé</span></p></div>
+      <div class="temoin"><p class="stars">★★★★★</p><blockquote>« Maman aurait adoré. Les paroles évoquaient son jardin et son rire, des choses que nous seuls connaissions. C'était tellement personnel. »</blockquote><p class="attrib">Mélanie G., Brossard<span>Chanson en hommage à sa mère</span></p></div>
+    </div>
+    <div class="temoin-cta"><a class="btn" href="https://chansonmemoire.com/survey-chanson-pour-toujours-memories">Créer sa chanson</a></div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="sec bg-paper" id="faq">
+  <div class="sec-in">
+    <div class="head-l">
+      <span class="kicker">Tu pourrais te demander…</span>
+      <h2>Quelques <em>réponses</em></h2>
+    </div>
+    <div class="faq-list">
+      <div class="faq-item"><button class="faq-q" type="button" onclick="qFaq(this)" aria-expanded="false"><span>Est-ce que je peux la faire jouer aux funérailles ?</span><span class="faq-ic">+</span></button><div class="faq-a">Absolument. De nombreuses familles diffusent leur chanson souvenir pendant la cérémonie, la veillée funèbre ou la cérémonie d'adieu. Tu recevras un fichier MP3 téléchargeable, compatible avec tous les haut-parleurs et systèmes audio.</div></div>
+      <div class="faq-item"><button class="faq-q" type="button" onclick="qFaq(this)" aria-expanded="false"><span>Je ne sais pas quoi écrire, est-ce correct ?</span><span class="faq-ic">+</span></button><div class="faq-a">Bien sûr. Quelques phrases suffisent : leur nom, comment tu te sentais en leur compagnie, un souvenir précieux. Pas besoin d'être écrivain.</div></div>
+      <div class="faq-item"><button class="faq-q" type="button" onclick="qFaq(this)" aria-expanded="false"><span>Combien de temps avant de recevoir ma chanson ?</span><span class="faq-ic">+</span></button><div class="faq-a">Nous nous efforçons de l'envoyer le plus rapidement possible. Un délai maximum de 24h est possible.</div></div>
+      <div class="faq-item"><button class="faq-q" type="button" onclick="qFaq(this)" aria-expanded="false"><span>Qu'est-ce qui arrive si je n'aime pas la chanson ?</span><span class="faq-ic">+</span></button><div class="faq-a">Nous offrons une garantie de satisfaction. Si vous n'êtes pas satisfait, contactez-nous dans les jours suivant la réception de la chanson et nous travaillerons avec vous pour qu'elle soit absolument parfaite grâce à des modifications.</div></div>
+      <div class="faq-item"><button class="faq-q" type="button" onclick="qFaq(this)" aria-expanded="false"><span>Comment je recevrai ma chanson ?</span><span class="faq-ic">+</span></button><div class="faq-a">Ta chanson est envoyée via courriel. Vous pourrez la télécharger au format MP3 de haute qualité, la partager avec qui vous voulez et la conserver indéfiniment.</div></div>
+      <div class="faq-item"><button class="faq-q" type="button" onclick="qFaq(this)" aria-expanded="false"><span>Est-ce que je peux inclure leur nom ?</span><span class="faq-ic">+</span></button><div class="faq-a">Oui ! Leur nom sera intégré aux paroles pour que la chanson soit vraiment personnelle et unique. C'est l'un des aspects les plus émouvants de cette expérience.</div></div>
+      <div class="faq-item"><button class="faq-q" type="button" onclick="qFaq(this)" aria-expanded="false"><span>Est-ce que ma chanson est privée ?</span><span class="faq-ic">+</span></button><div class="faq-a">Oui, tout à fait. Seules les personnes avec lesquelles vous choisissez de partager le lien pourront y accéder. Nous traitons votre histoire avec soin et ne partageons jamais votre chanson publiquement.</div></div>
     </div>
   </div>
 </section>
 
-<hr class="cm-divider">
-
-<!-- ═══ FAQ ═══ -->
-<section class="cm-faq" id="faq">
-  <div class="section-in">
-    <span class="eyebrow">Tu pourrais te demander…</span>
-    <h2>Quelques réponses</h2>
-    <div class="list">
-
-      <div class="cm-faq-item">
-        <button class="cm-faq-q" type="button" onclick="cmFaq(this)" aria-expanded="false">
-          <span>Est-ce que je peux la faire jouer aux funérailles ?</span>
-          <span class="cm-faq-icon">+</span>
-        </button>
-        <div class="cm-faq-a">Absolument. De nombreuses familles diffusent leur chanson souvenir pendant la cérémonie, la veillée funèbre ou la cérémonie d'adieu. Tu recevras un fichier MP3 téléchargeable, compatible avec tous les haut-parleurs et systèmes audio.</div>
-      </div>
-
-      <div class="cm-faq-item">
-        <button class="cm-faq-q" type="button" onclick="cmFaq(this)" aria-expanded="false">
-          <span>Je ne sais pas quoi écrire, est-ce correct ?</span>
-          <span class="cm-faq-icon">+</span>
-        </button>
-        <div class="cm-faq-a">Bien sûr. Quelques phrases suffisent : leur nom, comment tu te sentais en leur compagnie, un souvenir précieux. Pas besoin d'être écrivain.</div>
-      </div>
-
-      <div class="cm-faq-item">
-        <button class="cm-faq-q" type="button" onclick="cmFaq(this)" aria-expanded="false">
-          <span>Combien de temps avant de recevoir ma chanson ?</span>
-          <span class="cm-faq-icon">+</span>
-        </button>
-        <div class="cm-faq-a">Nous nous efforçons de l'envoyer le plus rapidement possible. Un délai maximum de 24h est possible.</div>
-      </div>
-
-      <div class="cm-faq-item">
-        <button class="cm-faq-q" type="button" onclick="cmFaq(this)" aria-expanded="false">
-          <span>Qu'est-ce qui arrive si je n'aime pas la chanson ?</span>
-          <span class="cm-faq-icon">+</span>
-        </button>
-        <div class="cm-faq-a">Nous offrons une garantie de satisfaction. Si vous n'êtes pas satisfait, contactez-nous dans les jours suivant la réception de la chanson et nous travaillerons avec vous pour qu'elle soit absolument parfaite grâce à des modifications.</div>
-      </div>
-
-      <div class="cm-faq-item">
-        <button class="cm-faq-q" type="button" onclick="cmFaq(this)" aria-expanded="false">
-          <span>Comment je recevrai ma chanson ?</span>
-          <span class="cm-faq-icon">+</span>
-        </button>
-        <div class="cm-faq-a">Ta chanson est envoyée via courriel. Vous pourrez la télécharger au format MP3 de haute qualité, la partager avec qui vous voulez et la conserver indéfiniment.</div>
-      </div>
-
-      <div class="cm-faq-item">
-        <button class="cm-faq-q" type="button" onclick="cmFaq(this)" aria-expanded="false">
-          <span>Est-ce que je peux inclure leur nom ?</span>
-          <span class="cm-faq-icon">+</span>
-        </button>
-        <div class="cm-faq-a">Oui ! Leur nom sera intégré aux paroles pour que la chanson soit vraiment personnelle et unique. C'est l'un des aspects les plus émouvants de cette expérience.</div>
-      </div>
-
-      <div class="cm-faq-item">
-        <button class="cm-faq-q" type="button" onclick="cmFaq(this)" aria-expanded="false">
-          <span>Est-ce que ma chanson est privée ?</span>
-          <span class="cm-faq-icon">+</span>
-        </button>
-        <div class="cm-faq-a">Oui, tout à fait. Seules les personnes avec lesquelles vous choisissez de partager le lien pourront y accéder. Nous traitons votre histoire avec soin et ne partageons jamais votre chanson publiquement.</div>
-      </div>
-
-    </div>
+<!-- CTA FINAL -->
+<section class="final">
+  <div class="final-in">
+    <h2>Leur mémoire mérite plus que des mots.</h2>
+    <p>Racontez-nous qui ils étaient. Écoutez l'aperçu en quelques minutes. Ne payez que s'il vous touche.</p>
+    <a class="btn btn--gold" href="https://chansonmemoire.com/survey-chanson-pour-toujours-memories">Créer sa chanson</a>
   </div>
 </section>
 
-<!-- ═══ FOOTER ═══ -->
-<footer class="cm-footer">
-  <p class="logo">Chanson Mémoire</p>
-  <p class="tagline">Fait avec ❤️ pour le réconfort</p>
-  <p class="email">Courriel : <a href="brigitte@chansonmemoire.com">brigitte@chansonmemoire.com</a></p>
+<!-- FOOTER FONCÉ -->
+<footer class="ft">
+  <img class="ft-logo" src="https://res.cloudinary.com/dcx1tfm47/image/upload/v1781659915/Logo_Chanson_M%C3%A9moire_jiq5ce.png" alt="Chanson Mémoire">
+  <p class="tag">Fait avec ❤️ pour le réconfort</p>
+  <p class="em">Courriel : <a href="mailto:brigitte@chansonmemoire.com">brigitte@chansonmemoire.com</a></p>
   <nav>
     <a href="https://chansonmemoire.com/politique-de-confidentialite">Politique de confidentialité</a>
     <a href="https://chansonmemoire.com/conditions-dutilisation">Conditions d'utilisation</a>
     <a href="https://chansonmemoire.com/politique-de-remboursement">Politique de remboursement</a>
   </nav>
   <p class="copy">©2026 Chanson Mémoire. Tous droits réservés.</p>
-  <p class="copy" style="margin-top:8px;">
-    <button type="button" onclick="cmReopenConsent()" style="background:none;border:none;font-size:.78rem;color:var(--muted);cursor:pointer;font-family:var(--ff-sans);text-decoration:underline;padding:0;">Gérer mes préférences de témoins</button>
-  </p>
+  <p class="manage"><button type="button" onclick="reopenConsent()">Gérer mes préférences de témoins</button></p>
 </footer>
 
-<!-- ═══ STICKY DOCK ═══ -->
-<div class="cm-sticky" id="cmSticky" aria-hidden="true">
-  <a class="cm-sticky-btn" href="https://chansonmemoire.com/survey-chanson-pour-toujours-memories">Créer sa chanson</a>
+<!-- STICKY -->
+<div class="sticky" id="sticky" aria-hidden="true">
+  <a href="https://chansonmemoire.com/survey-chanson-pour-toujours-memories">Créer sa chanson</a>
 </div>
 
-<!-- ═══ CONSENT BANNER ═══ -->
-<div class="cm-consent" id="cmConsent" role="dialog" aria-live="polite" aria-label="Consentement aux témoins">
-  <p class="cm-consent-txt">Nous utilisons des témoins (cookies) et des outils de mesure pour améliorer le site et nos publicités. Tu peux accepter ou refuser. Détails dans notre <a href="/politique-de-confidentialite">politique de confidentialité</a>.</p>
-  <div class="cm-consent-row">
-    <button type="button" class="cm-consent-btn cm-consent-accept" onclick="cmConsentSet(true)">Accepter</button>
-    <button type="button" class="cm-consent-btn cm-consent-refuse" onclick="cmConsentSet(false)">Refuser</button>
+<!-- CONSENT -->
+<div class="consent" id="consent" role="dialog" aria-label="Consentement aux témoins">
+  <p class="consent-txt">Nous utilisons des témoins (cookies) et des outils de mesure pour améliorer le site et nos publicités. Tu peux accepter ou refuser. Détails dans notre <a href="https://chansonmemoire.com/politique-de-confidentialite">politique de confidentialité</a>.</p>
+  <div class="consent-row">
+    <button type="button" class="consent-btn consent-accept" onclick="consentSet(true)">Accepter</button>
+    <button type="button" class="consent-btn consent-refuse" onclick="consentSet(false)">Refuser</button>
   </div>
 </div>
 
 <script>
-/* ─── AUDIO HELPERS ─── */
-function cmFmt(s){var m=Math.floor(s/60),x=Math.floor(s%60);return m+':'+(x<10?'0':'')+x;}
-function cmDur(a){a.closest('.cm-player').querySelector('.cm-dur').textContent=cmFmt(a.duration||0);}
-function cmTick(a){
-  var p=a.closest('.cm-player'),s=a.currentTime||0;
-  p.querySelector('.cm-cur').textContent=cmFmt(s);
-  p.querySelector('.cm-fill').style.width=(a.duration?s/a.duration*100:0)+'%';
+/* ════ MENU MOBILE ════ */
+function toggleMenu(){var b=document.getElementById('hdBurger'),m=document.getElementById('hdMenu'),o=b.classList.toggle('open');m.classList.toggle('open');b.setAttribute('aria-expanded',o?'true':'false');}
+function closeMenu(){var b=document.getElementById('hdBurger'),m=document.getElementById('hdMenu');b.classList.remove('open');m.classList.remove('open');b.setAttribute('aria-expanded','false');}
+
+/* ════ MINI-BARS : hauteurs organiques par piste ════ */
+var BAR_HEIGHTS=[
+  [22,38,54,30,46,68,40,58,80,48,62,34,52,74,44,60,28,70,42,76,36,56,82,50,66,32,58,72,46,64,38,54,26,48,70,44,62,34,60,78],
+  [30,52,68,36,58,82,44,66,90,52,74,38,60,84,48,70,32,76,54,80,42,64,28,56,72,40,62,86,50,68,34,60,46,52,82,48,64,30,58,72],
+  [18,42,60,32,50,76,44,64,88,54,70,28,52,80,46,68,24,74,48,84,40,62,20,54,78,36,58,88,50,72,38,56,44,66,86,52,70,40,64,82],
+  [26,46,62,38,54,78,48,68,90,58,72,34,56,82,50,70,28,78,52,86,44,66,32,58,76,42,64,88,54,72,36,56,48,70,84,54,68,36,62,80],
+  [20,44,58,34,52,74,40,62,86,50,68,30,54,78,44,66,26,72,46,82,38,60,24,52,76,36,60,84,48,70,32,54,46,64,80,50,66,38,58,76]
+];
+(function(){
+  document.querySelectorAll('.track-minibars').forEach(function(mb,i){
+    var heights=BAR_HEIGHTS[i%BAR_HEIGHTS.length];
+    heights.forEach(function(h){var s=document.createElement('span');s.style.height=Math.max(14,h)+'%';mb.appendChild(s);});
+  });
+})();
+
+/* ════ LECTEURS ════ */
+function fmt(s){if(!isFinite(s)||s<0)s=0;var m=Math.floor(s/60),x=Math.floor(s%60);return m+':'+(x<10?'0':'')+x;}
+function tDur(a){a.closest('.track').querySelector('.t-dur').textContent=fmt(a.duration);}
+function tTick(a){
+  var t=a.closest('.track');
+  t.querySelector('.t-cur').textContent=fmt(a.currentTime);
+  var bars=t.querySelector('.track-minibars').children;
+  var idx=Math.floor((a.duration?a.currentTime/a.duration:0)*bars.length);
+  for(var i=0;i<bars.length;i++)bars[i].classList.toggle('lit',i<=idx);
 }
-function cmPlay(a){
-  var p=a.closest('.cm-player'),b=p.querySelector('.cm-play');
-  p.classList.add('is-playing');b.innerHTML='❚❚';b.setAttribute('aria-label','Pause');
+function tPlay(a){var t=a.closest('.track');t.classList.add('playing');t.querySelector('.track-play').innerHTML='❚❚';}
+function tPause(a){var t=a.closest('.track');t.classList.remove('playing');t.querySelector('.track-play').innerHTML='▶';}
+function tEnd(a){
+  tPause(a);
+  var t=a.closest('.track');
+  t.querySelector('.t-cur').textContent='0:00';
+  var bars=t.querySelector('.track-minibars').children;
+  for(var i=0;i<bars.length;i++)bars[i].classList.remove('lit');
 }
-function cmPause(a){
-  var p=a.closest('.cm-player'),b=p.querySelector('.cm-play');
-  p.classList.remove('is-playing');b.innerHTML='▶';b.setAttribute('aria-label','Lecture');
-}
-function cmEnd(a){
-  cmPause(a);
-  a.closest('.cm-player').querySelector('.cm-fill').style.width='0%';
-  a.closest('.cm-player').querySelector('.cm-cur').textContent='0:00';
-}
-function cmToggle(btn){
-  var p=btn.closest('.cm-player'),a=p.querySelector('audio');
-  document.querySelectorAll('.cm-players audio').forEach(function(o){if(o!==a){o.pause();}});
+function tToggle(btn){
+  var t=btn.closest('.track'),a=t.querySelector('audio');
+  document.querySelectorAll('.track audio').forEach(function(o){if(o!==a)o.pause();});
   if(a.paused){a.play();}else{a.pause();}
 }
-function cmSeek(track,e){
-  var a=track.closest('.cm-player').querySelector('audio'),r=track.getBoundingClientRect();
-  if(a.duration)a.currentTime=((e.clientX-r.left)/r.width)*a.duration;
+function tSeek(seekDiv,e){
+  var a=seekDiv.closest('.track').querySelector('audio');
+  var mb=seekDiv.closest('.track-bars-wrap').querySelector('.track-minibars');
+  var r=mb.getBoundingClientRect();
+  if(a.duration)a.currentTime=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width))*a.duration;
 }
 
-/* ─── STICKY DOCK ─── */
+/* ════ STICKY + CONSENT ════ */
 (function(){
-  var dock=document.getElementById('cmSticky');
-  var consent=document.getElementById('cmConsent');
+  var dock=document.getElementById('sticky'),consent=document.getElementById('consent');
   function toggle(){
-    var visible=window.scrollY>500;
-    if(visible){dock.classList.add('show');dock.setAttribute('aria-hidden','false');}
+    var v=window.scrollY>500;
+    if(v){dock.classList.add('show');dock.setAttribute('aria-hidden','false');}
     else{dock.classList.remove('show');dock.setAttribute('aria-hidden','true');}
-    // Ajuste la position du banner consent selon la visibilité du dock
-    if(consent.classList.contains('show')){
-      if(visible){consent.classList.add('docked');}
-      else{consent.classList.remove('docked');}
-    }
+    if(consent.classList.contains('show')){if(v)consent.classList.add('docked');else consent.classList.remove('docked');}
   }
   toggle();
-  requestAnimationFrame(function(){requestAnimationFrame(function(){dock.classList.add('cm-ready');});});
+  requestAnimationFrame(function(){requestAnimationFrame(function(){dock.classList.add('ready');});});
   window.addEventListener('scroll',toggle,{passive:true});
 })();
 
-/* ─── CONSENT ─── */
-function cmConsentSet(accepted){
-  localStorage.setItem('cm_consent',accepted?'yes':'no');
-  var banner=document.getElementById('cmConsent');
-  banner.classList.remove('show');
-  banner.classList.remove('docked');
-  if(accepted){cmLoadPixel();}
-}
+/* ════ CONSENT ════ */
+(function(){var c=localStorage.getItem('cm_consent');if(!c){document.getElementById('consent').classList.add('show');}else if(c==='yes'){loadPixel();}})();
+function consentSet(ok){localStorage.setItem('cm_consent',ok?'yes':'no');var b=document.getElementById('consent');b.classList.remove('show','docked');if(ok)loadPixel();}
+function reopenConsent(){var b=document.getElementById('consent');b.classList.add('show');if(document.getElementById('sticky').classList.contains('show'))b.classList.add('docked');else b.classList.remove('docked');}
+function loadPixel(){if(window._px)return;window._px=true;!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','TON_PIXEL_ID');fbq('track','PageView');}
 
-function cmLoadPixel(){
-  // Charge le pixel Meta uniquement après consentement explicite
-  !function(f,b,e,v,n,t,s){
-    if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-    n.queue=[];t=b.createElement(e);t.async=!0;
-    t.src=v;s=b.getElementsByTagName(e)[0];
-    s.parentNode.insertBefore(t,s)
-  }(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
-  fbq('init','909919758755200');
-  fbq('track','PageView');
-}
-
-// Au chargement : si déjà consenti, charger le pixel immédiatement
-(function(){
-  if(localStorage.getItem('cm_consent')==='yes'){cmLoadPixel();}
-})();
-/* ─── FAQ ACCORDION ─── */
-function cmFaq(btn){
-  var item=btn.closest('.cm-faq-item');
-  var isOpen=item.classList.contains('open');
-  // Fermer tous
-  document.querySelectorAll('.cm-faq-item.open').forEach(function(i){
-    i.classList.remove('open');
-    i.querySelector('.cm-faq-q').setAttribute('aria-expanded','false');
-  });
-  // Ouvrir celui-ci si était fermé
-  if(!isOpen){
-    item.classList.add('open');
-    btn.setAttribute('aria-expanded','true');
-  }
-}function cmReopenConsent(){
-  var banner=document.getElementById('cmConsent');
-  banner.classList.add('show');
-  // Repositionne correctement selon l'état du dock
-  if(document.getElementById('cmSticky').classList.contains('show')){
-    banner.classList.add('docked');
-  } else {
-    banner.classList.remove('docked');
-  }
-}
+/* ════ FAQ ════ */
+function qFaq(btn){var i=btn.closest('.faq-item'),open=i.classList.contains('open');document.querySelectorAll('.faq-item.open').forEach(function(x){x.classList.remove('open');x.querySelector('.faq-q').setAttribute('aria-expanded','false');});if(!open){i.classList.add('open');btn.setAttribute('aria-expanded','true');}}
 </script>
 </body>
 </html>
