@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="fr-CA">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Politique de confidentialité — Chanson Mémoire</title>
+  <meta name="robots" content="noindex" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Inter:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:        #F7F3EE;
+      --surface:   #FFFFFF;
+      --mauve:     #8B7A9E;
+      --mauve-lt:  #EDE8F3;
+      --ink:       #2B2430;
+      --ink-soft:  #5C5165;
+      --rule:      #D9D3E0;
+      --accent:    #6B5880;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.7;
+    }
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--rule);
+      padding: 1.5rem 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+    }
+    .brand-mark {
+      width: 36px; height: 36px;
+      background: var(--mauve);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .brand-mark svg { width: 18px; height: 18px; fill: white; }
+    .brand-name {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.3rem;
+      font-weight: 500;
+      color: var(--accent);
+      letter-spacing: 0.02em;
+    }
+    .nav-links { margin-left: auto; display: flex; gap: 1.5rem; list-style: none; }
+    .nav-links a {
+      font-size: 0.8rem;
+      color: var(--ink-soft);
+      text-decoration: none;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .nav-links a:hover { color: var(--accent); }
+    .nav-links a[aria-current] { color: var(--accent); font-weight: 500; }
+
+    .page-wrap { max-width: 760px; margin: 0 auto; padding: 3rem 2rem 5rem; }
+    .page-header { padding-bottom: 2rem; border-bottom: 1px solid var(--rule); margin-bottom: 2.5rem; }
+    .page-label { font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--mauve); font-weight: 500; margin-bottom: 0.6rem; }
+    .page-title { font-family: 'Cormorant Garamond', Georgia, serif; font-size: clamp(1.9rem, 5vw, 2.8rem); font-weight: 400; line-height: 1.15; color: var(--ink); }
+    .page-date { margin-top: 0.75rem; font-size: 0.82rem; color: var(--ink-soft); }
+
+    /* RPRP card */
+    .rprp-card {
+      background: var(--surface);
+      border: 1px solid var(--rule);
+      border-left: 4px solid var(--mauve);
+      border-radius: 4px;
+      padding: 1.1rem 1.4rem;
+      margin-bottom: 2.5rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem 2rem;
+    }
+    .rprp-card .field { font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--mauve); margin-bottom: 0.15rem; }
+    .rprp-card .value { font-weight: 500; font-size: 0.93rem; color: var(--ink); }
+
+    .legal-section { margin-bottom: 2.4rem; }
+    .legal-section h2 {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.25rem;
+      font-weight: 500;
+      color: var(--accent);
+      margin-bottom: 0.8rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--rule);
+    }
+    .legal-section p { margin-bottom: 0.85rem; color: var(--ink); }
+    .legal-section ul { padding-left: 1.4rem; margin-bottom: 0.85rem; }
+    .legal-section li { margin-bottom: 0.35rem; }
+    .legal-section strong { color: var(--ink); }
+
+    /* Rights grid */
+    .rights-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 0.75rem;
+      margin: 1rem 0;
+    }
+    .right-item {
+      background: var(--mauve-lt);
+      border-radius: 4px;
+      padding: 0.75rem 1rem;
+      font-size: 0.88rem;
+      color: var(--ink);
+    }
+    .right-item::before {
+      content: '✓';
+      color: var(--accent);
+      font-weight: 700;
+      margin-right: 0.4rem;
+    }
+
+    /* Providers table */
+    .providers-note {
+      background: var(--surface);
+      border: 1px solid var(--rule);
+      border-radius: 4px;
+      padding: 1rem 1.25rem;
+      font-size: 0.88rem;
+      color: var(--ink-soft);
+      margin: 0.75rem 0;
+    }
+
+    footer {
+      border-top: 1px solid var(--rule);
+      padding: 2rem;
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--ink-soft);
+    }
+    footer a { color: var(--mauve); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    @media (max-width: 600px) {
+      .nav-links { display: none; }
+      .page-wrap { padding: 2rem 1.25rem 4rem; }
+      .rprp-card { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="brand-mark">
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 3C7.03 3 3 7.03 3 12s4.03 9 9 9 9-4.03 9-9-4.03-9-9-9zm0 16c-3.86 0-7-3.14-7-7s3.14-7 7-7 7 3.14 7 7-3.14 7-7 7zm1-11h-2v3H8v2h3v3h2v-3h3v-2h-3z"/>
+    </svg>
+  </div>
+  <span class="brand-name">Chanson Mémoire</span>
+  <nav>
+    <ul class="nav-links">
+      <li><a href="conditions-de-vente.html">Conditions de vente</a></li>
+      <li><a href="politique-de-remboursement.html">Remboursement</a></li>
+      <li><a href="politique-de-confidentialite.html" aria-current="page">Confidentialité</a></li>
+    </ul>
+  </nav>
+</header>
+
+<main class="page-wrap">
+
+  <div class="page-header">
+    <p class="page-label">Documents légaux</p>
+    <h1 class="page-title">Politique de confidentialité</h1>
+    <p class="page-date">Dernière mise à jour : <strong>[DATE]</strong></p>
+  </div>
+
+  <div class="rprp-card">
+    <div>
+      <p class="field">Entreprise</p>
+      <p class="value">[NOM LÉGAL] — Chanson Mémoire</p>
+    </div>
+    <div>
+      <p class="field">Responsable (RPRP)</p>
+      <p class="value">[NOM DU RPRP], [TITRE DU RPRP]</p>
+    </div>
+    <div>
+      <p class="field">Courriel du RPRP</p>
+      <p class="value">[COURRIEL]</p>
+    </div>
+    <div>
+      <p class="field">Loi applicable</p>
+      <p class="value">Loi 25 (Québec)</p>
+    </div>
+  </div>
+
+  <div class="legal-section">
+    <h2>1. Responsable de la protection des renseignements personnels</h2>
+    <p>Le responsable de la protection des renseignements personnels est <strong>[NOM DU RPRP]</strong>, <strong>[TITRE DU RPRP]</strong>. Pour toute question ou demande concernant vos renseignements personnels, vous pouvez le joindre à <strong>[COURRIEL]</strong>.</p>
+  </div>
+
+  <div class="legal-section">
+    <h2>2. Portée</h2>
+    <p>Cette politique s'applique à toutes vos interactions avec Chanson Mémoire : navigation sur le site, achats, communications et utilisation de nos services.</p>
+  </div>
+
+  <div class="legal-section">
+    <h2>3. Renseignements que nous recueillons</h2>
+    <p><strong>Renseignements que vous fournissez :</strong> nom, adresse courriel, renseignements de facturation, et le contenu que vous soumettez pour créer la chanson (noms, photos, souvenirs et informations concernant la personne honorée).</p>
+    <p><strong>Renseignements recueillis automatiquement :</strong> adresse IP, type d'appareil et de navigateur, pages consultées, données d'interaction avec le site.</p>
+    <p><strong>Renseignements de transaction :</strong> historique des commandes.</p>
+  </div>
+
+  <div class="legal-section">
+    <h2>4. Finalités de la collecte</h2>
+    <p>Nous utilisons vos renseignements pour créer et livrer votre chanson, traiter les paiements, communiquer avec vous (soutien, suivi), améliorer nos services, prévenir la fraude et respecter nos obligations légales. Nous limitons l'utilisation aux finalités pour lesquelles les renseignements ont été recueillis.</p>
+  </div>
+
+  <div class="legal-section">
+    <h2>5. Consentement</h2>
+    <p>En utilisant nos services, vous consentez à la collecte et à l'utilisation de vos renseignements aux fins décrites. Vous pouvez retirer votre consentement en tout temps en nous contactant ; cela peut limiter notre capacité à vous fournir le service.</p>
+  </div>
+
+  <div class="legal-section">
+    <h2>6. Partage avec des fournisseurs</h2>
+    <p>Nous ne vendons ni ne louons vos renseignements. Nous faisons appel à des fournisseurs pour des fonctions essentielles : traitement des paiements, hébergement, automatisation, génération musicale et communications. Ces fournisseurs n'ont accès qu'aux renseignements nécessaires et sont tenus de les protéger.</p>
+    <div class="providers-note">
+      Fournisseurs tiers utilisés notamment : Stripe (paiements), Make (automatisation), GoHighLevel (CRM/communications), Cloudinary (médias), Airtable (données de commandes), Suno (génération musicale via IA).
+    </div>
+  </div>
+
+  <div class="legal-section">
+    <h2>7. Transferts hors Québec</h2>
+    <p>Certains de nos fournisseurs traitent vos renseignements à l'extérieur du Québec, notamment aux États-Unis. Avant de confier des renseignements à ces fournisseurs, nous évaluons les facteurs relatifs à la vie privée et mettons en place des ententes visant à assurer une protection adéquate, conformément à la Loi 25.</p>
+  </div>
+
+  <div class="legal-section">
+    <h2>8. Conservation et destruction</h2>
+    <p>Nous conservons vos renseignements aussi longtemps que nécessaire aux fins prévues et pour respecter nos obligations légales. Vos commandes et chansons sont conservées afin que vous puissiez y accéder. Lorsque les renseignements ne sont plus nécessaires, ils sont détruits ou anonymisés de façon sécurisée.</p>
+  </div>
+
+  <div class="legal-section">
+    <h2>9. Sécurité</h2>
+    <p>Nous mettons en œuvre des mesures techniques et organisationnelles raisonnables pour protéger vos renseignements contre l'accès non autorisé, la perte ou la divulgation.</p>
+  </div>
+
+  <div class="legal-section">
+    <h2>10. Vos droits</h2>
+    <p>Conformément à la Loi 25, vous disposez des droits suivants :</p>
+    <div class="rights-grid">
+      <div class="right-item">Accéder à vos renseignements</div>
+      <div class="right-item">Les faire corriger</div>
+      <div class="right-item">En demander la suppression</div>
+      <div class="right-item">Demander leur portabilité</div>
+      <div class="right-item">Retirer votre consentement</div>
+      <div class="right-item">Vous opposer à certains traitements</div>
+    </div>
+    <p>Pour exercer ces droits, contactez notre responsable à <strong>[COURRIEL]</strong>. Nous pourrions vérifier votre identité avant de traiter votre demande.</p>
+  </div>
+
+  <div class="legal-section">
+    <h2>11. Communications et marketing</h2>
+    <p>Nous pouvons vous envoyer des communications promotionnelles si vous y avez consenti. Vous pouvez vous désinscrire à tout moment via le lien prévu dans nos courriels.</p>
+  </div>
+
+  <div class="legal-section">
+    <h2>12. Témoins de connexion (cookies) et traceurs</h2>
+    <p>Nous utilisons des témoins et des outils de mesure (dont le pixel Meta) pour améliorer le site et analyser le trafic. <strong>Ces traceurs ne sont activés qu'après votre consentement</strong>, que vous pouvez gérer à tout moment via notre bandeau de consentement ou les réglages de votre navigateur.</p>
+  </div>
+
+  <div class="legal-section">
+    <h2>13. Protection des enfants</h2>
+    <p>Nos services ne sont pas destinés aux mineurs et nous ne recueillons pas sciemment leurs renseignements personnels.</p>
+  </div>
+
+  <div class="legal-section">
+    <h2>14. Traitement des plaintes</h2>
+    <p>Pour toute plainte concernant la protection de vos renseignements, écrivez à notre responsable à <strong>[COURRIEL]</strong>. Nous accuserons réception, examinerons votre demande et vous répondrons dans un délai raisonnable. Vous pouvez également porter plainte auprès de la <strong>Commission d'accès à l'information du Québec</strong>.</p>
+  </div>
+
+  <div class="legal-section">
+    <h2>15. Modifications</h2>
+    <p>Toute modification sera publiée sur cette page avec la date de mise à jour.</p>
+  </div>
+
+  <div class="legal-section">
+    <h2>16. Contact</h2>
+    <p>Responsable de la protection des renseignements personnels : <strong>[NOM DU RPRP]</strong> — <strong>[COURRIEL]</strong></p>
+  </div>
+
+</main>
+
+<footer>
+  <p>
+    <a href="conditions-de-vente.html">Conditions de vente</a> &nbsp;·&nbsp;
+    <a href="politique-de-remboursement.html">Politique de remboursement</a> &nbsp;·&nbsp;
+    <a href="politique-de-confidentialite.html">Politique de confidentialité</a>
+  </p>
+  <p style="margin-top:.75rem;">&copy; <span id="yr"></span> [NOM LÉGAL] — Chanson Mémoire. Tous droits réservés.</p>
+  <script>document.getElementById('yr').textContent = new Date().getFullYear();</script>
+</footer>
+
+</body>
+</html>
