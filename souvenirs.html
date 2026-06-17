@@ -521,7 +521,7 @@ body {
   <!-- ── ÉTAPE 5 : Ambiance ── -->
   <div class="cm-step-card" data-step="5">
     <div class="cm-q-eyebrow">L'ambiance</div>
-    <h2 class="cm-q-title">Comment voulez-vous vous souvenir de lui / d'elle ?</h2>
+    <h2 class="cm-q-title">Choisi l'ambiance musicale désirée</h2>
     <p class="cm-q-sub">Choisissez l'émotion qui guide la chanson.</p>
     <div class="cm-choices cm-grid-2" id="choices-ambiance">
       <button class="cm-choice" data-value="Émotionnelle"><span class="cm-choice-emoji">💧</span> Émotionnelle</button>
@@ -711,7 +711,7 @@ body {
     /* Personnaliser les titres avec le prénom */
     if (data.prenom_defunt) {
       var q2 = document.getElementById('q2-title');
-      if (q2) q2.textContent = 'Qui était ' + data.prenom_defunt + ' pour vous ?';
+      if (q2 && data.prenom_defunt) q2.textContent = 'Qui était ' + data.prenom_defunt + ' pour vous ?';
       var q6 = document.getElementById('q6-title');
       if (q6) q6.textContent = 'Qu\'est-ce qui rendait ' + data.prenom_defunt + ' unique ?';
     }
