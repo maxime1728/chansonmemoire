@@ -668,7 +668,7 @@ body {
 
   /* ── CONFIG ─────────────────────────────────────── */
   const TOTAL_STEPS  = 9;
-  const ATTENTE_URL  = '/attente'; /* ← Changer quand /attente est prête */
+  const ATTENTE_URL  = '/revision'; /* ← Changer quand /attente est prête */
   /* Webhook Make — remplacer par votre URL réelle */
   const MAKE_WEBHOOK = 'VOTRE_WEBHOOK_MAKE_ICI';
 
@@ -822,23 +822,39 @@ body {
         });
       })
       .then(function() {
-        /* ── 3. Redirect ────────────────────────── */
-        var params = new URLSearchParams({
-          email:  data.email,
-          prenom: data.prenom_defunt
-        });
-        window.location.href = ATTENTE_URL + '?' + params.toString();
-      })
-      .catch(function(err) {
-        console.error('Erreur soumission:', err);
-        /* En cas d'erreur réseau, on redirige quand même
-           (Netlify a peut-être capturé la soumission) */
-        var params = new URLSearchParams({
-          email:  data.email,
-          prenom: data.prenom_defunt
-        });
-        window.location.href = ATTENTE_URL + '?' + params.toString();
-      });
+  /* ── 3. SessionStorage + Redirect ────────── */
+  sessionStorage.setItem('cm_souvenirs', JSON.stringify({
+    nomPersonne:        data.prenom_defunt,
+    relation:           data.relation,
+    styleMusical:       data.style_musical,
+    voix:               data.voix,
+    ambiance:           data.ambiance,
+    ceQuiRendaitUnique: data.unicite,
+    souvenirGarder:     data.souvenir_garder,
+    detailsPersonnels:  data.souvenirs,
+    souvenirsFavoris:   data.souvenirs,
+    message:            data.souvenir_garder,
+    email:              data.email
+  }));
+  window.location.href = ATTENTE_URL;
+})
+.catch(function(err) {
+  console.error('Erreur soumission:', err);
+  sessionStorage.setItem('cm_souvenirs', JSON.stringify({
+    nomPersonne:        data.prenom_defunt,
+    relation:           data.relation,
+    styleMusical:       data.style_musical,
+    voix:               data.voix,
+    ambiance:           data.ambiance,
+    ceQuiRendaitUnique: data.unicite,
+    souvenirGarder:     data.souvenir_garder,
+    detailsPersonnels:  data.souvenirs,
+    souvenirsFavoris:   data.souvenirs,
+    message:            data.souvenir_garder,
+    email:              data.email
+  }));
+  window.location.href = ATTENTE_URL;
+});
   });
 
   /* ── INIT ───────────────────────────────────────── */
