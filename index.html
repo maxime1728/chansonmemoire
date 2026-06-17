@@ -21,6 +21,7 @@
   --line:#e3dceb;
   --card:#fbfafc;
   --bg:#faf8fc;
+  --bg-alt:#edeaf4;
   --ff-serif:"Fraunces",Georgia,serif;
   --ff-sans:"Mulish",system-ui,sans-serif;
 }
@@ -99,7 +100,7 @@ a{color:inherit;}
 .cm-hero .note{font-size:.85rem;color:var(--muted);margin:12px 0 0;}
 
 /* ─── STEPS ─── */
-.cm-steps{text-align:center;padding:48px 20px 48px;}
+.cm-steps{text-align:center;padding:48px 20px 48px;background:var(--bg-alt);}
 .cm-steps .flame{width:22px;height:30px;margin:0 auto 26px;position:relative;}
 .cm-steps .flame::before{
   content:"";position:absolute;inset:0;margin:auto;width:10px;height:16px;
@@ -137,7 +138,7 @@ a{color:inherit;}
 .cm-uc-card p{color:var(--muted);font-size:.96rem;line-height:1.55;}
 
 /* ─── PLAYERS ─── */
-.cm-players{text-align:center;padding:48px 20px;}
+.cm-players{text-align:center;padding:48px 20px;background:var(--bg-alt);}
 .cm-players h2{font-family:var(--ff-serif);font-weight:600;color:var(--plum-deep);font-size:clamp(1.5rem,5vw,2.1rem);margin:0 0 26px;}
 .cm-players .list{display:flex;flex-direction:column;gap:18px;}
 .cm-player{
@@ -188,7 +189,7 @@ a{color:inherit;}
 .cm-stack .reassure{display:flex;flex-wrap:wrap;gap:6px 16px;justify-content:center;margin-top:16px;font-size:.82rem;color:var(--muted);}
 
 /* ─── TÉMOIGNAGES ─── */
-.cm-temoignages{text-align:center;padding:48px 20px;}
+.cm-temoignages{text-align:center;padding:48px 20px;background:var(--bg-alt);}
 .cm-temoignages h2{font-family:var(--ff-serif);font-weight:600;color:var(--plum-deep);font-size:clamp(1.5rem,5vw,2.1rem);margin:0 0 6px;}
 .cm-temoignages .sub{color:var(--muted);font-size:1rem;margin:0 0 28px;line-height:1.5;}
 .cm-temoignages .grid{display:grid;gap:16px;}
@@ -316,10 +317,7 @@ a{color:inherit;}
 <!-- ═══ HERO ═══ -->
 <section class="cm-hero">
   <div class="section-in">
-    <span class="qc">
-  <span style="font-size:1rem;line-height:1;color:var(--candle);">⚜</span>
-  Entreprise québécoise
-</span>
+    <p class="eyebrow">Entreprise québécoise</p>
     <p class="eyebrow">La plus belle façon de garder leur mémoire vivante</p>
     <h1>Une chanson pour quelqu'un que vous n'oublierez jamais</h1>
     <p class="lede">Vous nous parlez d'eux : qui ils étaient, ce qu'ils aimaient, les moments qui comptaient. On compose une chanson qui capture leur âme, pour toujours.</p>
@@ -659,16 +657,7 @@ a{color:inherit;}
 <div class="cm-sticky" id="cmSticky" aria-hidden="true">
   <a class="cm-sticky-btn" href="https://chansonmemoire.com/survey-chanson-pour-toujours-memories">Créer sa chanson</a>
 </div>
-function cmReopenConsent(){
-  var banner=document.getElementById('cmConsent');
-  banner.classList.add('show');
-  // Repositionne correctement selon l'état du dock
-  if(document.getElementById('cmSticky').classList.contains('show')){
-    banner.classList.add('docked');
-  } else {
-    banner.classList.remove('docked');
-  }
-}
+
 <!-- ═══ CONSENT BANNER ═══ -->
 <div class="cm-consent" id="cmConsent" role="dialog" aria-live="polite" aria-label="Consentement aux témoins">
   <p class="cm-consent-txt">Nous utilisons des témoins (cookies) et des outils de mesure pour améliorer le site et nos publicités. Tu peux accepter ou refuser. Détails dans notre <a href="/politique-de-confidentialite">politique de confidentialité</a>.</p>
@@ -768,6 +757,15 @@ function cmFaq(btn){
   if(!isOpen){
     item.classList.add('open');
     btn.setAttribute('aria-expanded','true');
+  }
+}function cmReopenConsent(){
+  var banner=document.getElementById('cmConsent');
+  banner.classList.add('show');
+  // Repositionne correctement selon l'état du dock
+  if(document.getElementById('cmSticky').classList.contains('show')){
+    banner.classList.add('docked');
+  } else {
+    banner.classList.remove('docked');
   }
 }
 </script>
