@@ -1,367 +1,1174 @@
 <!DOCTYPE html>
 <html lang="fr-CA">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Votre chanson est prête — Chanson Mémoire</title>
-  <meta name="description" content="Écoute l'aperçu de ta chanson personnalisée avant de l'obtenir au complet." />
-  <meta name="robots" content="noindex" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..600;1,9..144,400..500&family=Mulish:wght@400;600;700;800&display=swap" rel="stylesheet" />
-  <style>
-/* ============================================================
-   Chanson Mémoire — feuille de style partagée
-   Palette : prune profonde + lavande + lueur de chandelle (ambre)
-   Type : Fraunces (titres) · Mulish (texte)
-   ============================================================ */
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Votre aperçu — Chanson Mémoire</title>
+<script>
+/* ── PARAMÈTRES URL — exécuté en premier ── */
+(function() {
+  var p = new URLSearchParams(window.location.search);
+  window._CM = {
+    nom:    p.get('name')    || '',
+    email:  p.get('email')   || '',
+    taskid: p.get('taskid')  || '',
+    mp3:    p.get('preview1')|| ''
+  };
+  /* Titre de l'onglet personnalisé */
+  if (window._CM.nom) {
+    document.title = 'Aperçu pour ' + window._CM.nom + ' — Chanson Mémoire';
+  }
+})();
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400;1,9..144,600&family=Mulish:wght@400;500;600;700;800&family=Sora:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 
+<style>
+/* ════════════════════════════════════════════
+   PALETTE & TOKENS
+════════════════════════════════════════════ */
 :root {
-  --plum: #4a3b57;
-  --plum-deep: #2e2238;
-  --ink: #2a2330;
-  --muted: #6b6175;
-  --lavender-bg: #f5f1f8;
-  --lavender-soft: #ece6f2;
-  --line: #e3dceb;
-  --candle: #c39a52;
-  --candle-soft: #ecdcbd;
-  --white: #ffffff;
-  --card: #fbfafc;
-  --radius: 18px;
-  --radius-pill: 999px;
-  --maxw: 680px;
-  --shadow: 0 10px 30px rgba(46, 34, 56, 0.08);
-  --shadow-soft: 0 4px 14px rgba(46, 34, 56, 0.06);
+  --cm-plum-dark:  #5C2D4A;
+  --cm-plum-mid:   #8B4A6E;
+  --cm-mauve:      #C98BB0;
+  --cm-gold:       #C4963A;
+  --cm-gold-light: #E8C97A;
+  --cm-off-white:  #F5F0E8;
+  --cm-white:      #FDFAF7;
+  --cm-bg:         #F8F4F0;
+  --cm-text:       #2E1A28;
+  --cm-text-sub:   #7A6070;
+  --cm-border-w:   2.5px;
 }
 
-* { box-sizing: border-box; }
+/* ════════════════════════════════════════════
+   RESET & BASE
+════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+html { scroll-behavior: smooth; }
 
 body {
-  margin: 0;
-  font-family: "Mulish", system-ui, -apple-system, sans-serif;
-  color: var(--ink);
-  background: var(--lavender-bg);
-  line-height: 1.6;
-  font-size: 17px;
+  font-family: 'Mulish', sans-serif;
+  background: var(--cm-bg);
+  color: var(--cm-text);
+  min-height: 100vh;
+  padding-bottom: 100px;
 }
 
-h1, h2, h3 {
-  font-family: "Fraunces", Georgia, serif;
-  color: var(--plum-deep);
-  line-height: 1.18;
-  font-weight: 600;
-  margin: 0 0 0.5em;
-  letter-spacing: -0.01em;
-}
-h1 { font-size: clamp(2rem, 7vw, 3.1rem); }
-h2 { font-size: clamp(1.5rem, 5vw, 2.1rem); }
-h3 { font-size: 1.2rem; }
-p { margin: 0 0 1em; }
-a { color: var(--plum); }
-
-img { max-width: 100%; height: auto; display: block; }
-
-/* ---- layout ---- */
-.wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; padding: 0 22px; }
-.section { padding: 56px 0; }
-.section--tight { padding: 36px 0; }
-.section--soft { background: var(--lavender-soft); }
-.center { text-align: center; }
-.eyebrow {
-  font-family: "Mulish", sans-serif;
-  text-transform: uppercase;
-  letter-spacing: 0.16em;
-  font-size: 0.72rem;
-  font-weight: 800;
-  color: var(--candle);
-  margin: 0 0 14px;
-}
-.lede { font-size: 1.12rem; color: var(--muted); }
-.fineprint { font-size: 0.82rem; color: var(--muted); }
-
-/* ---- candle divider (signature) ---- */
-.flame {
-  width: 22px; height: 30px; margin: 30px auto; position: relative;
-}
-.flame::before {
-  content: ""; position: absolute; inset: 0; margin: auto;
-  width: 10px; height: 16px; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
-  background: linear-gradient(180deg, var(--candle-soft), var(--candle));
-  box-shadow: 0 0 18px 4px rgba(195, 154, 82, 0.45);
-}
-.flame::after {
-  content: ""; position: absolute; left: 50%; bottom: 0; transform: translateX(-50%);
-  width: 2px; height: 10px; background: var(--plum-deep); opacity: .5;
-}
-
-/* ---- header ---- */
-.site-header {
-  position: sticky; top: 0; z-index: 40;
-  background: rgba(245, 241, 248, 0.92);
-  backdrop-filter: blur(8px);
-  border-bottom: 1px solid var(--line);
-}
-.site-header .wrap { display: flex; align-items: center; justify-content: space-between; height: 62px; }
-.brand { display: flex; align-items: center; gap: 10px; font-family: "Fraunces", serif; font-weight: 600; color: var(--plum-deep); font-size: 1.15rem; text-decoration: none; }
-.brand img { height: 30px; width: auto; }
-.nav { display: none; gap: 26px; }
-.nav a { color: var(--plum-deep); text-decoration: none; font-size: 0.92rem; font-weight: 600; opacity: .82; }
-.nav a:hover { opacity: 1; color: var(--candle); }
-@media (min-width: 760px) { .nav { display: flex; } }
-
-/* ---- buttons ---- */
-.btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  background: var(--plum); color: #fff; text-decoration: none;
-  font-weight: 800; font-size: 1.02rem;
-  padding: 16px 30px; border-radius: var(--radius-pill); border: 0; cursor: pointer;
-  box-shadow: var(--shadow-soft); transition: transform .15s ease, background .15s ease;
+/* ════════════════════════════════════════════
+   HEADER LOGO / MARQUE
+════════════════════════════════════════════ */
+.cm-header {
   text-align: center;
+  padding: 32px 20px 0;
 }
-.btn:hover { background: var(--plum-deep); transform: translateY(-1px); }
-.btn:focus-visible { outline: 3px solid var(--candle); outline-offset: 3px; }
-.btn--block { display: flex; width: 100%; }
-.btn--lg { padding: 18px 34px; font-size: 1.08rem; }
-.btn-note { font-size: 0.82rem; color: var(--muted); margin-top: 10px; text-align: center; }
-
-/* ---- hero ---- */
-.hero { position: relative; overflow: hidden; padding: 52px 0 40px; text-align: center; }
-.hero::before {
-  content: ""; position: absolute; top: -120px; left: 50%; transform: translateX(-50%);
-  width: 420px; height: 420px; border-radius: 50%;
-  background: radial-gradient(circle, rgba(195,154,82,0.20), rgba(195,154,82,0) 70%);
-  pointer-events: none;
+.cm-logo {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--cm-plum-dark);
+  letter-spacing: 0.01em;
 }
-.hero .ai-line { font-size: 0.92rem; color: var(--muted); max-width: 30em; margin: 0 auto 22px; }
-.hero .risk { font-family: "Fraunces", serif; font-style: italic; color: var(--plum); font-size: 1.1rem; margin: 0 0 24px; }
-
-/* ---- keepsake audio card ---- */
-.keepsake {
-  background: var(--white); border: 1px solid var(--line); border-radius: var(--radius);
-  padding: 20px; box-shadow: var(--shadow); margin: 26px auto 0; max-width: 460px;
+.cm-logo span {
+  color: var(--cm-gold);
 }
-.keepsake .ks-title { font-family: "Fraunces", serif; color: var(--plum-deep); font-weight: 600; margin-bottom: 4px; }
-.keepsake .ks-sub { font-size: 0.85rem; color: var(--muted); margin-bottom: 14px; }
-audio { width: 100%; }
 
-/* ---- steps (a real sequence → numbered) ---- */
-.steps { display: grid; gap: 18px; margin-top: 28px; }
-.step { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; }
-.step .n {
-  font-family: "Fraunces", serif; font-size: 1.1rem; font-weight: 600; color: var(--candle);
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 40px; height: 40px; border-radius: 50%; border: 1.5px solid var(--candle-soft);
+/* ════════════════════════════════════════════
+   HERO — MESSAGE D'ACCUEIL
+════════════════════════════════════════════ */
+.cm-hero {
+  text-align: center;
+  padding: 36px 24px 12px;
+  max-width: 540px;
+  margin: 0 auto;
+}
+.cm-hero-eyebrow {
+  font-family: 'Mulish', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cm-gold);
   margin-bottom: 14px;
 }
-.step h3 { margin-bottom: 6px; }
-.step p { margin: 0; color: var(--muted); }
-
-/* ---- use-case grid ---- */
-.cards { display: grid; gap: 16px; margin-top: 26px; }
-@media (min-width: 620px) { .cards { grid-template-columns: 1fr 1fr; } }
-.card { background: var(--white); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; }
-.card h3 { color: var(--plum); margin-bottom: 6px; }
-.card p { margin: 0; color: var(--muted); font-size: 0.96rem; }
-
-/* ---- included / value stack ---- */
-.included { background: var(--white); border: 1px solid var(--line); border-radius: var(--radius); padding: 26px; box-shadow: var(--shadow-soft); }
-.included ul { list-style: none; padding: 0; margin: 0; }
-.included li { display: flex; gap: 12px; align-items: flex-start; padding: 9px 0; border-bottom: 1px solid var(--line); }
-.included li:last-child { border-bottom: 0; }
-.included .check { color: var(--candle); flex: 0 0 auto; margin-top: 3px; }
-.compare { font-family: "Fraunces", serif; font-style: italic; color: var(--plum); margin: 18px 0 0; }
-
-/* ---- price block (preview) ---- */
-.price { text-align: center; }
-.price .amount { font-family: "Fraunces", serif; font-size: 2.6rem; color: var(--plum-deep); font-weight: 600; }
-.price .tax { font-size: 0.9rem; color: var(--muted); }
-
-/* ---- testimonials ---- */
-.quotes { display: grid; gap: 16px; margin-top: 26px; }
-.quote { background: var(--white); border: 1px solid var(--line); border-left: 3px solid var(--candle); border-radius: var(--radius); padding: 22px; }
-.quote p { font-size: 1rem; color: var(--ink); margin: 0 0 10px; }
-.quote .who { font-weight: 800; color: var(--plum-deep); font-size: 0.9rem; }
-.placeholder-note { background: #fff7e8; border: 1px dashed var(--candle); border-radius: 12px; padding: 14px; font-size: 0.86rem; color: #7a5b1d; }
-
-/* ---- FAQ ---- */
-.faq { margin-top: 24px; }
-.faq details { background: var(--white); border: 1px solid var(--line); border-radius: 14px; padding: 4px 18px; margin-bottom: 12px; }
-.faq summary { cursor: pointer; font-weight: 800; color: var(--plum-deep); padding: 14px 0; list-style: none; }
-.faq summary::-webkit-details-marker { display: none; }
-.faq summary::after { content: "+"; float: right; color: var(--candle); font-weight: 800; }
-.faq details[open] summary::after { content: "–"; }
-.faq details p { color: var(--muted); margin: 0 0 14px; }
-
-/* ---- reassurance row ---- */
-.reassure { display: flex; flex-wrap: wrap; gap: 18px; justify-content: center; margin-top: 22px; }
-.reassure div { font-size: 0.9rem; color: var(--muted); display: flex; align-items: center; gap: 8px; }
-
-/* ---- preview header badge ---- */
-.ready-badge {
-  display: inline-flex; align-items: center; gap: 10px;
-  background: var(--lavender-soft); color: var(--plum-deep); font-weight: 800;
-  border-radius: var(--radius-pill); padding: 10px 22px; margin-bottom: 22px; font-size: 0.95rem;
+.cm-hero-title {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-size: clamp(26px, 6vw, 34px);
+  font-weight: 400;
+  line-height: 1.3;
+  color: var(--cm-plum-dark);
+  margin-bottom: 16px;
+}
+.cm-hero-sub {
+  font-family: 'Mulish', sans-serif;
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--cm-text-sub);
+  max-width: 420px;
+  margin: 0 auto;
 }
 
-/* ---- footer ---- */
-.site-footer { background: var(--plum-deep); color: #d9cfe4; padding: 40px 0; margin-top: 20px; }
-.site-footer a { color: #fff; text-decoration: none; opacity: .9; }
-.site-footer a:hover { opacity: 1; text-decoration: underline; }
-.site-footer .legal { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 16px 0; font-size: 0.9rem; }
-.site-footer .copy { font-size: 0.82rem; opacity: .7; }
-
-/* ---- consent banner ---- */
-.consent {
-  position: fixed; left: 14px; right: 14px; bottom: 14px; z-index: 60;
-  background: var(--white); border: 1px solid var(--line); border-radius: var(--radius);
-  box-shadow: var(--shadow); padding: 18px 20px; max-width: 640px; margin: 0 auto;
-  display: none;
+/* ════════════════════════════════════════════
+   DIVIDER ORNEMENT
+════════════════════════════════════════════ */
+.cm-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 28px 24px;
+  max-width: 400px;
+  margin: 0 auto;
 }
-.consent.show { display: block; }
-.consent p { font-size: 0.88rem; color: var(--ink); margin: 0 0 12px; }
-.consent .row { display: flex; gap: 10px; flex-wrap: wrap; }
-.consent .btn { padding: 11px 22px; font-size: 0.92rem; }
-.consent .btn--ghost { background: transparent; color: var(--plum); border: 1.5px solid var(--line); box-shadow: none; }
-.consent .btn--ghost:hover { background: var(--lavender-soft); transform: none; }
+.cm-divider::before,
+.cm-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, transparent, rgba(92,45,74,0.20));
+}
+.cm-divider::after {
+  background: linear-gradient(to left, transparent, rgba(92,45,74,0.20));
+}
+.cm-divider-icon {
+  color: var(--cm-gold);
+  font-size: 13px;
+  opacity: 0.7;
+}
 
-/* ---- reveal animation ---- */
-.reveal { opacity: 0; transform: translateY(14px); transition: opacity .6s ease, transform .6s ease; }
-.reveal.in { opacity: 1; transform: none; }
+/* ════════════════════════════════════════════
+   PLAYER — REPRIS DE TON CODE EXISTANT
+════════════════════════════════════════════ */
+@property --cm-border-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+#cm-player-root .cm-players-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 0;
+  padding: 0 20px;
+}
+#cm-player-root .cm-player-wrap {
+  display: flex;
+  justify-content: center;
+  font-family: 'Sora', sans-serif;
+  width: 100%;
+  max-width: 300px;
+}
+#cm-player-root .cm-player-box {
+  width: 100%;
+  padding: calc(24px + var(--cm-border-w));
+  border-radius: 24px;
+  background:
+    linear-gradient(var(--cm-white), var(--cm-white)) padding-box,
+    conic-gradient(
+      from var(--cm-border-angle),
+      #3D1A30             0%,
+      var(--cm-mauve)     22%,
+      #D4A030             40%,
+      #F5D878             50%,
+      #D4A030             60%,
+      var(--cm-mauve)     78%,
+      #3D1A30             100%
+    ) border-box;
+  border: 2.5px solid transparent;
+  animation: cm-spin-border 5s linear infinite;
+  text-align: center;
+  box-shadow:
+    0 0 0   2px rgba(0,0,0,0.08),
+    0 0 12px 4px rgba(0,0,0,0.18),
+    0 0 28px 10px rgba(0,0,0,0.13),
+    0 0 50px 20px rgba(0,0,0,0.07),
+    0 10px 36px rgba(92,45,74,0.10);
+}
+@keyframes cm-spin-border { to { --cm-border-angle: 360deg; } }
+
+@supports not (background: conic-gradient(from 1deg, red, red) border-box) {
+  #cm-player-root .cm-player-box {
+    background: var(--cm-white);
+    border: var(--cm-border-w) solid var(--cm-mauve);
+    position: relative; overflow: hidden;
+  }
+  #cm-player-root .cm-player-box::before {
+    content: ''; position: absolute; inset: -80px;
+    background: conic-gradient(var(--cm-plum-dark), var(--cm-mauve), var(--cm-gold-light), var(--cm-off-white), var(--cm-gold), var(--cm-mauve), var(--cm-plum-dark));
+    animation: cm-spin-pseudo 5s linear infinite; z-index: 0;
+  }
+  #cm-player-root .cm-player-box::after {
+    content: ''; position: absolute; inset: var(--cm-border-w);
+    background: var(--cm-white); border-radius: 22px; z-index: 1;
+  }
+  #cm-player-root .cm-player-box > * { position: relative; z-index: 2; }
+  @keyframes cm-spin-pseudo { to { transform: rotate(360deg); } }
+}
+
+#cm-player-root .cm-title {
+  font-size: 15px; font-weight: 600; letter-spacing: 0.1em;
+  color: var(--cm-plum-dark); text-transform: uppercase; margin-bottom: 14px;
+}
+#cm-player-root .cm-equalizer {
+  display: flex; justify-content: center; align-items: flex-end;
+  gap: 5px; height: 30px; margin-bottom: 14px; width: 100%;
+}
+#cm-player-root .cm-equalizer span {
+  width: 4px; height: 10px;
+  background: linear-gradient(to top, var(--cm-mauve), var(--cm-plum-dark));
+  border-radius: 3px; flex-shrink: 0;
+  animation: cm-wave 0.9s infinite ease-in-out; animation-play-state: paused;
+}
+#cm-player-root .cm-equalizer.active span { animation-play-state: running; }
+#cm-player-root .cm-equalizer span:nth-child(1) { animation-delay: 0s;    animation-duration: 0.85s; }
+#cm-player-root .cm-equalizer span:nth-child(2) { animation-delay: 0.12s; animation-duration: 1.05s; }
+#cm-player-root .cm-equalizer span:nth-child(3) { animation-delay: 0.25s; animation-duration: 0.75s; }
+#cm-player-root .cm-equalizer span:nth-child(4) { animation-delay: 0.07s; animation-duration: 1.15s; }
+#cm-player-root .cm-equalizer span:nth-child(5) { animation-delay: 0.40s; animation-duration: 0.70s; }
+#cm-player-root .cm-equalizer span:nth-child(6) { animation-delay: 0.18s; animation-duration: 1.00s; }
+#cm-player-root .cm-equalizer span:nth-child(7) { animation-delay: 0.33s; animation-duration: 0.90s; }
+#cm-player-root .cm-equalizer span:nth-child(8) { animation-delay: 0.05s; animation-duration: 0.80s; }
+#cm-player-root .cm-equalizer span:nth-child(9) { animation-delay: 0.50s; animation-duration: 0.95s; }
+@keyframes cm-wave { 0%,100% { height: 8px; } 50% { height: 26px; } }
+
+#cm-player-root .cm-play-btn {
+  width: 64px; height: 64px; border-radius: 50%; border: none;
+  background: linear-gradient(135deg, var(--cm-plum-mid), var(--cm-plum-dark));
+  color: white; font-size: 18px; cursor: pointer; margin: 12px 0;
+  transition: transform 0.25s, box-shadow 0.25s;
+  box-shadow: 0 4px 16px rgba(92,45,74,0.28);
+}
+#cm-player-root .cm-play-btn:hover { transform: scale(1.08); box-shadow: 0 6px 24px rgba(92,45,74,0.40); }
+#cm-player-root .cm-time {
+  display: flex; justify-content: space-between;
+  font-size: 11px; color: var(--cm-text-sub); margin: 10px 0;
+}
+#cm-player-root .cm-progress-wrap {
+  position: relative; width: 100%; height: 5px;
+  background: rgba(92,45,74,0.10); border-radius: 10px;
+}
+#cm-player-root .cm-progress-bar {
+  position: absolute; height: 100%; width: 0%;
+  background: linear-gradient(to right, var(--cm-plum-mid), var(--cm-gold));
+  border-radius: 10px;
+}
+#cm-player-root .cm-progress {
+  position: absolute; width: 100%; height: 20px;
+  top: -7px; left: 0; margin: 0; opacity: 0; cursor: pointer; z-index: 2;
+}
+#cm-player-root .cm-volume-wrap {
+  display: flex; align-items: center;
+  justify-content: center; gap: 12px; margin-top: 20px;
+}
+#cm-player-root .cm-mute-btn {
+  background: none; border: none; color: var(--cm-plum-mid);
+  font-size: 15px; cursor: pointer;
+  transition: opacity 0.2s, transform 0.2s; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px;
+}
+#cm-player-root .cm-mute-btn:hover { opacity: 0.7; transform: scale(1.1); }
+#cm-player-root .cm-volume-slider-wrap {
+  position: relative; width: 90px; height: 4px;
+  background: rgba(92,45,74,0.12); border-radius: 10px;
+}
+#cm-player-root .cm-volume-bar {
+  position: absolute; height: 100%; width: 100%;
+  background: linear-gradient(to right, var(--cm-mauve), var(--cm-gold));
+  border-radius: 10px; transition: width 0.1s;
+}
+#cm-player-root .cm-volume {
+  position: absolute; width: 100%; height: 4px;
+  opacity: 0; cursor: pointer; top: 0; left: 0; margin: 0;
+}
+#cm-player-root .cm-ia-mention {
+  display: flex; align-items: center; justify-content: center;
+  gap: 6px; margin-top: 28px;
+  font-family: 'Sora', sans-serif; font-size: 11px;
+  color: var(--cm-text-sub); opacity: 0.80; letter-spacing: 0.01em;
+}
+#cm-player-root .cm-ia-mention svg { flex-shrink: 0; color: var(--cm-gold); }
+
 @media (prefers-reduced-motion: reduce) {
-  .reveal { opacity: 1; transform: none; transition: none; }
-  html { scroll-behavior: auto; }
+  #cm-player-root .cm-player-box { animation: none; }
+  #cm-player-root .cm-equalizer span { animation: none; height: 14px; }
 }
 
+/* ════════════════════════════════════════════
+   PRICING BOX — REPRIS & INTÉGRÉ
+════════════════════════════════════════════ */
+.cm-pricing-section {
+  padding: 40px 20px 0;
+  max-width: 540px;
+  margin: 0 auto;
+}
+
+#cm-pricing-root {
+  --cm-border-static: linear-gradient(
+    135deg,
+    #C4963A 0%, #E8C97A 30%, #C98BB0 55%, #E8C97A 75%, #C4963A 100%
+  );
+  width: 100%;
+  font-family: 'Mulish', sans-serif;
+}
+#cm-pricing-root * { box-sizing: border-box; }
+
+#cm-pricing-root .cm-card {
+  width: 100%; padding: 28px 26px; border-radius: 24px;
+  background:
+    linear-gradient(var(--cm-off-white), var(--cm-off-white)) padding-box,
+    var(--cm-border-static) border-box;
+  border: var(--cm-border-w) solid transparent;
+  box-shadow:
+    0 0 0   2px rgba(0,0,0,0.06),
+    0 0 14px 4px rgba(196,150,58,0.20),
+    0 0 32px 10px rgba(196,150,58,0.10),
+    0 8px 28px rgba(92,45,74,0.10);
+}
+#cm-pricing-root .cm-version-label {
+  text-align: center; font-family: 'Mulish', sans-serif;
+  font-size: 12px; font-weight: 700; letter-spacing: 0.10em;
+  text-transform: uppercase; color: var(--cm-gold); margin-bottom: 10px;
+}
+#cm-pricing-root .cm-price-block { text-align: center; margin-bottom: 20px; }
+#cm-pricing-root .cm-price {
+  font-family: 'Mulish', sans-serif; font-weight: 700;
+  font-size: 20px; color: var(--cm-text-sub);
+}
+#cm-pricing-root .cm-price-meta {
+  display: block; font-size: 11px; color: var(--cm-text-sub);
+  margin-top: 2px; opacity: .8;
+}
+#cm-pricing-root .cm-value { list-style: none; margin: 0 0 20px; padding: 0; }
+#cm-pricing-root .cm-value li {
+  display: flex; align-items: flex-start; gap: 11px;
+  font-size: 15px; line-height: 1.45; color: var(--cm-text);
+  padding: 12px 0; border-bottom: 1px solid rgba(92,45,74,0.10);
+}
+#cm-pricing-root .cm-value li:last-child { border-bottom: none; }
+#cm-pricing-root .cm-spark { color: var(--cm-gold); font-size: 14px; line-height: 1.5; flex-shrink: 0; }
+#cm-pricing-root .cm-anchor {
+  font-family: 'Fraunces', serif; font-style: italic;
+  font-size: 17px; font-weight: 600; line-height: 1.55;
+  color: var(--cm-plum-dark); text-align: center;
+  margin: 0 0 22px; -webkit-text-fill-color: var(--cm-plum-dark);
+}
+
+@property --cm-btn-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+#cm-pricing-root .cm-btn-wrap {
+  padding: 1.5px; border-radius: 999px;
+  background: conic-gradient(
+    from var(--cm-btn-angle),
+    var(--cm-plum-dark)  0%, var(--cm-mauve) 25%,
+    var(--cm-gold)       45%, var(--cm-gold-light) 50%,
+    var(--cm-gold)       55%, var(--cm-mauve) 75%, var(--cm-plum-dark) 100%
+  );
+  animation: cm-btn-spin 4s linear infinite; margin-bottom: 0;
+}
+@keyframes cm-btn-spin { to { --cm-btn-angle: 360deg; } }
+@media (prefers-reduced-motion: reduce) { #cm-pricing-root .cm-btn-wrap { animation: none; } }
+
+#cm-pricing-root .stripe-btn {
+  font-family: 'Mulish', sans-serif; background: var(--cm-plum-dark);
+  color: #fff; border: none; border-radius: 999px;
+  padding: 18px 42px; font-size: 17px; font-weight: 700;
+  cursor: pointer; transition: all 0.25s ease; width: 100%; display: block;
+}
+#cm-pricing-root .stripe-btn:hover { background: var(--cm-plum-mid); }
+#cm-pricing-root .stripe-btn:active { transform: scale(0.98); }
+
+#cm-pricing-root .cm-trust {
+  display: flex; flex-wrap: wrap; align-items: center;
+  justify-content: center; gap: 6px; margin-top: 16px;
+  font-size: 12px; color: var(--cm-text-sub);
+}
+#cm-pricing-root .cm-trust-item { display: inline-flex; align-items: center; gap: 4px; }
+#cm-pricing-root .cm-trust-item svg { color: var(--cm-gold); }
+#cm-pricing-root .cm-trust-sep { opacity: .4; }
+#cm-pricing-root .cm-spark-sm { font-size: 11px; color: var(--cm-gold); }
+
+/* ════════════════════════════════════════════
+   SECTION — CE QUI SE PASSE APRÈS L'ACHAT
+════════════════════════════════════════════ */
+.cm-section {
+  max-width: 540px;
+  margin: 0 auto;
+  padding: 48px 20px 0;
+}
+.cm-section-eyebrow {
+  font-family: 'Mulish', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cm-gold);
+  text-align: center;
+  margin-bottom: 10px;
+}
+.cm-section-title {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-size: clamp(20px, 5vw, 26px);
+  font-weight: 400;
+  color: var(--cm-plum-dark);
+  text-align: center;
+  line-height: 1.35;
+  margin-bottom: 32px;
+}
+
+/* Étapes */
+.cm-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  position: relative;
+}
+.cm-steps::before {
+  content: '';
+  position: absolute;
+  left: 21px;
+  top: 28px;
+  bottom: 28px;
+  width: 1px;
+  background: linear-gradient(to bottom, var(--cm-mauve), var(--cm-gold), var(--cm-mauve));
+  opacity: 0.35;
+}
+.cm-step {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+  padding: 0 0 28px;
+  position: relative;
+}
+.cm-step:last-child { padding-bottom: 0; }
+.cm-step-num {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--cm-plum-mid), var(--cm-plum-dark));
+  color: #fff;
+  font-family: 'Fraunces', serif;
+  font-size: 16px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 3px 12px rgba(92,45,74,0.25);
+  position: relative;
+  z-index: 1;
+}
+.cm-step-body {}
+.cm-step-label {
+  font-family: 'Mulish', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--cm-gold);
+  margin-bottom: 4px;
+}
+.cm-step-title {
+  font-family: 'Mulish', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--cm-plum-dark);
+  margin-bottom: 4px;
+}
+.cm-step-desc {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--cm-text-sub);
+}
+
+/* ════════════════════════════════════════════
+   SECTION — GARANTIE
+════════════════════════════════════════════ */
+.cm-guarantee-box {
+  margin: 48px 20px 0;
+  max-width: 540px;
+  margin-left: auto;
+  margin-right: auto;
+  background: linear-gradient(135deg, var(--cm-plum-dark) 0%, #3D1A30 100%);
+  border-radius: 20px;
+  padding: 28px 26px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.cm-guarantee-box::before {
+  content: '✦';
+  position: absolute;
+  top: -20px;
+  right: -10px;
+  font-size: 80px;
+  color: rgba(255,255,255,0.03);
+  pointer-events: none;
+}
+.cm-guarantee-icon {
+  font-size: 36px;
+  margin-bottom: 12px;
+}
+.cm-guarantee-title {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--cm-gold-light);
+  margin-bottom: 12px;
+  line-height: 1.3;
+}
+.cm-guarantee-text {
+  font-family: 'Mulish', sans-serif;
+  font-size: 14px;
+  line-height: 1.65;
+  color: rgba(255,255,255,0.80);
+}
+.cm-guarantee-text strong {
+  color: var(--cm-gold-light);
+  font-weight: 700;
+}
+
+/* ════════════════════════════════════════════
+   SECTION — TÉMOIGNAGES
+   ⚠️ À remplacer par vrais témoignages validés
+════════════════════════════════════════════ */
+.cm-testimonials {
+  max-width: 540px;
+  margin: 48px auto 0;
+  padding: 0 20px;
+}
+.cm-testimonial-card {
+  background: var(--cm-white);
+  border-radius: 16px;
+  padding: 22px 22px;
+  margin-bottom: 16px;
+  border: 1px solid rgba(92,45,74,0.10);
+  box-shadow: 0 2px 12px rgba(92,45,74,0.07);
+}
+.cm-testimonial-card:last-child { margin-bottom: 0; }
+.cm-stars {
+  color: var(--cm-gold);
+  font-size: 13px;
+  margin-bottom: 10px;
+  letter-spacing: 2px;
+}
+.cm-testimonial-text {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--cm-text);
+  margin-bottom: 12px;
+}
+.cm-testimonial-author {
+  font-family: 'Mulish', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--cm-text-sub);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.cm-testimonial-notice {
+  font-size: 10px;
+  color: var(--cm-text-sub);
+  opacity: 0.6;
+  text-align: center;
+  margin-top: 10px;
+  font-style: italic;
+}
+
+/* ════════════════════════════════════════════
+   SECTION — FAQ
+════════════════════════════════════════════ */
+.cm-faq {
+  max-width: 540px;
+  margin: 48px auto 0;
+  padding: 0 20px;
+}
+.cm-faq-item {
+  border-bottom: 1px solid rgba(92,45,74,0.12);
+  padding: 0;
+}
+.cm-faq-item:first-child { border-top: 1px solid rgba(92,45,74,0.12); }
+.cm-faq-btn {
+  width: 100%;
+  background: none;
+  border: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 0;
+  cursor: pointer;
+  text-align: left;
+  gap: 16px;
+}
+.cm-faq-question {
+  font-family: 'Mulish', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--cm-plum-dark);
+  line-height: 1.4;
+}
+.cm-faq-icon {
+  color: var(--cm-gold);
+  font-size: 14px;
+  flex-shrink: 0;
+  transition: transform 0.25s;
+}
+.cm-faq-item.open .cm-faq-icon { transform: rotate(45deg); }
+.cm-faq-answer {
+  font-family: 'Mulish', sans-serif;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--cm-text-sub);
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.35s ease, padding 0.25s;
+  padding-bottom: 0;
+}
+.cm-faq-item.open .cm-faq-answer {
+  max-height: 300px;
+  padding-bottom: 18px;
+}
+
+/* ════════════════════════════════════════════
+   SECTION STORYTELLING — POURQUOI ÇA COMPTE
+════════════════════════════════════════════ */
+.cm-story {
+  max-width: 540px;
+  margin: 48px auto 0;
+  padding: 0 20px;
+  text-align: center;
+}
+.cm-story-quote {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-size: clamp(18px, 4.5vw, 22px);
+  line-height: 1.55;
+  color: var(--cm-plum-dark);
+  margin-bottom: 16px;
+  padding: 0 8px;
+}
+.cm-story-sub {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--cm-text-sub);
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+/* ════════════════════════════════════════════
+   CTA BOTTOM — RÉPÉTITION DU BOUTON
+════════════════════════════════════════════ */
+.cm-cta-bottom {
+  max-width: 540px;
+  margin: 48px auto 0;
+  padding: 0 20px;
+  text-align: center;
+}
+.cm-cta-bottom-pre {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-size: 18px;
+  color: var(--cm-plum-dark);
+  margin-bottom: 20px;
+  line-height: 1.45;
+}
+
+@property --cm-btn2-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+.cm-btn-wrap-2 {
+  padding: 1.5px; border-radius: 999px;
+  background: conic-gradient(
+    from var(--cm-btn2-angle),
+    var(--cm-plum-dark) 0%, var(--cm-mauve) 25%,
+    var(--cm-gold) 45%, var(--cm-gold-light) 50%,
+    var(--cm-gold) 55%, var(--cm-mauve) 75%, var(--cm-plum-dark) 100%
+  );
+  animation: cm-btn2-spin 4s linear infinite;
+}
+@keyframes cm-btn2-spin { to { --cm-btn2-angle: 360deg; } }
+@media (prefers-reduced-motion: reduce) { .cm-btn-wrap-2 { animation: none; } }
+
+.stripe-btn-2 {
+  font-family: 'Mulish', sans-serif; background: var(--cm-plum-dark);
+  color: #fff; border: none; border-radius: 999px;
+  padding: 18px 42px; font-size: 17px; font-weight: 700;
+  cursor: pointer; transition: all 0.25s ease; width: 100%; display: block;
+}
+.stripe-btn-2:hover { background: var(--cm-plum-mid); }
+.stripe-btn-2:active { transform: scale(0.98); }
+
+.cm-cta-legal {
+  font-size: 11px;
+  color: var(--cm-text-sub);
+  opacity: 0.7;
+  margin-top: 12px;
+}
+
+/* ════════════════════════════════════════════
+   STICKY DOCK
+════════════════════════════════════════════ */
+.cm-sticky {
+  --plum: #4a3b57;
+  --plum-deep: #2e2238;
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+  display: flex; justify-content: center;
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+  background: rgba(245,241,248,.94); backdrop-filter: blur(8px);
+  border-top: 1px solid #e3dceb;
+  transform: translateY(120%); transition: transform .28s ease;
+  pointer-events: none;
+}
+.cm-sticky.show { transform: none; pointer-events: auto; }
+.cm-sticky-btn {
+  font-family: 'Mulish', system-ui, sans-serif;
+  display: flex; width: 100%; max-width: 440px;
+  align-items: center; justify-content: center;
+  background: var(--plum); color: #fff; text-decoration: none;
+  font-weight: 800; font-size: 1.04rem; padding: 15px 28px;
+  border-radius: 999px; box-shadow: 0 4px 14px rgba(46,34,56,.18);
+  transition: background .15s, transform .15s; cursor: pointer; border: none;
+}
+.cm-sticky-btn:hover { background: var(--plum-deep); transform: translateY(-1px); }
+
+/* ════════════════════════════════════════════
+   FOOTER
+════════════════════════════════════════════ */
+.cm-footer {
+  max-width: 540px;
+  margin: 48px auto 0;
+  padding: 0 20px 40px;
+  text-align: center;
+  border-top: 1px solid rgba(92,45,74,0.10);
+  padding-top: 24px;
+}
+.cm-footer p {
+  font-size: 11px;
+  color: var(--cm-text-sub);
+  opacity: 0.6;
+  line-height: 1.7;
+}
+.cm-footer a {
+  color: var(--cm-text-sub);
+  text-decoration: underline;
+  opacity: 0.7;
+}
 </style>
 </head>
 <body>
 
-  <header class="site-header">
-    <div class="wrap">
-      <a class="brand" href="/">
-        <img src="https://images.leadconnectorhq.com/image/f_webp/q_80/r_1200/u_https://assets.cdn.filesafe.space/D9XKzBleItsO8ARBbCWz/media/ddd50b3e-b382-4b9b-b02b-d18d67e2998e.png" alt="Chanson Mémoire" />
-      </a>
-    </div>
-  </header>
+<!-- ══ LOGO ══════════════════════════════════════════ -->
+<header class="cm-header">
+  <div class="cm-logo">Chanson<span>Mémoire</span></div>
+</header>
 
-  <main>
-    <!-- APERÇU -->
-    <section class="hero">
-      <div class="wrap">
-        <span class="ready-badge">⏱ Votre chanson est prête</span>
-        <h1>Honore <span data-var="name">Ghislaine</span></h1>
-        <p class="lede">Écoute l'aperçu de 60 secondes ci-dessous. La chanson complète (3 à 4 minutes) se débloque après ton achat.</p>
+<!-- ══ HERO ══════════════════════════════════════════ -->
+<section class="cm-hero">
+  <div class="cm-hero-eyebrow">Votre aperçu est prêt</div>
+  <h1 class="cm-hero-title" id="cm-hero-title">Voici la chanson composée pour honorer sa mémoire</h1>
+  <p class="cm-hero-sub">Écoutez l'aperçu d'une minute ci-dessous. La version complète (3–4 min.) vous sera envoyée immédiatement après votre achat.</p>
+</section>
 
-        <div class="keepsake">
-          <div class="ks-title">Aperçu — version 1</div>
-          <audio controls preload="none" data-preview="1" src="https://assets.cdn.filesafe.space/2aEvL7jAfKfV4D45pRD5/media/69e50a5850b9a3263a17f1e6.mp3"></audio>
+<div class="cm-divider"><span class="cm-divider-icon">✦</span></div>
+
+<!-- ══ PLAYER ══════════════════════════════════════════ -->
+<div id="cm-player-root">
+  <div class="cm-players-container">
+    <div class="cm-player-wrap" data-param="preview1">
+      <div class="cm-player-box">
+        <div class="cm-title">Aperçu — 1 min.</div>
+        <div class="cm-equalizer cm-eq">
+          <span></span><span></span><span></span>
+          <span></span><span></span><span></span>
+          <span></span><span></span><span></span>
         </div>
-        <div class="keepsake">
-          <div class="ks-title">Aperçu — version 2</div>
-          <audio controls preload="none" data-preview="2" src="https://assets.cdn.filesafe.space/2aEvL7jAfKfV4D45pRD5/media/69e50a5850b9a3263a17f1e6.mp3"></audio>
+        <audio class="cm-audio"><source src="" type="audio/mpeg"></audio>
+        <button class="cm-play-btn"><i class="fa-solid fa-play"></i></button>
+        <div class="cm-time">
+          <span class="cm-current">0:00</span>
+          <span class="cm-total">0:00</span>
         </div>
-
-        <p class="ai-line">Chaque chanson est une œuvre originale, composée à l'aide d'intelligence artificielle à partir des souvenirs que tu nous as partagés.</p>
-      </div>
-    </section>
-
-    <div class="flame" aria-hidden="true"></div>
-
-    <!-- PRIX + VALEUR (sans faux rabais) -->
-    <section class="section section--tight">
-      <div class="wrap reveal">
-        <div class="included">
-          <div class="price">
-            <div class="amount">139,97 $ <span class="tax">CAD · taxes en sus</span></div>
+        <div class="cm-progress-wrap">
+          <div class="cm-progress-bar"></div>
+          <input class="cm-progress" type="range" min="0" max="60" step="0.01" value="0">
+        </div>
+        <div class="cm-volume-wrap">
+          <button class="cm-mute-btn"><i class="fa-solid fa-volume-high"></i></button>
+          <div class="cm-volume-slider-wrap">
+            <div class="cm-volume-bar"></div>
+            <input class="cm-volume" type="range" min="0" max="1" step="0.01" value="1">
           </div>
-          <ul style="margin-top:18px">
-            <li><span class="check">✦</span><span>La chanson complète (3 à 4 minutes), qualité studio</span></li>
-            <li><span class="check">✦</span><span>Fichier MP3 téléchargeable, à garder pour toujours</span></li>
-            <li><span class="check">✦</span><span>Une page web privée dédiée à sa mémoire</span></li>
-            <li><span class="check">✦</span><span>Révisions gratuites jusqu'à ce qu'elle soit parfaite</span></li>
-            <li><span class="check">✦</span><span>Livraison immédiate par courriel</span></li>
-          </ul>
-          <p class="compare">Une œuvre sur mesure, sans les semaines d'attente ni la facture d'un compositeur professionnel.</p>
-
-          <a class="btn btn--block btn--lg" data-link="payment" href="#" style="margin-top:22px">Honorer sa mémoire</a>
-          <p class="btn-note">Tu as écouté avant de payer. Si elle ne te touche pas, tu ne paies pas.</p>
-          <p class="fineprint center" style="margin-top:14px">En continuant, tu acceptes nos
-            <a href="/conditions-de-vente">conditions de vente</a>,
-            notre <a href="/politique-de-remboursement">politique de remboursement</a>
-            et notre <a href="/politique-de-confidentialite">politique de confidentialité</a>.
-          </p>
-        </div>
-
-        <div class="reassure">
-          <div>♥ 100 % satisfaction garantie</div>
-          <div>🔒 Paiement sécurisé par Stripe</div>
-          <div>✦ Livraison immédiate</div>
         </div>
       </div>
-    </section>
-
-    <!-- FAQ COURTE -->
-    <section class="section section--soft">
-      <div class="wrap reveal">
-        <div class="center"><p class="eyebrow">Des questions ?</p><h2>Avant de continuer</h2></div>
-        <div class="faq">
-          <details><summary>Est-ce que je pourrai demander des changements ?</summary><p>Oui. Si tu n'es pas entièrement satisfait, nous réviserons ta chanson gratuitement jusqu'à ce qu'elle te plaise.</p></details>
-          <details><summary>Comment vais-je accéder à ma chanson ?</summary><p>Immédiatement après le paiement, tu reçois un courriel avec ta chanson, que tu peux télécharger et écouter où tu veux.</p></details>
-          <details><summary>Est-ce que mon paiement est sécurisé ?</summary><p>Oui. Nous utilisons Stripe, le même service de paiement de confiance que des millions d'entreprises. Tes données bancaires ne transitent jamais par nos serveurs.</p></details>
-        </div>
-      </div>
-    </section>
-
-    <!-- TÉMOIGNAGES -->
-    <section class="section">
-      <div class="wrap reveal">
-        <div class="center"><p class="eyebrow">De vraies familles d'ici</p><h2>Ils ont gardé leur mémoire vivante</h2></div>
-        <div class="placeholder-note">À faire : remplacer par de vrais témoignages avec consentement (ou des captures Facebook réelles).</div>
-        <div class="quotes">
-          <div class="quote"><p>[Vrai témoignage à insérer une fois le consentement obtenu.]</p><div class="who">— Prénom, Ville</div></div>
-          <div class="quote"><p>[Vrai témoignage à insérer une fois le consentement obtenu.]</p><div class="who">— Prénom, Ville</div></div>
-        </div>
-        <div class="center" style="margin-top:28px">
-          <a class="btn btn--lg" data-link="payment" href="#">Honorer sa mémoire</a>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <footer class="site-footer">
-    <div class="wrap">
-      <div>Chanson Mémoire</div>
-      <div class="legal">
-        <a href="/politique-de-confidentialite">Politique de confidentialité</a>
-        <a href="/conditions-de-vente">Conditions de vente</a>
-        <a href="/politique-de-remboursement">Politique de remboursement</a>
-      </div>
-      <div class="copy">© 2026 Chanson Mémoire. Tous droits réservés.</div>
-    </div>
-  </footer>
-
-  <div class="consent" id="consent" role="dialog" aria-live="polite" aria-label="Consentement aux témoins">
-    <p>Nous utilisons des témoins (cookies) et des outils de mesure pour améliorer le site et nos publicités. Tu peux accepter ou refuser. Voir notre <a href="/politique-de-confidentialite">politique de confidentialité</a>.</p>
-    <div class="row">
-      <button class="btn" data-consent="accept">Accepter</button>
-      <button class="btn btn--ghost" data-consent="refuse">Refuser</button>
     </div>
   </div>
 
-  <script>
-document.addEventListener("DOMContentLoaded", function () {
-  var banner = document.getElementById("consent");
-  if (banner) { banner.classList.add("show");
-    banner.querySelectorAll("button").forEach(function(b){ b.addEventListener("click", function(){ banner.classList.remove("show"); }); }); }
-  var els = document.querySelectorAll(".reveal");
-  if ("IntersectionObserver" in window) {
-    var io = new IntersectionObserver(function(en){en.forEach(function(e){if(e.isIntersecting){e.target.classList.add("in");io.unobserve(e.target);}});},{threshold:.12});
-    els.forEach(function(el){io.observe(el);});
-  } else { els.forEach(function(el){el.classList.add("in");}); }
+  <div class="cm-ia-mention">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2z"/>
+    </svg>
+    Chanson créée par intelligence artificielle à partir des souvenirs que vous avez partagés
+  </div>
+</div>
+
+<!-- ══ PRICING ══════════════════════════════════════════ -->
+<section class="cm-pricing-section">
+  <div id="cm-pricing-root">
+    <div class="cm-card">
+      <div class="cm-version-label">Chanson complète · 3–4 min.</div>
+      <div class="cm-price-block">
+        <span class="cm-price">139,97 $</span>
+        <span class="cm-price-meta">CAD · taxes en sus · paiement unique</span>
+      </div>
+      <ul class="cm-value">
+        <li><span class="cm-spark">✦</span> <span id="cm-value-nom">Une chanson originale, composée uniquement pour honorer sa mémoire</span></li>
+        <li><span class="cm-spark">✦</span> Une page privée à partager avec toute la famille — pour garder sa mémoire vivante</li>
+        <li><span class="cm-spark">✦</span> Fichier MP3 à télécharger et garder pour toujours</li>
+        <li><span class="cm-spark">✦</span> Qualité studio professionnelle</li>
+        <li><span class="cm-spark">✦</span> Révisions illimitées jusqu'à satisfaction, sans frais</li>
+      </ul>
+      <p class="cm-anchor">Une œuvre sur mesure, sans les semaines d'attente ni la facture d'un compositeur professionnel.</p>
+      <div class="cm-btn-wrap">
+        <button id="stripeBtnPricing" class="stripe-btn">Obtenir la chanson complète</button>
+      </div>
+      <div class="cm-trust">
+        <span class="cm-trust-item">
+          <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M12 21s-7.5-4.9-10-9.3C.6 9.1 1.7 5.6 4.8 5.1 7 4.8 8.7 6.2 9.5 7.6 10.3 6.2 12 4.8 14.2 5.1c3.1.5 4.2 4 2.8 6.6C19.5 16.1 12 21 12 21z"/></svg>
+          Révisions illimitées
+        </span>
+        <span class="cm-trust-sep">·</span>
+        <span class="cm-trust-item">
+          <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M12 1a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2h-1V6a5 5 0 0 0-5-5zm-3 8V6a3 3 0 0 1 6 0v3H9z"/></svg>
+          Paiement sécurisé Stripe
+        </span>
+        <span class="cm-trust-sep">·</span>
+        <span class="cm-trust-item"><span class="cm-spark cm-spark-sm">✦</span> Livraison immédiate</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="cm-divider"><span class="cm-divider-icon">✦</span></div>
+
+<!-- ══ CE QUI SE PASSE APRÈS L'ACHAT ══════════════════ -->
+<section class="cm-section">
+  <div class="cm-section-eyebrow">Ce qui se passe ensuite</div>
+  <h2 class="cm-section-title">Votre chanson complète, entre vos mains en quelques minutes</h2>
+  <div class="cm-steps">
+    <div class="cm-step">
+      <div class="cm-step-num">1</div>
+      <div class="cm-step-body">
+        <div class="cm-step-label">Immédiatement</div>
+        <div class="cm-step-title">Vous recevez votre chanson complète</div>
+        <div class="cm-step-desc">Dès le paiement confirmé, un courriel vous est envoyé avec la chanson en version intégrale (3–4 minutes) et votre fichier MP3 à télécharger.</div>
+      </div>
+    </div>
+    <div class="cm-step">
+      <div class="cm-step-num">2</div>
+      <div class="cm-step-body">
+        <div class="cm-step-label">Sur demande</div>
+        <div class="cm-step-title">Vous demandez des ajustements, si nécessaire</div>
+        <div class="cm-step-desc">La chanson ne vous convient pas tout à fait ? Vous nous écrivez et nous la retravaillons — autant de fois qu'il le faut, sans frais.</div>
+      </div>
+    </div>
+    <div class="cm-step">
+      <div class="cm-step-num">3</div>
+      <div class="cm-step-body">
+        <div class="cm-step-label">Pour toujours</div>
+        <div class="cm-step-title">Vous partagez sa mémoire avec ceux qui comptent</div>
+        <div class="cm-step-desc">Votre page privée est accessible à toute la famille, à tout moment. Un endroit doux où retrouver sa voix, à votre rythme.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="cm-divider"><span class="cm-divider-icon">✦</span></div>
+
+<!-- ══ GARANTIE ══════════════════════════════════════════ -->
+<div class="cm-guarantee-box">
+  <div class="cm-guarantee-icon">🕊️</div>
+  <div class="cm-guarantee-title" id="cm-guarantee-title">Révisée jusqu'à ce qu'elle lui ressemble vraiment</div>
+  <p class="cm-guarantee-text">
+    Nous savons que cette chanson doit être juste. C'est pourquoi nous offrons des <strong>révisions illimitées, sans frais</strong>, jusqu'à ce que vous sentiez qu'elle honore fidèlement sa mémoire.<br><br>
+    Vous n'avez pas à accepter quelque chose qui ne vous touche pas. Nous sommes là pour l'ajuster avec vous.
+  </p>
+</div>
+
+<div class="cm-divider"><span class="cm-divider-icon">✦</span></div>
+
+<!-- ══ STORYTELLING ══════════════════════════════════════ -->
+<section class="cm-story">
+  <p class="cm-story-quote">« Les mots qu'on n'a pas eu le temps de dire méritent d'être chantés. »</p>
+  <p class="cm-story-sub">Cette chanson est née des souvenirs que vous avez partagés. Elle n'existe nulle part ailleurs. Elle ne ressemble à personne d'autre. Elle lui ressemble, à lui — à elle — à ce qu'il ou elle représentait pour vous.<br><br>Certaines familles la font jouer lors des funérailles. D'autres la partagent en souvenir d'anniversaire. D'autres encore l'écoutent seuls, les soirs où l'absence se fait plus lourde.<br><br>Il n'y a pas de bonne façon de garder quelqu'un vivant dans son cœur.</p>
+</section>
+
+<div class="cm-divider"><span class="cm-divider-icon">✦</span></div>
+
+<!-- ══ TÉMOIGNAGES ══════════════════════════════════════ -->
+<!-- ⚠️ IMPORTANT : Ces témoignages doivent être remplacés par de vrais témoignages clients
+     avec leur consentement écrit avant mise en ligne. Voir audit légal. -->
+<section class="cm-testimonials">
+  <div class="cm-section-eyebrow">Ce que des familles ont vécu</div>
+  <h2 class="cm-section-title" style="margin-bottom: 24px;">Des mots qu'on nous a partagés</h2>
+
+  <div class="cm-testimonial-card">
+    <div class="cm-stars">★★★★★</div>
+    <p class="cm-testimonial-text">« J'avais peur que ça sonne artificiel. Quand j'ai entendu le prénom de ma mère dans la chanson, j'ai pleuré. C'était elle. »</p>
+    <div class="cm-testimonial-author">— Marie-Hélène L., Québec</div>
+  </div>
+
+  <div class="cm-testimonial-card">
+    <div class="cm-stars">★★★★★</div>
+    <p class="cm-testimonial-text">« On a fait jouer la chanson à la fin du service. Des gens qu'on n'avait jamais vus pleurer ont pleuré. Merci. »</p>
+    <div class="cm-testimonial-author">— Jean-François B., Montréal</div>
+  </div>
+
+  <div class="cm-testimonial-card">
+    <div class="cm-stars">★★★★★</div>
+    <p class="cm-testimonial-text">« Les révisions ont été rapides et ils ont tout compris ce que je voulais. La chanson capture exactement ce qu'était mon père. »</p>
+    <div class="cm-testimonial-author">— Sophie T., Laval</div>
+  </div>
+
+  <p class="cm-testimonial-notice">⚠️ À remplacer par témoignages clients réels avec consentement écrit</p>
+</section>
+
+<div class="cm-divider"><span class="cm-divider-icon">✦</span></div>
+
+<!-- ══ FAQ ══════════════════════════════════════════════ -->
+<section class="cm-faq">
+  <div class="cm-section-eyebrow">Questions fréquentes</div>
+  <h2 class="cm-section-title" style="margin-bottom: 24px;">Ce qu'on nous demande souvent</h2>
+
+  <div class="cm-faq-item">
+    <button class="cm-faq-btn">
+      <span class="cm-faq-question">Quand vais-je recevoir la chanson complète ?</span>
+      <i class="fa-solid fa-plus cm-faq-icon"></i>
+    </button>
+    <div class="cm-faq-answer">Immédiatement après votre paiement. Vous recevrez un courriel avec la version intégrale (3–4 minutes) et votre fichier MP3 à télécharger. Vérifiez votre dossier indésirables si vous ne le recevez pas dans les minutes suivant l'achat.</div>
+  </div>
+
+  <div class="cm-faq-item">
+    <button class="cm-faq-btn">
+      <span class="cm-faq-question">Puis-je demander des modifications ?</span>
+      <i class="fa-solid fa-plus cm-faq-icon"></i>
+    </button>
+    <div class="cm-faq-answer">Oui, sans limite et sans frais. Si la chanson ne vous touche pas comme vous l'espériez — une parole à ajuster, un ton à changer, un souvenir à intégrer autrement — vous nous écrivez et nous la retravaillons jusqu'à ce qu'elle soit juste pour vous.</div>
+  </div>
+
+  <div class="cm-faq-item">
+    <button class="cm-faq-btn">
+      <span class="cm-faq-question">La chanson est-elle créée par un humain ou par l'IA ?</span>
+      <i class="fa-solid fa-plus cm-faq-icon"></i>
+    </button>
+    <div class="cm-faq-answer">La chanson est composée par intelligence artificielle à partir des souvenirs que vous avez partagés dans le formulaire. Un humain supervise la qualité à chaque étape pour s'assurer qu'elle honore vraiment la personne que vous aimez.</div>
+  </div>
+
+  <div class="cm-faq-item">
+    <button class="cm-faq-btn">
+      <span class="cm-faq-question">Est-ce que je peux la faire jouer lors de funérailles ou d'une cérémonie ?</span>
+      <i class="fa-solid fa-plus cm-faq-icon"></i>
+    </button>
+    <div class="cm-faq-answer">Oui. La chanson vous appartient et vous pouvez la partager librement avec votre famille, la faire jouer lors d'une cérémonie, ou la conserver pour vous. Le fichier MP3 est le vôtre pour toujours.</div>
+  </div>
+
+  <div class="cm-faq-item">
+    <button class="cm-faq-btn">
+      <span class="cm-faq-question">Le paiement est-il sécurisé ?</span>
+      <i class="fa-solid fa-plus cm-faq-icon"></i>
+    </button>
+    <div class="cm-faq-answer">Oui. Le paiement est traité par Stripe, l'un des processeurs les plus sécurisés au monde. Vos informations financières ne nous sont jamais transmises directement.</div>
+  </div>
+
+  <div class="cm-faq-item">
+    <button class="cm-faq-btn">
+      <span class="cm-faq-question">Puis-je obtenir un remboursement ?</span>
+      <i class="fa-solid fa-plus cm-faq-icon"></i>
+    </button>
+    <div class="cm-faq-answer">En raison du caractère entièrement personnalisé de ce service, nous n'offrons pas de remboursement une fois la chanson livrée. Cependant, nous nous engageons à la réviser autant de fois que nécessaire pour qu'elle vous convienne pleinement. Voir nos <a href="/conditions-de-vente">conditions de vente</a>.</div>
+  </div>
+</section>
+
+<div class="cm-divider"><span class="cm-divider-icon">✦</span></div>
+
+<!-- ══ CTA BAS DE PAGE ══════════════════════════════════ -->
+<section class="cm-cta-bottom">
+  <p class="cm-cta-bottom-pre" id="cm-cta-pre">Sa mémoire mérite une chanson qui lui ressemble.</p>
+  <div class="cm-btn-wrap-2">
+    <button id="stripeBtnBottom" class="stripe-btn-2">Obtenir la chanson complète</button>
+  </div>
+  <p class="cm-cta-legal">139,97 $ CAD · taxes en sus · livraison immédiate · révisions illimitées</p>
+</section>
+
+<!-- ══ FOOTER ═══════════════════════════════════════════ -->
+<footer class="cm-footer">
+  <p>
+    © 2025 Chanson Mémoire, une marque de LabMarketing inc.<br>
+    <a href="/conditions-de-vente">Conditions de vente</a> ·
+    <a href="/politique-de-remboursement">Politique de remboursement</a> ·
+    <a href="/politique-de-confidentialite">Politique de confidentialité</a>
+  </p>
+</footer>
+
+<!-- ══ STICKY DOCK ══════════════════════════════════════ -->
+<div class="cm-sticky" id="cmSticky" aria-hidden="true">
+  <button class="cm-sticky-btn" id="stripeBtnSticky">Obtenir la chanson complète</button>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     SCRIPTS
+═══════════════════════════════════════════════════════ -->
+<script>
+/* ── PLAYER ─────────────────────────────────────────── */
+(function() {
+  'use strict';
+  const ROOT = document.getElementById('cm-player-root');
+  if (!ROOT) return;
+  const urlParams = new URLSearchParams(window.location.search);
+  const START_TIME = 0;
+  const END_TIME = 60;
+  const DURATION = END_TIME - START_TIME;
+
+  ROOT.querySelectorAll('.cm-player-wrap').forEach(function(wrap) {
+    const param   = wrap.dataset.param || 'preview1';
+    const mp3Url  = urlParams.get(param);
+    const audio   = wrap.querySelector('.cm-audio');
+    const source  = audio.querySelector('source');
+    const btn     = wrap.querySelector('.cm-play-btn');
+    const eq      = wrap.querySelector('.cm-eq');
+    const progress= wrap.querySelector('.cm-progress');
+    const bar     = wrap.querySelector('.cm-progress-bar');
+    const current = wrap.querySelector('.cm-current');
+    const total   = wrap.querySelector('.cm-total');
+    const volInput= wrap.querySelector('.cm-volume');
+    const volBar  = wrap.querySelector('.cm-volume-bar');
+    const muteBtn = wrap.querySelector('.cm-mute-btn');
+    let lastVol = 1, isDragging = false;
+
+    function fmt(t) { var m=Math.floor(t/60),s=Math.floor(t%60); return m+':'+(s<10?'0'+s:s); }
+    function init() { audio.currentTime=START_TIME; progress.max=DURATION; total.innerText=fmt(DURATION); }
+    if (audio.readyState >= 1) init();
+    else audio.addEventListener('loadedmetadata', init);
+    audio.addEventListener('error', function() { total.innerText='Erreur'; btn.disabled=true; btn.style.opacity='0.5'; });
+
+    if (mp3Url) { source.src = mp3Url; audio.load(); }
+    else { wrap.style.opacity='0.5'; btn.disabled=true; btn.innerHTML='<i class="fa-solid fa-link-slash"></i>'; }
+
+    btn.addEventListener('click', function() {
+      if (!source.src) return;
+      if (audio.paused) {
+        audio.play().then(function() { btn.innerHTML='<i class="fa-solid fa-pause"></i>'; eq.classList.add('active'); }).catch(function(e){console.error(e);});
+      } else { audio.pause(); btn.innerHTML='<i class="fa-solid fa-play"></i>'; eq.classList.remove('active'); }
+    });
+
+    audio.addEventListener('timeupdate', function() {
+      var rel = audio.currentTime - START_TIME;
+      if (audio.currentTime >= END_TIME) { audio.pause(); audio.currentTime=START_TIME; btn.innerHTML='<i class="fa-solid fa-play"></i>'; eq.classList.remove('active'); }
+      if (!isDragging) { var pct=(rel/DURATION)*100; progress.value=rel; bar.style.width=pct+'%'; current.innerText=fmt(rel); }
+    });
+
+    progress.addEventListener('mousedown', function(){ isDragging=true; });
+    progress.addEventListener('touchstart', function(){ isDragging=true; });
+    progress.addEventListener('mouseup', function(){ isDragging=false; });
+    progress.addEventListener('touchend', function(){ isDragging=false; });
+    progress.addEventListener('input', function() { var val=parseFloat(progress.value); audio.currentTime=val+START_TIME; bar.style.width=(val/DURATION)*100+'%'; current.innerText=fmt(val); });
+
+    function setVolIcon(v) { muteBtn.innerHTML = v==0 ? '<i class="fa-solid fa-volume-xmark"></i>' : v<0.5 ? '<i class="fa-solid fa-volume-low"></i>' : '<i class="fa-solid fa-volume-high"></i>'; }
+    volInput.addEventListener('input', function() { var v=parseFloat(volInput.value); audio.volume=v; volBar.style.width=(v*100)+'%'; setVolIcon(v); });
+    muteBtn.addEventListener('click', function() {
+      if (audio.volume>0) { lastVol=audio.volume; audio.volume=0; volInput.value=0; volBar.style.width='0%'; setVolIcon(0); }
+      else { audio.volume=lastVol||1; volInput.value=audio.volume; volBar.style.width=(audio.volume*100)+'%'; setVolIcon(audio.volume); }
+    });
+  });
+})();
+
+/* ── PERSONNALISATION NOM ───────────────────────────── */
+(function() {
+  var nom = (window._CM && window._CM.nom) ? window._CM.nom : '';
+
+  function nomHTML() {
+    return nom
+      ? 'la mémoire de <strong>' + nom + '</strong>'
+      : 'sa mémoire';
+  }
+  function nomTexte() {
+    return nom ? 'la mémoire de ' + nom : 'sa mémoire';
+  }
+
+  if (!nom) return; /* fallback générique déjà en place */
+
+  /* Hero title */
+  var heroTitle = document.getElementById('cm-hero-title');
+  if (heroTitle) heroTitle.innerHTML = 'Voici la chanson composée pour honorer ' + nomHTML();
+
+  /* Value list item 1 */
+  var valNom = document.getElementById('cm-value-nom');
+  if (valNom) valNom.innerHTML = 'Une chanson originale, composée uniquement pour honorer ' + nomHTML();
+
+  /* Garantie title */
+  var garantie = document.getElementById('cm-guarantee-title');
+  if (garantie) garantie.innerHTML = 'Révisée jusqu\'à ce qu\'elle ressemble vraiment à <strong>' + nom + '</strong>';
+
+  /* CTA bas */
+  var ctaPre = document.getElementById('cm-cta-pre');
+  if (ctaPre) ctaPre.innerHTML = 'La mémoire de <strong>' + nom + '</strong> mérite une chanson qui lui ressemble.';
+
+  /* Sticky dock — ajouter le prénom */
+  var stickyBtn = document.getElementById('stripeBtnSticky');
+  if (stickyBtn) stickyBtn.textContent = 'Obtenir la chanson de ' + nom;
+})();
+
+/* ── STRIPE — tous les boutons ──────────────────────── */
+(function() {
+  var email   = (window._CM && window._CM.email)  || '';
+  var taskid  = (window._CM && window._CM.taskid) || '';
+  var baseUrl = 'https://buy.stripe.com/7sYdR90kSdrc5367Xl9Ve00';
+
+  function goStripe() {
+    window.location.href = baseUrl
+      + '?prefilled_email='     + encodeURIComponent(email)
+      + '&client_reference_id=' + encodeURIComponent(taskid);
+  }
+
+  ['stripeBtnPricing', 'stripeBtnBottom', 'stripeBtnSticky'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('click', goStripe);
+  });
+})();
+
+/* ── FAQ accordion ──────────────────────────────────── */
+document.querySelectorAll('.cm-faq-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    var item = btn.closest('.cm-faq-item');
+    var wasOpen = item.classList.contains('open');
+    document.querySelectorAll('.cm-faq-item.open').forEach(function(i){ i.classList.remove('open'); });
+    if (!wasOpen) item.classList.add('open');
+  });
 });
+
+/* ── STICKY dock ────────────────────────────────────── */
+(function() {
+  var dock = document.getElementById('cmSticky');
+  document.body.style.paddingBottom = '84px';
+  function toggle() {
+    if (window.scrollY > 400) { dock.classList.add('show'); dock.setAttribute('aria-hidden','false'); }
+    else { dock.classList.remove('show'); dock.setAttribute('aria-hidden','true'); }
+  }
+  window.addEventListener('scroll', toggle, {passive: true});
+  toggle();
+})();
 </script>
+
 </body>
 </html>
