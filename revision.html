@@ -531,7 +531,7 @@
       <div class="erreur-icone">✦</div>
       <div class="erreur-titre">Quelque chose s'est passé</div>
       <div class="erreur-msg" id="erreur-detail">Une erreur inattendue est survenue.</div>
-      <button class="btn-reessayer" onclick="genererParoles()">Réessayer</button>
+      <button class="btn-reessayer" onclick="genererParoles(true)">Réessayer</button>
     </div>
 
     <!-- CONTENU PRINCIPAL -->
@@ -620,137 +620,172 @@
   </main>
 
   <script>
-    // ── RÉCUPÉRER LES DONNÉES DU SESSIONSTORA
+    'use strict';
+
+    /* ⚠️ REMPLACE par ton webhook Make B (update Airtable + Suno + GHL). */
+    const WEBHOOK_MAKE = 'https://hook.us1.make.com/0inhd1tegi5rvrm5szqypkheuqyei4h2';
+    /* ⚠️ REMPLACE par l'URL de ta page d'attente. */
+    const URL_ATTENTE  = '/attente-chanson';
+
+    /* Helper : récupère un élément sans planter s'il manque */
+    function el(id) { return document.getElementById(id); }
+
+    /* Helper : écrit du texte dans un élément seulement s'il existe */
+    function setTexte(id, texte) {
+      var node = el(id);
+      if (node) node.textContent = texte;
+    }
+
+    /* ── RÉCUPÉRER LES DONNÉES DU SESSIONSTORAGE ── */
     function getDonnees() {
       try {
-        const raw = sessionStorage.getItem('cm_souvenirs');
+        var raw = sessionStorage.getItem('cm_souvenirs');
         return raw ? JSON.parse(raw) : null;
-      } catch {
+      } catch (e) {
         return null;
       }
     }
 
-    // ── AFFICHER/MASQUER LES ÉTATS
+    /* ── AFFICHER / MASQUER LES ÉTATS ── */
     function montrer(id) {
-      ['etat-chargement','etat-erreur','contenu','etat-soumission'].forEach(i => {
-        document.getElementById(i).style.display = i === id ? '' : 'none';
+      ['etat-chargement', 'etat-erreur', 'contenu', 'etat-soumission'].forEach(function (i) {
+        var node = el(i);
+        if (node) node.style.display = (i === id ? '' : 'none');
       });
     }
 
-    // ── GÉNÉRER LES PAROLES
-    async function genererParoles() {
+    /* ── AFFICHER LES PAROLES À L'ÉCRAN ── */
+    function afficherParoles(titre, paroles) {
+      setTexte('titre-chanson-affiche', titre);
+      setTexte('nom-chanson-header', titre);
+      setTexte('paroles-affichees', paroles);
+      setTexte('compteur', paroles.length + ' caractères');
+      montrer('contenu');
+    }
+
+    /* ── GÉNÉRER LES PAROLES ──
+       forcer = true  -> on régénère même si déjà en mémoire (bouton Réessayer) */
+    async function genererParoles(forcer) {
+      /* 1. Si on a déjà des paroles en mémoire et qu'on ne force pas : afficher direct. */
+      if (!forcer) {
+        var dejaParoles = sessionStorage.getItem('cm_paroles');
+        var dejaTitre   = sessionStorage.getItem('cm_titre');
+        if (dejaParoles) {
+          afficherParoles(dejaTitre || 'votre chanson', dejaParoles);
+          return;
+        }
+      }
+
+      /* 2. Sinon, on génère via la fonction Netlify. */
       montrer('etat-chargement');
 
-      const donnees = getDonnees();
+      var donnees = getDonnees();
       if (!donnees) {
-        document.getElementById('erreur-detail').textContent = 'Vos informations de souvenirs sont introuvables. Veuillez recommencer depuis le début.';
+        setTexte('erreur-detail', 'Vos informations de souvenirs sont introuvables. Veuillez recommencer depuis le début.');
         montrer('etat-erreur');
         return;
       }
 
       try {
-        const res = await fetch('/api/generate-lyrics', {
+        var res = await fetch('/api/generate-lyrics', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(donnees),
+          body: JSON.stringify(donnees)
         });
 
-        const data = await res.json();
+        var data = await res.json();
 
         if (!res.ok || data.error) {
           throw new Error(data.error || 'Erreur serveur');
         }
 
-        // Stocker pour soumission
-        sessionStorage.setItem('cm_paroles', data.lyrics);
-        sessionStorage.setItem('cm_titre', data.title);
+        /* Stocker pour la soumission et pour un éventuel rechargement */
+        sessionStorage.setItem('cm_paroles', data.lyrics || '');
+        sessionStorage.setItem('cm_titre', data.title || '');
 
-        // Afficher
-        document.getElementById('titre-chanson-affiche').textContent = data.title;
-        document.getElementById('nom-chanson-header').textContent = data.title;
-        document.getElementById('paroles-affichees').textContent = data.lyrics;
-        document.getElementById('compteur').textContent = `${data.lyrics.length} caractères`;
-
-        montrer('contenu');
+        afficherParoles(data.title || 'votre chanson', data.lyrics || '');
 
       } catch (err) {
-        document.getElementById('erreur-detail').textContent = err.message || 'Une erreur inattendue est survenue.';
+        setTexte('erreur-detail', (err && err.message) ? err.message : 'Une erreur inattendue est survenue.');
         montrer('etat-erreur');
       }
     }
 
-    // ── CHIPS EXEMPLES
+    /* ── CHIPS EXEMPLES ── */
     function ajouterExemple(chip) {
-      const ta = document.getElementById('modifications');
-      const texte = chip.textContent.trim();
+      var ta = el('modifications');
+      if (!ta) return;
+      var texte = chip.textContent.trim();
       ta.value = ta.value ? ta.value + '\n' + texte : texte;
       ta.focus();
     }
 
-    // ── TOGGLE SANS MODIFICATION
+    /* ── TOGGLE SANS MODIFICATION ── */
     function toggleSansModif() {
-      const checked = document.getElementById('sans-modif').checked;
-      const ta = document.getElementById('modifications');
-      const icone = document.getElementById('check-icone');
-      const cbCustom = document.querySelector('.checkbox-custom');
+      var checkbox = el('sans-modif');
+      if (!checkbox) return;
+      var checked  = checkbox.checked;
+      var ta       = el('modifications');
+      var icone    = el('check-icone');
+      var cbCustom = document.querySelector('.checkbox-custom');
 
-      ta.disabled = checked;
-      ta.style.opacity = checked ? '0.4' : '1';
-      icone.style.display = checked ? 'block' : 'none';
-      cbCustom.style.background = checked ? 'var(--mauve)' : 'white';
-      cbCustom.style.borderColor = checked ? 'var(--mauve)' : 'var(--mauve-doux)';
+      if (ta) {
+        ta.disabled = checked;
+        ta.style.opacity = checked ? '0.4' : '1';
+      }
+      if (icone)    icone.style.display = checked ? 'block' : 'none';
+      if (cbCustom) {
+        cbCustom.style.background  = checked ? 'var(--mauve)' : 'white';
+        cbCustom.style.borderColor = checked ? 'var(--mauve)' : 'var(--mauve-doux)';
+      }
     }
 
-    // ── SOUMETTRE
+    /* ── SOUMETTRE ── */
     async function soumettre() {
-      const btn = document.getElementById('btn-soumettre');
-      btn.disabled = true;
-      btn.textContent = 'Envoi en cours…';
+      var btn = el('btn-soumettre');
+      if (btn) { btn.disabled = true; btn.textContent = 'Envoi en cours…'; }
 
-      const paroles = sessionStorage.getItem('cm_paroles') || '';
-      const titre = sessionStorage.getItem('cm_titre') || '';
-      const modifications = document.getElementById('modifications').value.trim();
-      const sansModif = document.getElementById('sans-modif').checked;
-      const donnees = getDonnees() || {};
+      var paroles       = sessionStorage.getItem('cm_paroles') || '';
+      var titre         = sessionStorage.getItem('cm_titre') || '';
+      var champModif    = el('modifications');
+      var checkbox      = el('sans-modif');
+      var modifications = champModif ? champModif.value.trim() : '';
+      var sansModif     = checkbox ? checkbox.checked : false;
+      var donnees       = getDonnees() || {};
 
-      // Payload complet pour Make
-      const payload = {
-        ...donnees,
-        paroles_initiales: paroles,
-        titre_chanson: titre,
-        modifications: sansModif ? '' : modifications,
-        sans_modification: sansModif,
-      };
-
-      // ⚠️ Remplace cette URL par ton webhook Make
-      const WEBHOOK_MAKE = 'https://hook.us1.make.com/0inhd1tegi5rvrm5szqypkheuqyei4h2';
+      var payload = Object.assign({}, donnees, {
+        record_id:          sessionStorage.getItem('cm_record_id') || '',
+        paroles_initiales:  paroles,
+        titre_chanson:      titre,
+        modifications:      sansModif ? '' : modifications,
+        sans_modification:  sansModif
+      });
 
       try {
         await fetch(WEBHOOK_MAKE, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
+          body: JSON.stringify(payload)
         });
       } catch (err) {
-        // On continue quand même vers l'attente
         console.error('Webhook error:', err);
       }
 
-      // Nettoyer sessionStorage
+      /* Nettoyer */
       sessionStorage.removeItem('cm_souvenirs');
       sessionStorage.removeItem('cm_paroles');
       sessionStorage.removeItem('cm_titre');
+      sessionStorage.removeItem('cm_record_id');
 
       montrer('etat-soumission');
 
-      // ⚠️ Remplace par l'URL de ta page attente
-      setTimeout(() => {
-        window.location.href = '/attente-chanson';
+      setTimeout(function () {
+        window.location.href = URL_ATTENTE;
       }, 2500);
     }
 
-    // ── INIT
-    genererParoles();
+    /* ── INIT ── */
+    genererParoles(false);
   </script>
 </body>
 </html>
