@@ -56,7 +56,7 @@ exports.handler = async (event) => {
         titre:             gen.song_title || '',
         paroles:           gen.lyrics || '',
         statut:            gen.generation_status || '',     // lyrics_generated / audio_generated / validated
-        audio_url:         gen.suno_audio_url || '',
+        audio_url:         gen.cloudinary_audio_url || '',
         commercial_status: projet.fields.commercial_status || 'preview_only'
         // PAS d'email, PAS de stripe_*, PAS d'attribution. Volontaire.
       })
