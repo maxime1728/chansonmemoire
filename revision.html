@@ -623,7 +623,7 @@
     'use strict';
 
     /* ⚠️ REMPLACE par ton webhook Make B (update Airtable + Suno + GHL). */
-    const WEBHOOK_MAKE = 'https://hook.us1.make.com/0inhd1tegi5rvrm5szqypkheuqyei4h2';
+    const WEBHOOK_MAKE = 'https://hook.us1.make.com/jyxke1vgiin3l9b6vzy9b1s1nu5o7szh';
     /* ⚠️ REMPLACE par l'URL de ta page d'attente. */
     const URL_ATTENTE  = '/attente-chanson';
 
@@ -646,11 +646,13 @@
       }
     }
 
-    /* ── AFFICHER / MASQUER LES ÉTATS ── */
+    /* ── AFFICHER / MASQUER LES ÉTATS ──
+       On force "block" (et non "") : plusieurs de ces sections sont
+       display:none dans le CSS, donc "" les laisserait cachées. */
     function montrer(id) {
       ['etat-chargement', 'etat-erreur', 'contenu', 'etat-soumission'].forEach(function (i) {
         var node = el(i);
-        if (node) node.style.display = (i === id ? '' : 'none');
+        if (node) node.style.display = (i === id ? 'block' : 'none');
       });
     }
 
