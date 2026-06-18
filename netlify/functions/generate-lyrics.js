@@ -1,6 +1,8 @@
 // netlify/functions/generate-lyrics.js
 // Appelée par Make (module HTTP) entre Create Project et Create Generation.
 // Reçoit les champs aux noms AIRTABLE. Retourne { "title": "...", "lyrics": "..." }.
+// Si l'entrée est du charabia / vide de sens, renvoie un code d'erreur PROPRE
+// (statut 422) au lieu de faire passer un message pour des paroles.
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
@@ -37,6 +39,8 @@ TENSE: past tense for facts (who they were, what they did), present tense for wh
 
 TRUTH — ABSOLUTE RULE: use ONLY the information provided. NEVER invent a name, place, memory, or event. If a field is empty or vague, stay general without embellishing. Naturally weave in every element provided; prioritize concrete, unique details over generic ones. If a special phrase or word is provided, it MUST appear in the chorus or the bridge.
 
+INVALID INPUT — IMPORTANT: if the provided information is meaningless, random keystrokes, gibberish, or contains no real usable detail to honor a real person, do NOT attempt a song and do NOT ask follow-up questions. Instead respond ONLY with this exact JSON: {"error":"invalid_input"}. Nothing else.
+
 STRUCTURE (in this order, without naming the sections in the text):
 - Verse 1: who the person was — their qualities, their way of being. Concrete, past tense.
 - Verse 2: specific memories — a place, a moment, a shared habit.
@@ -52,7 +56,7 @@ REGISTER:
 - FORBIDDEN: clichés ("tu es ma lumière", "tu veilles sur nous", "ange gardien", "étoile qui brille") and any heavy religious imagery (ange, là-haut, ciel). Use concrete images drawn from the provided details.
 
 STYLE ADAPTATION — adapt vocabulary, metaphors, and rhythm:
-Pop: direct and emotional. Country: concrete images (roads, seasons, home), storytelling. R&B: sensory and flowing. Folk/Acoustic: intimate and poetic. Jazz: sophisticated. Rock: energy and contrast. Hip-hop: precise syllabic rhythm and storytelling.
+Pop: direct and emotional. Country: concrete images (roads, seasons, home), storytelling. R&B: sensory and flowing. Folk/Acoustic: intimate and poetic. Jazz: sophisticated. Rock: energy and contrast. Hip-hop: precise syllabic rhythm and storytelling. Cinematic: sweeping, evocative. Latin/Salsa: warm and rhythmic. Reggae: relaxed, steady groove. Electronic/Dance: pulse and uplift.
 
 TECHNICAL CONSTRAINTS:
 - 2200 to 2800 characters.
@@ -69,7 +73,9 @@ TITLE — also create a title:
 
 OUTPUT — respond ONLY with a valid JSON object, no surrounding text, no backticks, straight double quotes only:
 {"title":"...","lyrics":"..."}
-In "lyrics", use real line breaks between lines and between sections. Title and lyrics in Québec French.`;
+In "lyrics", use real line breaks between lines and between sections. Title and lyrics in Québec French.
+
+If you cannot proceed and must communicate anything other than the song, write it in Québec French.`;
 
   const userPrompt = `Provided information:
 - In memory of: ${deceased_name}
@@ -120,7 +126,7 @@ In "lyrics", use real line breaks between lines and between sections. Title and 
     // On nettoie d'éventuels backticks markdown.
     let clean = raw.replace(/```json/gi, '').replace(/```/g, '').trim();
 
-    // Filet : si du texte traîne avant/après, on isole le 1er objet { ... }.
+    // On isole le 1er objet { ... } si du texte traîne autour.
     const debut = clean.indexOf('{');
     const fin   = clean.lastIndexOf('}');
     if (debut !== -1 && fin !== -1 && fin > debut) {
@@ -131,8 +137,28 @@ In "lyrics", use real line breaks between lines and between sections. Title and 
     try {
       parsed = JSON.parse(clean);
     } catch {
-      // Filet de sécurité : si le parse échoue, on renvoie au moins quelque chose d'utilisable.
-      parsed = { title: `Pour ${deceased_name}`, lyrics: clean };
+      // Le modèle n'a pas produit de JSON valide (ex. il a "cassé" sur du charabia)
+      // → entrée invalide, pas des paroles. On renvoie une erreur propre.
+      return {
+        statusCode: 422,
+        body: JSON.stringify({ error: 'invalid_input' })
+      };
+    }
+
+    // Le modèle a explicitement signalé une entrée invalide.
+    if (parsed.error === 'invalid_input') {
+      return {
+        statusCode: 422,
+        body: JSON.stringify({ error: 'invalid_input' })
+      };
+    }
+
+    // Sécurité : si pas de vraies paroles, on traite comme entrée invalide.
+    if (!parsed.lyrics || String(parsed.lyrics).trim().length < 50) {
+      return {
+        statusCode: 422,
+        body: JSON.stringify({ error: 'invalid_input' })
+      };
     }
 
     return {
@@ -140,7 +166,7 @@ In "lyrics", use real line breaks between lines and between sections. Title and 
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         title:  parsed.title  || `Pour ${deceased_name}`,
-        lyrics: parsed.lyrics || ''
+        lyrics: parsed.lyrics
       })
     };
   } catch (err) {
