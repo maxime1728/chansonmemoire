@@ -102,7 +102,14 @@ In "lyrics", use real line breaks between lines and between sections. Title and 
 
     const data = await res.json();
     if (!res.ok) {
-      return { statusCode: 502, body: JSON.stringify({ error: 'Erreur de génération' }) };
+      return {
+        statusCode: 502,
+        body: JSON.stringify({
+          error: 'Erreur de génération',
+          anthropic_status: res.status,
+          anthropic_detail: data
+        })
+      };
     }
 
     // On a forcé la réponse à continuer après {"title": — on recolle le début.
