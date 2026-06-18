@@ -1,4 +1,6 @@
 // netlify/functions/generate-lyrics.js
+// Appelée par Make (module HTTP) entre Create Project et Create Generation.
+// Reçoit les champs aux noms AIRTABLE. Retourne { "title": "...", "lyrics": "..." }.
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
@@ -6,85 +8,77 @@ exports.handler = async (event) => {
   }
 
   let d;
-  try {
-    d = JSON.parse(event.body || '{}');
-  } catch {
-    return { statusCode: 400, body: JSON.stringify({ error: 'Données invalides' }) };
-  }
+  try { d = JSON.parse(event.body || '{}'); }
+  catch { return { statusCode: 400, body: JSON.stringify({ error: 'Données invalides' }) }; }
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
-
-  // ── DIAGNOSTIC : est-ce que la clé est là ? ──
-  console.log('Clé présente ?', apiKey ? 'OUI' : 'NON');
-  console.log('Début de la clé :', apiKey ? apiKey.slice(0, 7) : 'aucune');
-
   if (!apiKey) {
-    console.log('ERREUR : aucune clé API trouvée dans process.env.ANTHROPIC_API_KEY');
     return { statusCode: 500, body: JSON.stringify({ error: 'Configuration serveur manquante' }) };
   }
 
-  const nom       = d.nomPersonne || 'cette personne';
-  const relation  = d.relation || '';
-  const style     = d.styleMusical || 'douce mélodie';
-  const voix      = d.voix || '';
-  const ambiance  = d.ambiance || '';
-  const unique    = d.ceQuiRendaitUnique || '';
-  const souvenirs = d.detailsPersonnels || d.souvenirsFavoris || '';
-  const garder    = d.souvenirGarder || d.message || '';
+  // ── Champs aux noms AIRTABLE (vocabulaire unique) ──
+  const deceased_name    = d.deceased_name    || 'cette personne';
+  const relationship     = d.relationship     || '';
+  const music_style      = d.music_style      || 'douce mélodie';
+  const mood             = d.mood             || '';
+  const what_made_unique = d.what_made_unique || '';
+  const memories         = d.memories         || '';
+  const memory_to_keep   = d.memory_to_keep   || '';
+  // voice (d.voice) n'est PAS utilisé ici — il sert à Suno, pas aux paroles.
 
-  const systemPrompt = `Tu es parolier professionnel québécois pour Chanson Mémoire, un service qui crée des chansons hommage personnalisées pour une personne décédée.
+  // ── System prompt : instructions en anglais, SORTIE forcée en québécois ──
+  const systemPrompt = `You are a professional Québécois songwriter for Chanson Mémoire, a service that creates personalized tribute songs for someone who has passed away.
 
-INTENTION : la chanson honore QUI était la personne, pas comment elle est partie. Émotion centrale : l'amour et la gratitude qui restent, jamais la tristesse lourde. Sobre et digne, jamais larmoyant, jamais morbide.
+OUTPUT LANGUAGE — NON-NEGOTIABLE: the song lyrics AND the title must be written in natural Québec French (français québécois), never France French, never English. Only this instruction set is in English; everything you produce is in Québec French.
 
-SOLUTION-FIRST (impératif) : le Couplet 1 et le Refrain n'ouvrent JAMAIS sur la perte, l'absence ou la douleur. On entre par une présence vivante — une qualité, un geste, une image concrète de la personne telle qu'elle était. L'absence ne peut être évoquée qu'à partir du bridge, avec retenue, et toujours résolue par ce qui reste. Le premier vers de la chanson doit faire sourire ou réchauffer, pas serrer la gorge.
+INTENT: the song honors WHO the person was, not how they passed. Core emotion is the love and gratitude that remain — never heavy sadness. Restrained and dignified, never tearful, never morbid.
 
-TEMPS : passé pour les faits (qui elle était, ce qu'elle faisait), présent pour ce qui demeure (sa présence dans les souvenirs, dans les gestes de ceux qui restent). Jamais de futur pour la personne — elle ne grandira pas, ne vivra pas d'aventures. Le futur appartient à ceux qui restent.
+TENSE: past tense for facts (who they were, what they did), present tense for what remains (their presence in memories, in the gestures of those still here). Never future tense for the person — they will not grow up or live new adventures. The future belongs to those who remain.
 
-VÉRITÉ — RÈGLE ABSOLUE : utilise UNIQUEMENT les informations fournies. N'invente JAMAIS un prénom, un lieu, un souvenir, un événement. Si un champ est vide ou vague, reste général sans broder. Intègre naturellement tous les éléments fournis ; priorise les détails concrets et uniques sur le général. Si une phrase ou un mot spécial est fourni, il DOIT apparaître dans le refrain ou le bridge.
+TRUTH — ABSOLUTE RULE: use ONLY the information provided. NEVER invent a name, place, memory, or event. If a field is empty or vague, stay general without embellishing. Naturally weave in every element provided; prioritize concrete, unique details over generic ones. If a special phrase or word is provided, it MUST appear in the chorus or the bridge.
 
-STRUCTURE (dans cet ordre, sans nommer les sections dans le texte) :
-- Couplet 1 : qui était la personne, ses qualités, sa façon d'être. Concret, au passé.
-- Couplet 2 : souvenirs spécifiques — un lieu, un moment, une habitude partagée.
-- Pré-refrain : monte l'émotion vers la gratitude ou l'acceptation, pas la peine pure.
-- Refrain : célèbre la personne, message central mémorable, prénom si naturel.
-- Bridge : le plus intime — ce qu'on n'a pas eu le temps de dire, et la certitude que l'amour reste.
-- Outro : comment elle continue de vivre (un geste, une saison, un sourire). Termine sur la paix et la gratitude. Peut reprendre un ou deux vers du refrain.
+STRUCTURE (in this order, without naming the sections in the text):
+- Verse 1: who the person was — their qualities, their way of being. Concrete, past tense.
+- Verse 2: specific memories — a place, a moment, a shared habit.
+- Pre-chorus: lift the emotion toward gratitude or acceptance, not pure grief.
+- Chorus: celebrate the person, memorable central message, first name if natural.
+- Bridge: the most intimate part — what went unsaid, and the certainty that love remains.
+- Outro: how they live on (a gesture, a season, a smile). End on peace and gratitude. May reuse one or two lines from the chorus.
 
-REGISTRE :
-- Évite les mots lourds : mort, décès, disparu, enterrement, cercueil.
-- Tu peux évoquer l'absence avec retenue, sans t'y appesantir.
-- Le refrain célèbre ce qu'elle était, pas ce qu'on a perdu.
-- INTERDIT : clichés (« tu es ma lumière », « tu veilles sur nous », « ange gardien », « étoile qui brille ») et toute imagerie religieuse appuyée (ange, là-haut, ciel). Cherche des images concrètes tirées des détails fournis.
+REGISTER:
+- Avoid heavy French words: mort, décès, disparu, enterrement, cercueil.
+- Absence may be evoked with restraint, never dwelled upon.
+- The chorus celebrates who they were, not what was lost.
+- FORBIDDEN: clichés ("tu es ma lumière", "tu veilles sur nous", "ange gardien", "étoile qui brille") and any heavy religious imagery (ange, là-haut, ciel). Use concrete images drawn from the provided details.
 
-ADAPTATION AU STYLE — adapte vocabulaire, métaphores et rythme :
-Pop direct et émotionnel ; Country images concrètes (routes, saisons, maison), storytelling ; R&B sensoriel et fluide ; Folk/Acoustique intime et poétique ; Jazz sophistiqué ; Rock énergie et contrastes ; Hip-hop rythme syllabique précis et storytelling.
+STYLE ADAPTATION — adapt vocabulary, metaphors, and rhythm:
+Pop: direct and emotional. Country: concrete images (roads, seasons, home), storytelling. R&B: sensory and flowing. Folk/Acoustic: intimate and poetic. Jazz: sophisticated. Rock: energy and contrast. Hip-hop: precise syllabic rhythm and storytelling.
 
-CONTRAINTES TECHNIQUES :
-- 2200 à 2800 caractères.
-- Rimes cohérentes (ABAB ou AABB) selon le style ; vers de longueur régulière dans chaque section, chantables.
-- Accent tonique naturel — français québécois, jamais français de France.
-- Les nombres écrits en lettres.
-- AUCUN crochet, AUCUN titre de section, AUCUN commentaire dans les paroles. Texte propre seulement.
+TECHNICAL CONSTRAINTS:
+- 2200 to 2800 characters.
+- Consistent rhyme (ABAB or AABB) per style; even line lengths within each section, singable.
+- Natural stress — Québec French, never France French.
+- Numbers written out in letters (in French).
+- NO brackets, NO section titles, NO commentary in the lyrics. Clean text only.
 
-TITRE — crée aussi un titre :
-- Tiré directement des paroles : une image forte, une phrase marquante, l'idée centrale.
-- De deux à six mots, québécois naturel, sonne bien à voix haute.
-- Jamais générique (« Mon amour », « Pour toujours », « Dans nos cœurs », « Tu me manques ») ni cliché (« ange gardien », « étoile qui brille »).
-- Le prénom est permis s'il est central dans le refrain.
+TITLE — also create a title:
+- Drawn directly from the lyrics: a strong image, a striking line, the central idea.
+- Two to six words, natural Québec French, sounds good aloud.
+- Never generic ("Mon amour", "Pour toujours", "Dans nos cœurs", "Tu me manques") nor cliché ("ange gardien", "étoile qui brille").
+- The first name is allowed if it is central to the chorus.
 
-SORTIE — réponds UNIQUEMENT avec un objet JSON valide, sans aucun texte autour, sans backticks :
+OUTPUT — respond ONLY with a valid JSON object, no surrounding text, no backticks, straight double quotes only:
 {"title":"...","lyrics":"..."}
-Dans "lyrics", utilise de vrais sauts de ligne entre les vers et entre les sections.`;
+In "lyrics", use real line breaks between lines and between sections. Title and lyrics in Québec French.`;
 
-  const userPrompt = `Informations fournies :
-- En souvenir de : ${nom}
-- Lien avec la personne qui commande : ${relation}
-- Style musical : ${style}
-- Voix souhaitée : ${voix}
-- Ambiance : ${ambiance}
-- Ce qui la rendait unique : ${unique}
-- Souvenirs partagés : ${souvenirs}
-- Ce qu'on veut garder et transmettre : ${garder}`;
+  const userPrompt = `Provided information:
+- In memory of: ${deceased_name}
+- Relationship to the person ordering: ${relationship}
+- Musical style: ${music_style}
+- Mood: ${mood}
+- What made them unique: ${what_made_unique}
+- Shared memories: ${memories}
+- What we want to keep and pass on: ${memory_to_keep}`;
 
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -96,51 +90,48 @@ Dans "lyrics", utilise de vrais sauts de ligne entre les vers et entre les secti
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 5000,
+        max_tokens: 2000,
         system: systemPrompt,
-        messages: [{ role: 'user', content: userPrompt }]
+        messages: [
+          { role: 'user', content: userPrompt },
+          // Pré-remplir le début force un JSON propre (pas de préambule bavard).
+          { role: 'assistant', content: '{"title":' }
+        ]
       })
     });
 
-    // ── DIAGNOSTIC : qu'a répondu Anthropic ? ──
-    console.log('Statut réponse Anthropic :', res.status);
-
     const data = await res.json();
-
     if (!res.ok) {
-      // On écrit la VRAIE erreur d'Anthropic dans le log
-      console.log('ERREUR Anthropic :', JSON.stringify(data));
       return { statusCode: 502, body: JSON.stringify({ error: 'Erreur de génération' }) };
     }
 
-    const raw = (data.content || [])
+    // On a forcé la réponse à continuer après {"title": — on recolle le début.
+    const suite = (data.content || [])
       .filter(b => b.type === 'text')
       .map(b => b.text)
-      .join('\n')
+      .join('')
       .trim();
 
+    let raw = '{"title":' + suite;
     const clean = raw.replace(/```json/gi, '').replace(/```/g, '').trim();
 
     let parsed;
     try {
       parsed = JSON.parse(clean);
     } catch {
-      parsed = { title: `Pour ${nom}`, lyrics: clean };
+      // Filet de sécurité : si le parse échoue, on renvoie au moins quelque chose d'utilisable.
+      parsed = { title: `Pour ${deceased_name}`, lyrics: clean };
     }
-
-    console.log('Succès : paroles générées,', (parsed.lyrics || '').length, 'caractères');
 
     return {
       statusCode: 200,
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        title: parsed.title || `Pour ${nom}`,
-        lyrics: parsed.lyrics || clean
+        title:  parsed.title  || `Pour ${deceased_name}`,
+        lyrics: parsed.lyrics || ''
       })
     };
   } catch (err) {
-    // On écrit l'erreur technique exacte dans le log
-    console.log('ERREUR technique :', err.message);
     return { statusCode: 500, body: JSON.stringify({ error: 'Erreur serveur' }) };
   }
 };
