@@ -96,7 +96,7 @@ Dans "lyrics", utilise de vrais sauts de ligne entre les vers et entre les secti
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 2000,
+        max_tokens: 5000,
         system: systemPrompt,
         messages: [{ role: 'user', content: userPrompt }]
       })
