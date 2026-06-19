@@ -15,12 +15,13 @@ const AT_API         = `https://api.airtable.com/v0/${BASE_ID}`;
 
 /* ───────────────────── Bloc suggestions (commun aux 2 prompts) ───────────────────── */
 const SUGGESTIONS_RULES = `
-SUGGESTIONS — also produce exactly 3 revision suggestions in Québec French:
-- Each suggestion MUST be anchored in a SPECIFIC real detail the client provided (a place, a habit, a named trait) OR a detail already present in the lyrics.
-- Each proposes to DEEPEN, MOVE, or HIGHLIGHT that real detail (e.g. bring it into the chorus, expand it, make it central). NEVER invent a new fact, name, place, or memory.
-- Forbidden: generic suggestions about tone or length ("adoucir le ton", "rallonger le couplet"). They must feel specific to THIS person.
-- About the LYRICS only — never about music, rhythm, or voice (the song does not exist yet).
-- Maximum 7 words each. Short, concrete, in Québec French.`;
+SUGGESTIONS — also produce exactly 3 revision suggestions in Québec French, addressed TO THE CLIENT (using "vous"/"votre"/"sa"):
+- Base them STRICTLY on the raw details the client actually provided (the "what made them unique", "memories", "what to keep", relationship). NEVER base a suggestion on the lyrics themselves, and NEVER invent a detail the client did not write.
+- Each suggestion INVITES the client to expand on one real element they mentioned. Examples of the right FORM (not content): "Renchérir sur vos étés au chalet", "Parlez davantage de sa passion pour l'automobile", "Ajoutez un mot sur sa cuisine du dimanche".
+- If the client gave very few details, it is better to return fewer suggestions (even just 1) than to invent. Quality over quantity. Never fabricate to reach 3.
+- Forbidden: generic suggestions about tone, length, rhyme, or structure. Forbidden: anything not directly traceable to what the client wrote.
+- About the LYRICS content only — never about music, rhythm, or voice.
+- Maximum 7 words each. Warm, in Québec French, second person.`;
 
 const OUTPUT_RULES = `
 OUTPUT — respond ONLY with a valid JSON object, no surrounding text, no backticks, straight double quotes only:
@@ -194,9 +195,7 @@ ${modifications}`;
 
       const parsed = parseModel(r.data);
       if (!parsed || !parsed.lyrics || !String(parsed.lyrics).trim()) {
-        // DEBUG TEMPORAIRE : on renvoie la réponse brute de Claude pour voir pourquoi le parse échoue.
-        const brut = (r.data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
-        return { statusCode: 422, body: JSON.stringify({ error: 'invalid_input', debug_raw: brut.slice(0, 800) }) };
+        return { statusCode: 422, body: JSON.stringify({ error: 'invalid_input' }) };
       }
 
       const suggestions = normSuggestions(parsed.suggestions);
@@ -204,7 +203,7 @@ ${modifications}`;
 
       // 4. Écrire la NOUVELLE Generation (numéro +1)
       const gen = await createGeneration({
-        project:           [projet.id],
+        Project:           [projet.id],
         generation_no:     dernierNo + 1,
         type:              'regeneration',
         lyrics:            parsed.lyrics,
