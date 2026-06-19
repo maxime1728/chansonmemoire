@@ -69,10 +69,21 @@
       <label>Envie d'ajustements ?</label>
       <div class="actions">
         <a class="btn btn-ghost" id="actLyrics" href="#">Modifier les paroles</a>
-        <a class="btn btn-ghost" id="actSong" href="#">Régénérer la chanson</a>
-        <a class="btn btn-ghost" id="actCover" href="#">Créer une nouvelle version (cover)</a>
+        <button class="btn btn-ghost" id="actSong" type="button">Régénérer la chanson</button>
+        <button class="btn btn-ghost" id="actCover" type="button">Créer un cover</button>
       </div>
-      <p class="muted-note">Plafond de 5 régénérations après l'achat.</p>
+
+      <!-- Formulaire cover (garde la mélodie, ajuste les paroles) -->
+      <div class="hidden" id="coverForm" style="margin-top:14px;">
+        <label for="coverNotes">Vos ajustements (paroles, prononciation, style)</label>
+        <input type="text" id="coverNotes" placeholder="Ex : remplacer « maman » par « ma mère », garder la même mélodie…">
+        <div class="actions" style="margin-top:10px;">
+          <button class="btn" id="coverSubmit" type="button">Lancer le cover</button>
+        </div>
+      </div>
+
+      <p class="muted-note">Plafond de 5 régénérations (chanson + cover) après l'achat.</p>
+      <p class="muted-note hidden" id="actMsg"></p>
     </div>
   </div>
 
@@ -82,6 +93,8 @@
 (function(){
   'use strict';
   var ACCEPT_TEXT_VERSION = 'cgv-livraison-v1-2026-06';
+  /* Webhook du scénario MAKE C-gen (à remplacer une fois le scénario Make monté). */
+  var MAKE_C_GEN_WEBHOOK = 'https://hook.us1.make.com/REMPLACER_PAR_WEBHOOK_MAKE_C_GEN';
   var UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   var token = new URLSearchParams(window.location.search).get('id') || '';
 
@@ -143,12 +156,40 @@
     })
     .catch(function(){});
 
-    /* Liens post-achat */
-    var enc = encodeURIComponent(token);
-    document.getElementById('actLyrics').href = '/revision?id=' + enc;
-    document.getElementById('actSong').href   = '/souvenirs?id=' + enc;
-    document.getElementById('actCover').href  = '/souvenirs?id=' + enc + '&mode=cover';
+    /* Modifier les paroles = page revision existante (régén paroles directe, non plafonnée). */
+    document.getElementById('actLyrics').href = '/revision?id=' + encodeURIComponent(token);
   }
+
+  /* Déclenche une (re)génération Suno via MAKE C-gen. Plafond 5 post-achat enforced SERVEUR. */
+  function triggerSuno(payload, btn){
+    btn.disabled = true;
+    fetch(MAKE_C_GEN_WEBHOOK, {
+      method:'POST', headers:{ 'Content-Type':'application/json' },
+      body:JSON.stringify(payload)
+    })
+    .then(function(){
+      showActMsg('Votre nouvelle version est en cours — vous la recevrez par courriel et elle apparaîtra ici dans quelques minutes.');
+    })
+    .catch(function(){
+      btn.disabled = false;
+      showActMsg('Une erreur est survenue. Veuillez réessayer.');
+    });
+  }
+  function showActMsg(t){ var m=document.getElementById('actMsg'); m.textContent=t; m.classList.remove('hidden'); }
+
+  /* Régénérer la chanson : nouvelle mélodie, mêmes paroles. */
+  document.getElementById('actSong').addEventListener('click', function(){
+    if(!window.confirm('Régénérer créera une nouvelle mélodie à partir des mêmes paroles. Continuer ?')) return;
+    triggerSuno({ token: token, mode: 'song_regeneration', post_purchase: true }, this);
+  });
+  /* Cover : garde la mélodie, ajuste les paroles (décortique Anthropic côté Make). */
+  document.getElementById('actCover').addEventListener('click', function(){
+    document.getElementById('coverForm').classList.toggle('hidden');
+  });
+  document.getElementById('coverSubmit').addEventListener('click', function(){
+    var notes = document.getElementById('coverNotes').value.trim();
+    triggerSuno({ token: token, mode: 'cover', post_purchase: true, demande_client: notes }, this);
+  });
 
   /* Téléchargement gaté + journalisé -> renvoie l'URL complète */
   document.getElementById('btnDownload').addEventListener('click', function(){
