@@ -153,8 +153,8 @@ If you cannot proceed and must communicate anything other than the song, write i
       };
     }
 
-    // Sécurité : si pas de vraies paroles, on traite comme entrée invalide.
-    if (!parsed.lyrics || String(parsed.lyrics).trim().length < 50) {
+    // Sécurité minimale : on exige juste que des paroles existent (plus de seuil de longueur).
+    if (!parsed.lyrics || String(parsed.lyrics).trim().length === 0) {
       return {
         statusCode: 422,
         body: JSON.stringify({ error: 'invalid_input' })
