@@ -89,6 +89,11 @@ limite d'hébergement de 1 an acceptable.
   protection = minimisation des champs + token inguessable + rétention Loi 25.)
 - **Validation token** : regex UUID v4 stricte en amont, `400` avant tout appel Airtable.
 - **Révélation complète** : gated sur `commercial_status` payé, vérif serveur.
+- **⚠️ EXCEPTION assumée à « Make écrit, Netlify lit »** (décision lockée §6) : les **écritures de
+  preuve de livraison** (`accepter-livraison.js`, `telecharger.js`) écrivent **directement** dans
+  Airtable. Justification : écritures **ponctuelles, sur des champs dédiés, sans concurrence** avec
+  la génération (aucune race Netlify↔Make). La règle « Make écrit » reste la norme pour tout le
+  reste (paroles, génération, statut). Approuvé explicitement. *(Refléter aussi dans `CLAUDE.md §6`.)*
 
 ---
 
