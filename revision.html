@@ -6,7 +6,7 @@
   <title>Vos paroles — Chanson Mémoire</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -41,41 +41,65 @@
     .titre-chanson { font-family:'Cormorant Garamond',serif; font-size:13px; color:var(--or); letter-spacing:0.12em; text-transform:uppercase; margin-bottom:8px; }
     .intro-titre { font-family:'Cormorant Garamond',serif; font-size:34px; font-weight:300; color:var(--encre); line-height:1.25; margin-bottom:6px; }
     .intro-titre em { font-style:italic; color:var(--mauve); }
-    .intro-sous { font-size:14px; color:var(--encre-doux); font-weight:300; margin-bottom:36px; line-height:1.7; }
+    .intro-sous { font-size:14px; color:var(--encre-doux); font-weight:300; margin-bottom:20px; line-height:1.7; }
+    /* Message d'importance */
+    .avis-important { background:rgba(196,168,130,0.12); border:1px solid rgba(196,168,130,0.4); border-radius:10px; padding:14px 18px; font-size:13.5px; color:var(--encre-doux); line-height:1.6; margin-bottom:32px; }
+    .avis-important strong { color:var(--encre); font-weight:600; }
     .carte-paroles { background:var(--blanc); border:1px solid var(--papier-alt); border-radius:12px; overflow:hidden; margin-bottom:36px; }
     .carte-paroles-header { background:var(--mauve-pale); padding:16px 24px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #D8CEE8; }
     .carte-paroles-label { font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--mauve); font-weight:500; }
     .nom-chanson { font-family:'Cormorant Garamond',serif; font-size:15px; font-style:italic; color:var(--encre-doux); }
     .paroles-texte { padding:28px 32px; font-family:'Cormorant Garamond',serif; font-size:17px; font-weight:300; line-height:1.9; color:var(--encre); white-space:pre-wrap; }
-    .section-modifs { background:var(--blanc); border:1px solid var(--papier-alt); border-radius:12px; overflow:hidden; margin-bottom:28px; }
+    .lecture-seule-note { padding:10px 24px; font-size:11px; color:var(--encre-doux); background:var(--papier); border-top:1px solid var(--papier-alt); font-style:italic; }
+    .section-modifs { background:var(--blanc); border:1px solid var(--papier-alt); border-radius:12px; overflow:hidden; margin-bottom:24px; }
     .modifs-header { padding:20px 24px 0; }
     .modifs-label { font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--or); font-weight:500; margin-bottom:8px; }
     .modifs-titre { font-family:'Cormorant Garamond',serif; font-size:22px; color:var(--encre); margin-bottom:6px; }
     .modifs-description { font-size:13.5px; color:var(--encre-doux); font-weight:300; line-height:1.65; margin-bottom:20px; }
     .modifs-exemples { background:var(--mauve-pale); border-top:1px solid #D8CEE8; border-bottom:1px solid #D8CEE8; padding:14px 24px; }
-    .exemples-titre { font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--mauve); font-weight:500; margin-bottom:8px; }
-    .exemples-liste { list-style:none; display:flex; flex-wrap:wrap; gap:6px; }
-    .exemple-chip { background:white; border:1px solid #D8CEE8; border-radius:20px; padding:4px 12px; font-size:12px; color:var(--encre-doux); cursor:pointer; transition:all 0.15s; user-select:none; }
+    .exemples-titre { font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--mauve); font-weight:500; margin-bottom:10px; }
+    .exemples-liste { list-style:none; display:flex; flex-wrap:wrap; gap:8px; }
+    /* GARDE-FOU CSS : bulle qui ne casse jamais la mise en page, même longue */
+    .exemple-chip {
+      background:white; border:1px solid #D8CEE8; border-radius:20px; padding:6px 14px;
+      font-size:12.5px; color:var(--encre-doux); cursor:pointer; transition:all 0.15s; user-select:none;
+      max-width:100%; white-space:normal; word-break:break-word; line-height:1.35; text-align:left;
+    }
     .exemple-chip:hover { background:var(--mauve); color:white; border-color:var(--mauve); }
+    .exemple-chip.vide { color:#B8A8C8; font-style:italic; cursor:default; }
+    .exemple-chip.vide:hover { background:white; color:#B8A8C8; border-color:#D8CEE8; }
     .modifs-champ { padding:20px 24px; }
-    textarea#modifications { width:100%; min-height:160px; padding:16px; border:1.5px solid var(--papier-alt); border-radius:8px; font-family:'Inter',sans-serif; font-size:14px; color:var(--encre); background:var(--papier); resize:vertical; outline:none; line-height:1.6; }
+    textarea#modifications { width:100%; min-height:120px; padding:16px; border:1.5px solid var(--papier-alt); border-radius:8px; font-family:'Inter',sans-serif; font-size:14px; color:var(--encre); background:var(--papier); resize:vertical; outline:none; line-height:1.6; }
     textarea#modifications::placeholder { color:#B8A8C8; font-style:italic; }
     textarea#modifications:focus { border-color:var(--mauve-doux); background:var(--blanc); }
     .champ-hint { font-size:12px; color:var(--encre-doux); margin-top:8px; font-weight:300; }
-    .option-sans-modif { display:flex; align-items:center; gap:10px; padding:14px 24px 20px; cursor:pointer; }
-    .checkbox-custom { width:18px; height:18px; border:1.5px solid var(--mauve-doux); border-radius:4px; background:white; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all 0.15s; }
-    input[type="checkbox"] { display:none; }
-    .sans-modif-label { font-size:13.5px; color:var(--encre-doux); font-weight:300; }
-    .btn-soumettre { width:100%; background:var(--mauve); color:white; border:none; padding:16px 24px; border-radius:10px; font-family:'Cormorant Garamond',serif; font-size:20px; cursor:pointer; transition:background 0.2s, transform 0.1s; display:flex; align-items:center; justify-content:center; gap:10px; }
-    .btn-soumettre:hover { background:#6A4E96; }
-    .btn-soumettre:active { transform:scale(0.99); }
-    .btn-soumettre:disabled { background:#C4B8D4; cursor:not-allowed; transform:none; }
-    .btn-sous-note { text-align:center; font-size:12px; color:var(--encre-doux); margin-top:10px; font-weight:300; }
+    .btn-regen { width:100%; background:white; color:var(--mauve); border:1.5px solid var(--mauve); padding:14px 24px; border-radius:10px; font-family:'Inter',sans-serif; font-size:15px; font-weight:600; cursor:pointer; transition:all 0.2s; display:flex; align-items:center; justify-content:center; gap:8px; margin-top:4px; }
+    .btn-regen:hover { background:var(--mauve-pale); }
+    .btn-regen:disabled { opacity:0.5; cursor:not-allowed; }
+    .btn-confirmer { width:100%; background:var(--mauve); color:white; border:none; padding:16px 24px; border-radius:10px; font-family:'Cormorant Garamond',serif; font-size:20px; cursor:pointer; transition:background 0.2s, transform 0.1s; display:flex; align-items:center; justify-content:center; gap:10px; }
+    .btn-confirmer:hover { background:#6A4E96; }
+    .btn-confirmer:active { transform:scale(0.99); }
+    .btn-sous-note { text-align:center; font-size:12px; color:var(--encre-doux); margin-top:10px; margin-bottom:8px; font-weight:300; }
+    /* POPUP */
+    .overlay { display:none; position:fixed; inset:0; background:rgba(44,32,53,0.55); z-index:50; align-items:center; justify-content:center; padding:20px; }
+    .overlay.show { display:flex; }
+    .popup { background:var(--blanc); border-radius:16px; max-width:420px; width:100%; padding:32px 28px; text-align:center; box-shadow:0 20px 60px rgba(44,32,53,0.3); }
+    .popup-titre { font-family:'Cormorant Garamond',serif; font-size:26px; font-weight:300; color:var(--encre); margin-bottom:12px; }
+    .popup-texte { font-size:14px; color:var(--encre-doux); line-height:1.7; margin-bottom:26px; }
+    .popup-texte strong { color:var(--encre); }
+    .popup-actions { display:flex; flex-direction:column; gap:10px; }
+    .popup-oui { background:var(--mauve); color:white; border:none; padding:15px; border-radius:10px; font-family:'Inter',sans-serif; font-size:15px; font-weight:600; cursor:pointer; }
+    .popup-oui:hover { background:#6A4E96; }
+    .popup-non { background:none; color:var(--encre-doux); border:1px solid var(--papier-alt); padding:13px; border-radius:10px; font-family:'Inter',sans-serif; font-size:14px; cursor:pointer; }
+    .popup-non:hover { border-color:var(--mauve-doux); color:var(--mauve); }
     #etat-soumission { display:none; text-align:center; padding:60px 0; }
     .soumission-icone { width:64px; height:64px; background:var(--mauve-pale); border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 24px; }
     .soumission-icone svg { width:28px; height:28px; stroke:var(--mauve); }
     .soumission-titre { font-family:'Cormorant Garamond',serif; font-size:28px; font-weight:300; color:var(--encre); margin-bottom:10px; }
     .soumission-sous { font-size:14px; color:var(--encre-doux); font-weight:300; line-height:1.7; max-width:400px; margin:0 auto; }
+    /* overlay régénération en cours, par-dessus les paroles */
+    .regen-overlay { display:none; text-align:center; padding:40px 0; }
+    .regen-overlay.show { display:block; }
     @media (max-width:600px) { main { padding:32px 16px 60px; } .intro-titre { font-size:26px; } .paroles-texte { padding:20px; font-size:15px; } }
   </style>
 </head>
@@ -114,48 +138,52 @@
     <div id="contenu">
       <div class="titre-chanson">Vos paroles personnalisées</div>
       <h1 class="intro-titre">Voici <em id="titre-chanson-affiche"></em></h1>
-      <p class="intro-sous">Lisez ces paroles attentivement. Si quelque chose ne vous convient pas — un détail à ajuster, une phrase à reformuler, un souvenir à ajouter ou à retirer — indiquez-le ci-dessous.</p>
+      <p class="intro-sous">Prenez le temps de relire ces paroles attentivement.</p>
 
+      <div class="avis-important">
+        <strong>Ces paroles façonneront votre chanson.</strong> Vous pouvez les ajuster autant de fois que nécessaire ici. Une fois la chanson créée, des ajustements restent possibles, mais plus limités — c'est donc le meilleur moment pour tout perfectionner.
+      </div>
+
+      <!-- PAROLES (lecture seule) -->
       <div class="carte-paroles">
         <div class="carte-paroles-header">
           <span class="carte-paroles-label">Paroles générées</span>
           <span class="nom-chanson" id="nom-chanson-header"></span>
         </div>
         <div class="paroles-texte" id="paroles-affichees"></div>
+        <div class="lecture-seule-note">Pour modifier, décrivez vos changements dans l'encadré ci-dessous — les paroles seront réécrites selon vos demandes.</div>
       </div>
 
+      <!-- MODIFICATIONS -->
       <div class="section-modifs">
         <div class="modifs-header">
           <div class="modifs-label">Vos retours</div>
-          <h2 class="modifs-titre">Souhaitez-vous apporter des changements ?</h2>
-          <p class="modifs-description">Si vous désirez ajuster certains éléments, décrivez vos modifications ci-dessous. De nouvelles paroles seront générées en tenant compte de vos demandes.</p>
+          <h2 class="modifs-titre">Souhaitez-vous ajuster quelque chose ?</h2>
+          <p class="modifs-description">Décrivez ce que vous aimeriez ajouter, retirer ou reformuler. Les nouvelles paroles garderont tout ce qui fonctionne et n'appliqueront que vos changements.</p>
         </div>
         <div class="modifs-exemples">
-          <div class="exemples-titre">Exemples de retours fréquents</div>
-          <ul class="exemples-liste">
-            <li class="exemple-chip" onclick="ajouterExemple(this)">Ajouter le surnom « [nom] »</li>
-            <li class="exemple-chip" onclick="ajouterExemple(this)">Rendre le ton plus doux</li>
-            <li class="exemple-chip" onclick="ajouterExemple(this)">Mentionner notre ville natale</li>
-            <li class="exemple-chip" onclick="ajouterExemple(this)">Le refrain est parfait, garder tel quel</li>
-            <li class="exemple-chip" onclick="ajouterExemple(this)">Ajouter un souvenir de Noël ensemble</li>
+          <div class="exemples-titre">Suggestions inspirées de vos paroles</div>
+          <ul class="exemples-liste" id="liste-suggestions">
+            <li class="exemple-chip vide">Les suggestions apparaîtront ici…</li>
           </ul>
         </div>
         <div class="modifs-champ">
-          <textarea id="modifications" placeholder="Ex. : J'aimerais qu'on mentionne son jardin et ses rosiers. Le deuxième couplet est parfait, ne le changez pas…"></textarea>
+          <textarea id="modifications" placeholder="Ex. : Mettre davantage l'accent sur ses dimanches dans la cuisine. Garder le refrain tel quel…"></textarea>
           <div class="champ-hint">Soyez aussi précis que possible — chaque détail aide à personnaliser davantage.</div>
         </div>
-        <label class="option-sans-modif" for="sans-modif">
-          <input type="checkbox" id="sans-modif" onchange="toggleSansModif()" />
-          <div class="checkbox-custom"><svg width="10" height="8" viewBox="0 0 10 8" fill="none" style="display:none" id="check-icone"><path d="M1 4l3 3 5-6" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-          <span class="sans-modif-label">Ces paroles me conviennent — procéder à la création de la chanson sans modification.</span>
-        </label>
+        <div class="modifs-champ" style="padding-top:0;">
+          <button class="btn-regen" id="btn-regen" onclick="regenerer()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+            Régénérer mes paroles
+          </button>
+        </div>
       </div>
 
-      <button class="btn-soumettre" id="btn-soumettre" onclick="soumettre()">
-        Confirmer et créer ma chanson
+      <button class="btn-confirmer" id="btn-confirmer" onclick="ouvrirPopup()">
+        Ces paroles sont parfaites
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
       </button>
-      <div class="btn-sous-note">Votre chanson sera créée dans les prochaines minutes.</div>
+      <div class="btn-sous-note">La création de la chanson démarrera à partir de ces paroles.</div>
     </div>
 
     <!-- SOUMISSION CONFIRMÉE -->
@@ -166,134 +194,163 @@
     </div>
   </main>
 
+  <!-- POPUP DE CONFIRMATION -->
+  <div class="overlay" id="overlay">
+    <div class="popup">
+      <div class="popup-titre">Confirmer ces paroles ?</div>
+      <div class="popup-texte">Votre chanson sera créée à partir de <strong>ces paroles exactes</strong>. Après cette étape, les ajustements deviennent plus limités. Êtes-vous prêt·e à continuer ?</div>
+      <div class="popup-actions">
+        <button class="popup-oui" onclick="confirmerProd()">Oui, créer ma chanson</button>
+        <button class="popup-non" onclick="fermerPopup()">Pas encore, je veux relire</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     'use strict';
 
-    /* ── CONFIG ─────────────────────────────────────── */
-    const URL_ATTENTE = '/attente-chanson';   // page suivante après confirmation
-    /* Webhook Make B : reçoit la confirmation / les modifications de paroles. */
-    const WEBHOOK_MAKE_B = 'https://hook.us1.make.com/jyxke1vgiin3l9b6vzy9b1s1nu5o7szh';
+    /* ── CONFIG ── */
+    const URL_ATTENTE     = '/attente-chanson';
+    const WEBHOOK_MAKE_B  = 'https://hook.us1.make.com/jyxke1vgiin3l9b6vzy9b1s1nu5o7szh';
 
-    /* ── 1. LE TOKEN VIENT DE L'URL ── */
     const token = new URLSearchParams(location.search).get('id');
 
-    /* ── Polling : config ── */
-    const POLL_INTERVAL = 5000;   // 5 sec
-    const MAX_ESSAIS    = 24;     // 24 × 5 sec = 2 min puis on arrête
+    /* ── Polling (chargement initial) ── */
+    const POLL_INTERVAL = 5000;
+    const MAX_ESSAIS    = 24;
     const STATUTS_PRETS = ['lyrics_generated', 'audio_generated', 'validated'];
+    let essais = 0, pollTimer = null, fini = false;
 
-    let essais    = 0;
-    let pollTimer = null;
-    let fini      = false;        // verrou : une fois true, plus aucun ping
-    let derniereData = null;
-
-    function el(id) { return document.getElementById(id); }
-    function setTexte(id, t) { var n = el(id); if (n) n.textContent = t; }
-    function montrer(id) {
+    function el(id){ return document.getElementById(id); }
+    function setTexte(id,t){ var n=el(id); if(n) n.textContent=t; }
+    function montrer(id){
       ['etat-chargement','etat-erreur','contenu','etat-soumission'].forEach(function(i){
-        var n = el(i); if (n) n.style.display = (i === id ? 'block' : 'none');
+        var n=el(i); if(n) n.style.display=(i===id?'block':'none');
       });
     }
 
-    function afficherParoles(d) {
-      derniereData = d;
+    /* ── Affichage paroles + suggestions ── */
+    function rendreSuggestions(sugg){
+      var ul = el('liste-suggestions');
+      if(!ul) return;
+      ul.innerHTML = '';
+      var arr = [];
+      try { arr = (typeof sugg === 'string') ? JSON.parse(sugg||'[]') : (sugg||[]); } catch(e){ arr = []; }
+      if(!arr.length){
+        var vide=document.createElement('li');
+        vide.className='exemple-chip vide';
+        vide.textContent='Décrivez librement vos changements ci-dessous.';
+        ul.appendChild(vide);
+        return;
+      }
+      arr.forEach(function(s){
+        var li=document.createElement('li');
+        li.className='exemple-chip';
+        li.textContent=s;
+        li.onclick=function(){ ajouterSuggestion(s); };
+        ul.appendChild(li);
+      });
+    }
+
+    function ajouterSuggestion(texte){
+      var ta=el('modifications'); if(!ta) return;
+      ta.value = ta.value ? ta.value+'\n'+texte : texte;
+      ta.focus();
+    }
+
+    function afficher(d){
       setTexte('titre-chanson-affiche', d.titre || 'votre chanson');
       setTexte('nom-chanson-header',   d.titre || '');
       setTexte('paroles-affichees',    d.paroles || '');
+      rendreSuggestions(d.suggestions);
       montrer('contenu');
     }
 
-    function afficherAttenteLongue() {
+    function afficherAttenteLongue(){
       setTexte('erreur-detail', "La création prend un peu plus de temps que prévu. Nous vous enverrons un courriel dès que vos paroles seront prêtes — vous pourrez revenir avec le lien reçu.");
       montrer('etat-erreur');
     }
+    function arreterPolling(){ fini=true; if(pollTimer) clearInterval(pollTimer); pollTimer=null; }
 
-    function arreterPolling() {
-      fini = true;
-      if (pollTimer) clearInterval(pollTimer);
-      pollTimer = null;
-    }
-
-    /* ── 2. POLLING : lit /api/lire-projet jusqu'à ce que les paroles soient prêtes ── */
-    async function checkStatut() {
-      if (fini) return;
-      if (document.hidden) return;   // onglet caché : on saute ce tour
+    async function checkStatut(){
+      if(fini) return;
+      if(document.hidden) return;
       essais++;
-
       try {
-        var res = await fetch('/api/lire-projet', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token: token })
-        });
-        var d = await res.json();
-
-        if (res.ok && STATUTS_PRETS.indexOf(d.statut) !== -1 && d.paroles) {
-          arreterPolling();          // STOP définitif : les paroles sont là
-          afficherParoles(d);
+        var res=await fetch('/api/lire-projet',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:token})});
+        var d=await res.json();
+        if(res.ok && STATUTS_PRETS.indexOf(d.statut)!==-1 && d.paroles){
+          arreterPolling();
+          afficher(d);
           return;
         }
-      } catch (e) { /* erreur réseau ponctuelle : le prochain tour réessaiera */ }
+      } catch(e){}
+      if(essais>=MAX_ESSAIS){ arreterPolling(); afficherAttenteLongue(); }
+    }
 
-      if (essais >= MAX_ESSAIS) {
-        arreterPolling();
-        afficherAttenteLongue();
+    /* ── RÉGÉNÉRATION : boucle sur place ── */
+    async function regenerer(){
+      var modifs=(el('modifications').value||'').trim();
+      if(!modifs){
+        el('modifications').focus();
+        el('modifications').style.borderColor='#c0392b';
+        setTimeout(function(){ el('modifications').style.borderColor=''; }, 1500);
+        return;
       }
-    }
-
-    /* ── CHIPS / TOGGLE (inchangés) ── */
-    function ajouterExemple(chip) {
-      var ta = el('modifications'); if (!ta) return;
-      var t = chip.textContent.trim();
-      ta.value = ta.value ? ta.value + '\n' + t : t;
-      ta.focus();
-    }
-    function toggleSansModif() {
-      var cb = el('sans-modif'); if (!cb) return;
-      var ta = el('modifications'), icone = el('check-icone'), cbCustom = document.querySelector('.checkbox-custom');
-      if (ta) { ta.disabled = cb.checked; ta.style.opacity = cb.checked ? '0.4' : '1'; }
-      if (icone) icone.style.display = cb.checked ? 'block' : 'none';
-      if (cbCustom) { cbCustom.style.background = cb.checked ? 'var(--mauve)' : 'white'; cbCustom.style.borderColor = cb.checked ? 'var(--mauve)' : 'var(--mauve-doux)'; }
-    }
-
-    /* ── 3. SOUMETTRE : envoie le TOKEN à Make B (plus de record_id, plus de sessionStorage) ── */
-    async function soumettre() {
-      var btn = el('btn-soumettre');
-      if (btn) { btn.disabled = true; btn.textContent = 'Envoi en cours…'; }
-
-      var champModif = el('modifications');
-      var checkbox   = el('sans-modif');
-      var sansModif  = checkbox ? checkbox.checked : false;
-      var modifs     = (champModif && !sansModif) ? champModif.value.trim() : '';
-
-      var payload = {
-        token:             token,
-        modifications:     modifs,
-        sans_modification: sansModif
-      };
+      var btn=el('btn-regen');
+      btn.disabled=true;
+      btn.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" stroke-opacity="0.25"/><path d="M22 12a10 10 0 0 1-10 10"><animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="0.8s" repeatCount="indefinite"/></path></svg> Réécriture en cours…';
 
       try {
-        await fetch(WEBHOOK_MAKE_B, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
+        var res=await fetch('/api/generate-lyrics',{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({ mode:'regenerate', token:token, modifications:modifs })
         });
-      } catch (err) { console.error('Webhook B error:', err); }
-
-      montrer('etat-soumission');
-      setTimeout(function() {
-        window.location.href = URL_ATTENTE + '?id=' + encodeURIComponent(token);
-      }, 2500);
+        var d=await res.json();
+        if(res.ok && d.paroles){
+          afficher(d);                       // réaffiche les NOUVELLES paroles + nouvelles suggestions
+          el('modifications').value='';      // on vide le champ pour le prochain tour
+          window.scrollTo({top:0,behavior:'smooth'});
+        } else {
+          alert("La réécriture n'a pas pu aboutir. Veuillez reformuler vos changements.");
+        }
+      } catch(e){
+        alert("Une erreur est survenue. Veuillez réessayer.");
+      }
+      btn.disabled=false;
+      btn.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg> Régénérer mes paroles';
     }
 
+    /* ── POPUP CONFIRMATION ── */
+    function ouvrirPopup(){ el('overlay').classList.add('show'); }
+    function fermerPopup(){ el('overlay').classList.remove('show'); }
+
+    /* ── CONFIRMER → PROD (Make B → Suno) ── */
+    async function confirmerProd(){
+      fermerPopup();
+      try {
+        await fetch(WEBHOOK_MAKE_B,{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({ token:token, sans_modification:true })
+        });
+      } catch(e){ console.error('Webhook B error:', e); }
+      montrer('etat-soumission');
+      setTimeout(function(){ window.location.href=URL_ATTENTE+'?id='+encodeURIComponent(token); }, 2500);
+    }
+
+    /* expose pour les onclick inline */
+    window.regenerer=regenerer; window.ouvrirPopup=ouvrirPopup; window.fermerPopup=fermerPopup; window.confirmerProd=confirmerProd;
+
     /* ── INIT ── */
-    if (!token) {
+    if(!token){
       setTexte('erreur-detail', "Lien invalide ou expiré. Veuillez recommencer depuis le début.");
       montrer('etat-erreur');
     } else {
       montrer('etat-chargement');
-      checkStatut();                                  // 1er check immédiat
-      pollTimer = setInterval(checkStatut, POLL_INTERVAL);
+      checkStatut();
+      pollTimer=setInterval(checkStatut, POLL_INTERVAL);
     }
   </script>
 </body>
