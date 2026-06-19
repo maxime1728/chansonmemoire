@@ -7,34 +7,28 @@ Rien ici ne touche la prod. Ordre : Airtable d'abord (le pied de la chaîne), pu
 
 ## 1. Airtable (base de test dupliquée)
 
-### Table **Projects** — ajouter
-| Champ | Type |
-|---|---|
-| `song_regenerations_count` | Rollup sur `generations` — `COUNT(values)`, filtre `type = 'song_regeneration'` ET `post_purchase = 0` |
-| `post_purchase_regenerations_count` | Rollup sur `generations` — filtre `(type='song_regeneration' OU type='cover')` ET `post_purchase = 1` |
-| `recevoir_clicked_at` | Date (avec heure) |
-| `delivery_signature_name` | Single line text |
-| `delivery_signature_at` | Date (avec heure) |
-| `delivery_accessed_at` | Date (avec heure) |
-| `delivery_acceptance_text_version` | Single line text |
-| `acceptance_ip` | Single line text |
-| `acceptance_user_agent` | Single line text |
-| `downloaded_at` | Date (avec heure) |
-| `download_count` | Number (integer) |
+### ✅ Déjà appliqué via MCP (base appIADNKzDOVtpjWj, 2026-06-19)
+**Projects** : `recevoir_clicked_at`, `delivery_signature_name`, `delivery_signature_at`,
+`delivery_accessed_at`, `delivery_acceptance_text_version`, `acceptance_ip`, `acceptance_user_agent`,
+`downloaded_at` (dateTime/text/number).
+**Generations** : `suno_task_id`, `post_purchase`.
+Déjà présents avant : `token`, `cgv_acceptees_at`, `stripe_*`, `fbc/fbp`, `song_id`,
+`cloudinary_audio_url`, `delivery_url`. `task_id` absent, pas de doublon `payment_intent`. Rien à nettoyer.
 
-À **retirer** : `task_id` (Projects) et le doublon `payment_intent`.
+### ⚙️ Reste manuel dans l'UI Airtable (le MCP ne crée pas de rollup ni n'édite les options de select)
+1. **Projects → `song_regenerations_count`** : Rollup sur `generations`, `COUNT(values)`,
+   filtre **`suno_task_id` non vide ET `post_purchase` décoché**. (Pas besoin de toucher `type`.)
+2. **Projects → `post_purchase_regenerations_count`** : Rollup sur `generations`, `COUNT(values)`,
+   filtre **`suno_task_id` non vide ET `post_purchase` coché**.
+3. **Generations → `generation_status`** : ajouter l'option **`audio_pending`** (garder
+   `lyrics_generated` / `audio_generated` / `validated` — orthographe EXACTE, le polling l'attend).
+4. *(Optionnel)* `type` : ajouter `song` / `song_regeneration` pour la lisibilité (NON requis : les
+   compteurs se basent sur `suno_task_id`, pas sur `type`). Existant : `preview` / `regeneration` / `cover`.
+5. *(Optionnel, cleanup)* retirer `preview_slug` / `full_slug` (redondants avec le token) ; l'ancien
+   rollup `regenerations_count` peut rester (inoffensif) ou être retiré.
 
-### Table **Generations** — ajouter / modifier
-| Champ | Type |
-|---|---|
-| `suno_task_id` | Single line text |
-| `song_id` | Single line text |
-| `post_purchase` | Checkbox |
-| `type` | Single select — valeurs : `lyrics`, `lyrics_regeneration`, `song`, `song_regeneration`, `cover` |
-| `generation_status` | Single select — ajouter la valeur `audio_pending` (garder `lyrics_generated`, `audio_generated`, `validated`) |
-| `cloudinary_audio_url` | URL — **confirmer le nom exact au caractère près** (lu par `lire-projet.js` / `telecharger.js`) |
-
-> ⚠️ Orthographe **exacte** des valeurs `generation_status` : le polling Netlify attend `audio_generated`.
+**Plafonds côté Make** : pré-achat `song_regenerations_count < 6` (1re + 5 régén) ;
+post-achat `post_purchase_regenerations_count < 5`.
 
 ### PAT Airtable
 Scopes `data.records:read` + `data.records:write`, accès à la **base de test uniquement**.

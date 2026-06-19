@@ -60,8 +60,8 @@
 | `generations` | Link → Generations | ✅ | Auto via lien |  |  |
 | `generations_count` | Rollup (count) sur generations | ✅ | Auto |  | Compte TOUT (preview \+ regen) — indicateur, pas un blocage |
 | `previews_count` | Rollup (count) filtré type=preview | ✅ | Auto |  |  |
-| **`song_regenerations_count`** | Rollup (count) filtré type=song_regeneration ET post_purchase=false | ➕ | Auto | Make (filtre limite 5\) | Plafond **5 pré-achat**. Les **paroles** ne sont PAS plafonnées. |
-| **`post_purchase_regenerations_count`** | Rollup (count) filtré (type=song_regeneration OU cover) ET post_purchase=true | ➕ | Auto | Make (filtre limite 5\) | Plafond **5 post-achat** (régén chanson + cover ensemble). |
+| **`song_regenerations_count`** | Rollup (count) sur generations, filtre `suno_task_id` non vide **ET** `post_purchase`=décoché | ➕ (rollup = manuel UI) | Auto | Make (filtre limite) | Compte les chansons générées pré-achat (chaque appel Suno a un `suno_task_id`). Plafond : 1re + 5 régén → `< 6`. Paroles NON plafonnées. |
+| **`post_purchase_regenerations_count`** | Rollup (count) sur generations, filtre `suno_task_id` non vide **ET** `post_purchase`=coché | ➕ (rollup = manuel UI) | Auto | Make (filtre limite 5\) | Régén chanson + cover post-achat (les deux ont un `suno_task_id`). Plafond `< 5`. |
 | `upsells` | Link → Upsells | ✅ | Auto via lien |  |  |
 | `utm_source` | Single line text | ✅ | Make ← survey |  | Attribution |
 | `utm_medium` | Single line text | ✅ | Make ← survey |  |  |

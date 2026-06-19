@@ -16,8 +16,8 @@
     },
     {
       "n": 2,
-      "module": "Router/Filter — plafond",
-      "config": "Si post_purchase=false: condition song_regenerations_count < 5. Si post_purchase=true: post_purchase_regenerations_count < 5.",
+      "module": "Router/Filter — plafond (base sur suno_task_id non vide + post_purchase)",
+      "config": "Si post_purchase=false: song_regenerations_count < 6 (1re chanson + 5 regen). Si post_purchase=true: post_purchase_regenerations_count < 5.",
       "else": "Stop + reponse 'plafond atteint' (pas d'appel Suno, pas de cout)"
     },
     {
@@ -47,7 +47,7 @@
     {
       "n": 7,
       "module": "Airtable > Create Generation",
-      "config": "type = {{mode}}, generation_no +1, suno_task_id = {{data.taskId}}, generation_status = 'audio_pending', post_purchase = {{post_purchase}}"
+      "config": "type = (mode=='cover' ? 'cover' : 'regeneration') [options existantes ; le compteur se base sur suno_task_id, pas sur type], generation_no +1, suno_task_id = {{data.taskId}}, generation_status = 'audio_pending', post_purchase = {{post_purchase}}"
     }
   ],
   "garde_fous": [
