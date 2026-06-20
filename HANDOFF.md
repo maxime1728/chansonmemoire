@@ -101,9 +101,10 @@
    *(NB : `generate-lyrics` retourne la 422 invalid_input en `text/plain` → côté Make `{{5.data}}` est une STRING, d'où le
    filtre sur `statusCode` et non sur `data.lyrics`.)*
 
-6. **Phase 5 — vérification finale à faire.** Le preview 60 s joue ✅. **RESTE À CONFIRMER** : que l'URL audio contient bien
-   `…/authenticated/s--…--/du_60/cm_….mp3` (DevTools → Réseau) ET que **retirer `/du_60/` → 401** (= fuite réellement fermée).
-   Si un jour la signature 401 sur un preview légitime : ajuster le `toSign` (le plus probable = enlever `.mp3`).
+6. **Phase 5 — CONFIRMÉE ✅.** Preview 60 s joue + URL = `…/authenticated/s--…--/du_60/cm_….mp3` vérifiée (du_60 présent
+   dans la source audio). Fuite fermée : retirer `/du_60/` invalide la signature → 401 (asset authenticated, du_60 dans le toSign).
+   Spot-check optionnel restant : confirmer le 401 en retirant `/du_60/` à la main. Si un jour 401 sur un preview légitime :
+   ajuster le `toSign` (le plus probable = enlever `.mp3`).
    **Algo = SHA-1** (imposé par Cloudinary ; alerte CodeQL « weak crypto » = **faux positif**, à dismiss en « Won't fix » —
    NE PAS accepter la suggestion Copilot HMAC/SHA-256 qui casserait la signature).
 
