@@ -28,7 +28,7 @@ function toHttps(u) {
   return (typeof u === 'string') ? u.replace(/^http:\/\//i, 'https://') : u;
 }
 
-const crypto = require('node:crypto');
+const crypto = require('crypto');
 
 // Parse une URL Cloudinary -> {cloud, publicId, ext}. Gère /upload/ (public, transition)
 // ET /authenticated/ (cible Phase 5).
