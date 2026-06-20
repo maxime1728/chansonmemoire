@@ -316,6 +316,23 @@ body {
   #cm-player-root .cm-equalizer span { animation: none; height: 14px; }
 }
 
+/* ── Sélecteur de versions (affiché s'il y a plus d'une version) ── */
+#cm-player-root .cm-version-picker { max-width: 300px; margin: 0 auto 18px; padding: 0 20px; }
+#cm-player-root .cm-version-picker-label {
+  display: block; text-align: center; font-family: 'Mulish', sans-serif;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--cm-gold); margin-bottom: 8px;
+}
+#cm-player-root .cm-version-select {
+  width: 100%; padding: 11px 36px 11px 14px; border-radius: 12px;
+  border: var(--cm-border-w) solid var(--cm-mauve);
+  background: var(--cm-white) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238B4A6E' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>") no-repeat right 14px center;
+  color: var(--cm-text); font-family: 'Mulish', sans-serif; font-size: 14px; font-weight: 600;
+  cursor: pointer; appearance: none; -webkit-appearance: none; -moz-appearance: none;
+  text-align: center; text-align-last: center;
+}
+#cm-player-root .cm-version-select:focus { outline: none; border-color: var(--cm-plum-mid); }
+
 /* ════════════════════════════════════════════
    PRICING BOX — REPRIS & INTÉGRÉ
 ════════════════════════════════════════════ */
@@ -804,6 +821,11 @@ body {
 
 <!-- ══ PLAYER ══════════════════════════════════════════ -->
 <div id="cm-player-root">
+  <!-- Sélecteur de versions — masqué tant qu'il n'y a qu'une version (rempli par lire-versions). -->
+  <div class="cm-version-picker" id="cm-version-picker" style="display:none;">
+    <label class="cm-version-picker-label" for="cm-version-select">Votre version</label>
+    <select class="cm-version-select" id="cm-version-select" aria-label="Choisir la version à écouter"></select>
+  </div>
   <div class="cm-players-container">
     <div class="cm-player-wrap" data-param="preview1">
       <div class="cm-player-box">
@@ -1112,30 +1134,65 @@ body {
   });
 })();
 
-/* ── CHARGE L'AUDIO PAR TOKEN (lire-projet) ─────────────
-   La redirection arrive avec ?id=TOKEN (sans preview1). On recupere l'audio via
-   lire-projet et on l'injecte dans le lecteur. Preview 60s = transformation
-   Cloudinary (du_60) tant que la chanson n'est pas achetee. */
+/* ── CHARGE LES VERSIONS PAR TOKEN (lire-versions) ──────
+   La redirection arrive avec ?id=TOKEN. On recupere TOUTES les versions jouables du projet
+   (preview 60s signe cote serveur), on remplit le menu deroulant et on joue la version choisie.
+   La plus recente est selectionnee par defaut. Menu masque s'il n'y a qu'une version.
+   Compat legacy : si pas de token (?preview1=...), ce bloc ne fait rien et le lecteur charge preview1. */
 (function() {
   var token = (window._CM && window._CM.id) || '';
   if (!token) return;
 
-  fetch('/api/lire-projet', {
+  var wrap   = document.querySelector('.cm-player-wrap');
+  if (!wrap) return;
+  var audio  = wrap.querySelector('.cm-audio');
+  var source = audio ? audio.querySelector('source') : null;
+  var btn    = wrap.querySelector('.cm-play-btn');
+  var picker = document.getElementById('cm-version-picker');
+  var select = document.getElementById('cm-version-select');
+
+  function loadInto(url) {
+    if (!source || !url) return;
+    try { if (audio) audio.pause(); } catch (e) {}
+    source.src = url; audio.load();
+    wrap.style.opacity = '1';
+    if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.innerHTML = '<i class="fa-solid fa-play"></i>'; }
+  }
+
+  function labelOf(ver) {
+    var bits = [];
+    if (ver.style)    bits.push(ver.style);
+    if (ver.ambiance) bits.push(ver.ambiance);
+    if (!bits.length && ver.titre) bits.push(ver.titre);   /* repli sur le titre tant que le style par version n'existe pas (Phase 2) */
+    return 'V' + ver.v + (bits.length ? ' · ' + bits.join(' · ') : '');
+  }
+
+  fetch('/api/lire-versions', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ token: token })
   })
   .then(function(r) { return r.ok ? r.json() : null; })
   .then(function(d) {
-    if (!d || !d.audio_url) return;
-    var url = d.audio_url;   /* déjà signé + tronqué (preview 60s) ou complet (payé), décidé côté serveur */
-    var wrap = document.querySelector('.cm-player-wrap');
-    if (!wrap) return;
-    var audio  = wrap.querySelector('.cm-audio');
-    var source = audio ? audio.querySelector('source') : null;
-    var btn    = wrap.querySelector('.cm-play-btn');
-    if (source) { source.src = url; audio.load(); }
-    wrap.style.opacity = '1';
-    if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.innerHTML = '<i class="fa-solid fa-play"></i>'; }
+    if (!d || !Array.isArray(d.versions) || d.versions.length === 0) return;
+    var versions = d.versions;
+    var def = versions.length - 1;   /* la plus recente par defaut */
+
+    if (select && versions.length > 1) {
+      versions.forEach(function(ver, i) {
+        var opt = document.createElement('option');
+        opt.value = String(i);
+        opt.textContent = labelOf(ver);
+        select.appendChild(opt);
+      });
+      select.value = String(def);
+      select.addEventListener('change', function() {
+        var ver = versions[parseInt(select.value, 10)] || versions[def];
+        loadInto(ver.audio_url);
+      });
+      if (picker) picker.style.display = 'block';
+    }
+
+    loadInto(versions[def].audio_url);
   })
   .catch(function() {});
 })();
