@@ -30,26 +30,30 @@ function toHttps(u) {
 
 const crypto = require('crypto');
 
-// Parse une URL Cloudinary -> {cloud, publicId, ext}. Gère /upload/ (public, transition)
-// ET /authenticated/ (cible Phase 5).
+// Extrait {cloud, type, publicId, ext} d'une URL Cloudinary. Gère /upload/ (public, anciens assets)
+// ET /authenticated/ déjà signée (s--sig--/ + version éventuelle à ignorer).
 function parseCloudinary(url) {
-  const m = /res\.cloudinary\.com\/([^/]+)\/video\/(?:upload|authenticated)\/(?:v\d+\/)?(.+?)(\.\w+)?$/.exec(url || '');
-  return m ? { cloud: m[1], publicId: m[2], ext: m[3] || '' } : null;
+  const m = /res\.cloudinary\.com\/([^/]+)\/video\/(upload|authenticated)\/(?:s--[^/]+--\/)?(?:v\d+\/)?(.+?)(\.\w+)?$/.exec(url || '');
+  return m ? { cloud: m[1], type: m[2], publicId: m[3], ext: m[4] || '' } : null;
 }
 
-// URL Cloudinary SIGNÉE (delivery type authenticated). transformation = 'du_60' (preview 60s)
-// ou '' (chanson complète). La transformation est INCLUSE dans la signature -> impossible de
-// retirer le du_60 pour obtenir la version complète (la signature ne matcherait plus = 401).
-// Signature = sha1(<chemin après s--..--/> + API_SECRET) -> base64url, 8 car. Déterministe,
-// sans expiration -> URL stable/permanente. Renvoie '' si pas de secret/parse (pas de fuite).
-function signedAuthUrl(parsed, transformation) {
-  const secret = process.env.CLOUDINARY_API_SECRET;
-  if (!parsed || !secret) return '';
+// Construit l'URL audio servie, selon le TYPE de l'asset stocké :
+//  - 'authenticated' (nouveaux assets, Phase 5) -> URL SIGNÉE côté serveur. La transformation
+//    (du_60 = preview 60s) est INCLUSE dans la signature -> impossible de la retirer (401).
+//  - 'upload' (anciens assets publics, transition) -> URL publique avec la transformation (joue ;
+//    contournable, mais ce sont des données de test pré-Phase-5).
+// transformation = 'du_60' (preview) ou '' (chanson complète). Signature sha1 déterministe, sans expiration.
+function buildAudioUrl(stored, transformation) {
+  const p = parseCloudinary(stored);
+  if (!p) return '';
   const tf = transformation ? transformation + '/' : '';
-  const toSign = tf + parsed.publicId + parsed.ext;
-  const sig = crypto.createHash('sha1').update(toSign + secret).digest('base64')
-    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '').slice(0, 8);
-  return `https://res.cloudinary.com/${parsed.cloud}/video/authenticated/s--${sig}--/${tf}${parsed.publicId}${parsed.ext}`;
+  if (p.type === 'authenticated' && process.env.CLOUDINARY_API_SECRET) {
+    const toSign = tf + p.publicId + p.ext;
+    const sig = crypto.createHash('sha1').update(toSign + process.env.CLOUDINARY_API_SECRET).digest('base64')
+      .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '').slice(0, 8);
+    return `https://res.cloudinary.com/${p.cloud}/video/authenticated/s--${sig}--/${tf}${p.publicId}${p.ext}`;
+  }
+  return `https://res.cloudinary.com/${p.cloud}/video/upload/${tf}${p.publicId}${p.ext}`;
 }
 
 exports.handler = async (event) => {
@@ -111,8 +115,7 @@ exports.handler = async (event) => {
     // Audio = URL Cloudinary SIGNÉE générée côté serveur. Si payé -> complète ; sinon -> preview 60s
     // (du_60 inclus DANS la signature -> non contournable). L'URL complète n'est jamais exposée avant achat.
     const isPaid   = (projet.fields.commercial_status || 'preview_only') === 'purchased';
-    const parsed   = parseCloudinary(gen.cloudinary_audio_url || '');
-    const audioUrl = signedAuthUrl(parsed, isPaid ? '' : 'du_60');
+    const audioUrl = buildAudioUrl(gen.cloudinary_audio_url || '', isPaid ? '' : 'du_60');
 
     // 3. Réponse FILTRÉE — uniquement l'utile pour l'affichage
     return {
