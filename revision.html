@@ -71,6 +71,16 @@
     }
     .exemple-chip.vide { color:#B8A8C8; font-style:italic; }
     .exemple-chip.vide::before { color:#B8A8C8; }
+    /* Ajustements rapides : 2 boutons fixes cliquables (injectent une consigne dans le champ) */
+    .modifs-rapides { padding:16px 24px 0; }
+    .rapides-boutons { display:flex; flex-wrap:wrap; gap:10px; margin-top:8px; }
+    .chip-rapide {
+      background:var(--mauve-pale); color:var(--mauve); border:1px solid #D8CEE8;
+      border-radius:999px; padding:9px 16px; font-family:'Inter',sans-serif; font-size:13px;
+      font-weight:500; cursor:pointer; transition:background 0.18s, color 0.18s, transform 0.1s;
+    }
+    .chip-rapide:hover { background:var(--mauve); color:#fff; border-color:var(--mauve); }
+    .chip-rapide:active { transform:scale(0.97); }
     .modifs-champ { padding:20px 24px; }
     textarea#modifications { width:100%; min-height:120px; padding:16px; border:1.5px solid var(--papier-alt); border-radius:8px; font-family:'Inter',sans-serif; font-size:14px; color:var(--encre); background:var(--papier); resize:vertical; outline:none; line-height:1.6; }
     textarea#modifications::placeholder { color:#B8A8C8; font-style:italic; }
@@ -170,6 +180,13 @@
             <li class="exemple-chip vide">Les suggestions apparaîtront ici…</li>
           </ul>
         </div>
+        <div class="modifs-rapides">
+          <div class="exemples-titre">Ajustements rapides</div>
+          <div class="rapides-boutons">
+            <button type="button" class="chip-rapide" onclick="ajustementRapide('allonger')">＋ Allonger les paroles</button>
+            <button type="button" class="chip-rapide" onclick="ajustementRapide('raccourcir')">－ Raccourcir les paroles</button>
+          </div>
+        </div>
         <div class="modifs-champ">
           <textarea id="modifications" placeholder="Ex. : Mettre davantage l'accent sur ses dimanches dans la cuisine. Garder le refrain tel quel…"></textarea>
           <div class="champ-hint">Soyez aussi précis que possible — chaque détail aide à personnaliser davantage.</div>
@@ -260,6 +277,18 @@
       var ta=el('modifications'); if(!ta) return;
       ta.value = ta.value ? ta.value+'\n'+texte : texte;
       ta.focus();
+    }
+
+    /* ── Ajustements rapides : 2 consignes fixes injectées dans le champ ── */
+    var PHRASES_RAPIDES = {
+      allonger:   'Allonger un peu les paroles (ajouter un couplet), en gardant le même ton et la même structure.',
+      raccourcir: 'Raccourcir un peu les paroles, en gardant les passages les plus forts.'
+    };
+    function ajustementRapide(cle){
+      var texte = PHRASES_RAPIDES[cle]; if(!texte) return;
+      var ta = el('modifications');
+      if(ta && ta.value.indexOf(texte) !== -1){ ta.focus(); return; }   // déjà présent -> pas de doublon
+      ajouterSuggestion(texte);
     }
 
     function afficher(d){
@@ -354,6 +383,7 @@
 
     /* expose pour les onclick inline */
     window.regenerer=regenerer; window.ouvrirPopup=ouvrirPopup; window.fermerPopup=fermerPopup; window.confirmerProd=confirmerProd;
+    window.ajustementRapide=ajustementRapide;
 
     /* ── INIT ── */
     if(!token){
