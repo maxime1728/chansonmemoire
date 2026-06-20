@@ -24,24 +24,27 @@ function toHttps(u) {
   return (typeof u === 'string') ? u.replace(/^http:\/\//i, 'https://') : u;
 }
 
-const crypto = require('node:crypto');
+const crypto = require('crypto');
 
-// Parse une URL Cloudinary -> {cloud, publicId, ext} (gère /upload/ et /authenticated/).
+// Extrait {cloud, type, publicId, ext} d'une URL Cloudinary (gère /upload/ public ET /authenticated/ signée).
 function parseCloudinary(url) {
-  const m = /res\.cloudinary\.com\/([^/]+)\/video\/(?:upload|authenticated)\/(?:v\d+\/)?(.+?)(\.\w+)?$/.exec(url || '');
-  return m ? { cloud: m[1], publicId: m[2], ext: m[3] || '' } : null;
+  const m = /res\.cloudinary\.com\/([^/]+)\/video\/(upload|authenticated)\/(?:s--[^/]+--\/)?(?:v\d+\/)?(.+?)(\.\w+)?$/.exec(url || '');
+  return m ? { cloud: m[1], type: m[2], publicId: m[3], ext: m[4] || '' } : null;
 }
 
-// URL Cloudinary SIGNÉE (authenticated). Ici transformation = '' (chanson COMPLÈTE), servie
-// uniquement après le garde-fou `purchased` ci-dessous. Déterministe, sans expiration.
-function signedAuthUrl(parsed, transformation) {
-  const secret = process.env.CLOUDINARY_API_SECRET;
-  if (!parsed || !secret) return '';
+// Construit l'URL audio COMPLÈTE (transformation '') — servie uniquement après le garde-fou
+// `purchased`. Asset 'authenticated' -> URL SIGNÉE ; ancien 'upload' -> URL publique. Déterministe.
+function buildAudioUrl(stored, transformation) {
+  const p = parseCloudinary(stored);
+  if (!p) return '';
   const tf = transformation ? transformation + '/' : '';
-  const toSign = tf + parsed.publicId + parsed.ext;
-  const sig = crypto.createHash('sha1').update(toSign + secret).digest('base64')
-    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '').slice(0, 8);
-  return `https://res.cloudinary.com/${parsed.cloud}/video/authenticated/s--${sig}--/${tf}${parsed.publicId}${parsed.ext}`;
+  if (p.type === 'authenticated' && process.env.CLOUDINARY_API_SECRET) {
+    const toSign = tf + p.publicId + p.ext;
+    const sig = crypto.createHash('sha1').update(toSign + process.env.CLOUDINARY_API_SECRET).digest('base64')
+      .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '').slice(0, 8);
+    return `https://res.cloudinary.com/${p.cloud}/video/authenticated/s--${sig}--/${tf}${p.publicId}${p.ext}`;
+  }
+  return `https://res.cloudinary.com/${p.cloud}/video/upload/${tf}${p.publicId}${p.ext}`;
 }
 
 exports.handler = async (event) => {
@@ -106,7 +109,7 @@ exports.handler = async (event) => {
 
     // 5. Renvoie l'URL complète SIGNÉE (authenticated). Fallback toHttps acceptable ici car déjà
     //    gaté `purchased` (un client payant peut recevoir l'URL même avant la bascule authenticated).
-    const fullUrl = signedAuthUrl(parseCloudinary(audioUrl), '') || toHttps(audioUrl);
+    const fullUrl = buildAudioUrl(audioUrl, '') || toHttps(audioUrl);
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
