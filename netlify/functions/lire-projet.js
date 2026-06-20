@@ -28,6 +28,30 @@ function toHttps(u) {
   return (typeof u === 'string') ? u.replace(/^http:\/\//i, 'https://') : u;
 }
 
+const crypto = require('node:crypto');
+
+// Parse une URL Cloudinary -> {cloud, publicId, ext}. Gère /upload/ (public, transition)
+// ET /authenticated/ (cible Phase 5).
+function parseCloudinary(url) {
+  const m = /res\.cloudinary\.com\/([^/]+)\/video\/(?:upload|authenticated)\/(?:v\d+\/)?(.+?)(\.\w+)?$/.exec(url || '');
+  return m ? { cloud: m[1], publicId: m[2], ext: m[3] || '' } : null;
+}
+
+// URL Cloudinary SIGNÉE (delivery type authenticated). transformation = 'du_60' (preview 60s)
+// ou '' (chanson complète). La transformation est INCLUSE dans la signature -> impossible de
+// retirer le du_60 pour obtenir la version complète (la signature ne matcherait plus = 401).
+// Signature = sha1(<chemin après s--..--/> + API_SECRET) -> base64url, 8 car. Déterministe,
+// sans expiration -> URL stable/permanente. Renvoie '' si pas de secret/parse (pas de fuite).
+function signedAuthUrl(parsed, transformation) {
+  const secret = process.env.CLOUDINARY_API_SECRET;
+  if (!parsed || !secret) return '';
+  const tf = transformation ? transformation + '/' : '';
+  const toSign = tf + parsed.publicId + parsed.ext;
+  const sig = crypto.createHash('sha1').update(toSign + secret).digest('base64')
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '').slice(0, 8);
+  return `https://res.cloudinary.com/${parsed.cloud}/video/authenticated/s--${sig}--/${tf}${parsed.publicId}${parsed.ext}`;
+}
+
 exports.handler = async (event) => {
   // On accepte seulement le POST
   if (event.httpMethod !== 'POST') {
@@ -84,6 +108,12 @@ exports.handler = async (event) => {
     const dG = await rG.json();
     const gen = (dG.records && dG.records[0]) ? dG.records[0].fields : {};
 
+    // Audio = URL Cloudinary SIGNÉE générée côté serveur. Si payé -> complète ; sinon -> preview 60s
+    // (du_60 inclus DANS la signature -> non contournable). L'URL complète n'est jamais exposée avant achat.
+    const isPaid   = (projet.fields.commercial_status || 'preview_only') === 'purchased';
+    const parsed   = parseCloudinary(gen.cloudinary_audio_url || '');
+    const audioUrl = signedAuthUrl(parsed, isPaid ? '' : 'du_60');
+
     // 3. Réponse FILTRÉE — uniquement l'utile pour l'affichage
     return {
       statusCode: 200,
@@ -92,7 +122,7 @@ exports.handler = async (event) => {
         titre:             gen.song_title || '',
         paroles:           gen.lyrics || '',
         statut:            gen.generation_status || '',     // lyrics_generated / audio_generated / validated
-        audio_url:         toHttps(gen.cloudinary_audio_url || ''),
+        audio_url:         audioUrl,
         suggestions:       gen.suggestions || '[]',         // bulles dynamiques — exposition INTENTIONNELLE (au-delà des 5 champs §6 ; à refléter dans CLAUDE.md §6)
         commercial_status: projet.fields.commercial_status || 'preview_only'
         // PAS d'email, PAS de stripe_*, PAS d'attribution. Volontaire.

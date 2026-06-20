@@ -1120,12 +1120,6 @@ body {
   var token = (window._CM && window._CM.id) || '';
   if (!token) return;
 
-  function preview60(url) {
-    if (!url) return url;
-    var parts = url.split('/upload/');
-    return (parts.length === 2) ? (parts[0] + '/upload/du_60/' + parts[1]) : url;
-  }
-
   fetch('/api/lire-projet', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ token: token })
@@ -1133,7 +1127,7 @@ body {
   .then(function(r) { return r.ok ? r.json() : null; })
   .then(function(d) {
     if (!d || !d.audio_url) return;
-    var url = (d.commercial_status === 'purchased') ? d.audio_url : preview60(d.audio_url);
+    var url = d.audio_url;   /* déjà signé + tronqué (preview 60s) ou complet (payé), décidé côté serveur */
     var wrap = document.querySelector('.cm-player-wrap');
     if (!wrap) return;
     var audio  = wrap.querySelector('.cm-audio');

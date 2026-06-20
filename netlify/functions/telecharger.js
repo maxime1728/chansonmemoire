@@ -24,6 +24,26 @@ function toHttps(u) {
   return (typeof u === 'string') ? u.replace(/^http:\/\//i, 'https://') : u;
 }
 
+const crypto = require('node:crypto');
+
+// Parse une URL Cloudinary -> {cloud, publicId, ext} (gère /upload/ et /authenticated/).
+function parseCloudinary(url) {
+  const m = /res\.cloudinary\.com\/([^/]+)\/video\/(?:upload|authenticated)\/(?:v\d+\/)?(.+?)(\.\w+)?$/.exec(url || '');
+  return m ? { cloud: m[1], publicId: m[2], ext: m[3] || '' } : null;
+}
+
+// URL Cloudinary SIGNÉE (authenticated). Ici transformation = '' (chanson COMPLÈTE), servie
+// uniquement après le garde-fou `purchased` ci-dessous. Déterministe, sans expiration.
+function signedAuthUrl(parsed, transformation) {
+  const secret = process.env.CLOUDINARY_API_SECRET;
+  if (!parsed || !secret) return '';
+  const tf = transformation ? transformation + '/' : '';
+  const toSign = tf + parsed.publicId + parsed.ext;
+  const sig = crypto.createHash('sha1').update(toSign + secret).digest('base64')
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '').slice(0, 8);
+  return `https://res.cloudinary.com/${parsed.cloud}/video/authenticated/s--${sig}--/${tf}${parsed.publicId}${parsed.ext}`;
+}
+
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: JSON.stringify({ error: 'Méthode non permise' }) };
@@ -84,11 +104,13 @@ exports.handler = async (event) => {
       });
     } catch (_) { /* le log ne doit jamais bloquer la possession */ }
 
-    // 5. Renvoie l'URL complète (la page déclenche le téléchargement).
+    // 5. Renvoie l'URL complète SIGNÉE (authenticated). Fallback toHttps acceptable ici car déjà
+    //    gaté `purchased` (un client payant peut recevoir l'URL même avant la bascule authenticated).
+    const fullUrl = signedAuthUrl(parseCloudinary(audioUrl), '') || toHttps(audioUrl);
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ audio_url: toHttps(audioUrl) })
+      body: JSON.stringify({ audio_url: fullUrl })
     };
 
   } catch (err) {
