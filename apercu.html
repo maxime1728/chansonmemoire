@@ -1324,7 +1324,8 @@ body {
 (function() {
   var email   = (window._CM && window._CM.email)  || '';
   var token   = (window._CM && window._CM.id)     || '';   /* UUID = clé pour MAKE D (Stripe → Project) */
-  var baseUrl = 'https://buy.stripe.com/7sYdR90kSdrc5367Xl9Ve00';
+  /* ⚠️ Payment Link Stripe en mode TEST (pré-lancement). À remplacer par le lien LIVE au launch. */
+  var baseUrl = 'https://buy.stripe.com/test_eVqbIU8Ix0Fs2RxbYH6Na00';
 
   function goStripe() {
     if (window._cmFunnel) window._cmFunnel('checkout_started');   /* intention d'achat (avant redirection) */
