@@ -57,18 +57,30 @@ exports.handler = async (event) => {
     const projLit = formulaLiteral(projet.fields.project);
     if (projLit === null) return { statusCode: 500, body: JSON.stringify({ error: 'Erreur serveur' }) };
 
-    // 2. La version demandée appartient-elle au projet ET a-t-elle un audio ? (anti-tamper)
-    const fG = encodeURIComponent(`AND({project}=${projLit}, {generation_no}=${generationNo})`);
-    const rG = await fetch(`${API}/Generations?filterByFormula=${fG}&maxRecords=1`, { headers });
+    // 2. Récupère TOUTES les Generations (comme lire-versions) pour calculer le RANG affiché
+    //    (V1, V2…) parmi les versions JOUABLES — et valider que la version demandée existe (anti-tamper).
+    //    Le menu de l'aperçu numérote par rang, pas par generation_no -> on aligne le libellé Stripe.
+    const fG = encodeURIComponent(`{project}=${projLit}`);
+    const rG = await fetch(
+      `${API}/Generations?filterByFormula=${fG}` +
+      `&sort%5B0%5D%5Bfield%5D=generation_no&sort%5B0%5D%5Bdirection%5D=asc`,
+      { headers }
+    );
     const dG = await rG.json();
-    const gen = (dG.records && dG.records[0]) ? dG.records[0].fields : null;
-    if (!gen || !gen.cloudinary_audio_url) {
+    let rang = 0, gen = null;
+    for (const rec of (dG.records || [])) {
+      const f = rec.fields;
+      if (!f.cloudinary_audio_url) continue;                              // versions jouables seulement
+      rang += 1;
+      if (Number(f.generation_no) === generationNo) { gen = f; break; }   // rang = numéro affiché (V{rang})
+    }
+    if (!gen) {
       return { statusCode: 400, body: JSON.stringify({ error: 'Version introuvable' }) };
     }
 
-    // 3. Libellé dynamique affiché dans Stripe (jamais le prix : fixé serveur).
+    // 3. Libellé dynamique affiché dans Stripe = MÊME rang que le menu (jamais le prix : fixé serveur).
     const bits     = [gen.gen_music_style, gen.gen_mood].filter(Boolean);
-    const lineName = `Chanson Mémoire — V${generationNo}` + (bits.length ? ` · ${bits.join(' · ')}` : '');
+    const lineName = `Chanson Mémoire — V${rang}` + (bits.length ? ` · ${bits.join(' · ')}` : '');
     const songId   = gen.song_id || '';
     const email    = (body.email || '').trim();
 
