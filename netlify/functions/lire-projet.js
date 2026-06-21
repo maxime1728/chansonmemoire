@@ -129,7 +129,9 @@ exports.handler = async (event) => {
         statut:            gen.generation_status || '',     // lyrics_generated / audio_generated / validated
         audio_url:         audioUrl,
         suggestions:       gen.suggestions || '[]',         // bulles dynamiques — exposition INTENTIONNELLE (au-delà des 5 champs §6 ; à refléter dans CLAUDE.md §6)
-        commercial_status: projet.fields.commercial_status || 'preview_only'
+        commercial_status: projet.fields.commercial_status || 'preview_only',
+        style:             gen.gen_music_style || projet.fields.music_style || '',   // affichage acceptation (titre + style + ambiance)
+        ambiance:          gen.gen_mood        || projet.fields.mood        || ''
         // PAS d'email, PAS de stripe_*, PAS d'attribution. Volontaire.
       })
     };

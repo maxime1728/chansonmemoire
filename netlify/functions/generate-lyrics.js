@@ -52,7 +52,7 @@ STYLE ADAPTATION: Pop direct/emotional; Country concrete+storytelling; R&B senso
 
 TECHNICAL: 2200-2800 characters. Consistent rhyme. Singable, even lines. Québec French. Numbers in letters. NO brackets, NO section titles, NO commentary.
 
-TITLE: drawn from the lyrics, 2-6 words, never generic or cliché.
+TITLE: create it FROM THE PROVIDED DETAILS (first name, what made them unique, the relationship, the memories) — NOT from the lyrics text. 2-6 words, evocative and dignified, never generic or cliché. It names the song as a whole and must stay stable across regenerations.
 ${SUGGESTIONS_RULES}
 ${OUTPUT_RULES}`;
 }
@@ -69,7 +69,7 @@ Keep the same overall structure, tone, dignity and Québec French register as th
 
 TECHNICAL: keep it 2200-2800 characters, consistent rhyme, singable. NO brackets, NO section titles, NO commentary. Numbers in letters.
 
-TITLE: keep the existing title unless the changes make a new one clearly better.
+TITLE: KEEP the existing title EXACTLY as is. Do NOT change it unless the client EXPLICITLY asked to change the title.
 ${SUGGESTIONS_RULES}
 ${OUTPUT_RULES}`;
 }
@@ -283,7 +283,8 @@ ${modifications}`;
       }
 
       const suggestions = normSuggestions(parsed.suggestions);
-      const nouveauTitre = parsed.title || titreActuel || `Pour ${p.deceased_name || 'cette personne'}`;
+      // Titre stable : on garde le titre existant (généré depuis les détails) sauf demande explicite (gérée post-achat).
+      const nouveauTitre = titreActuel || parsed.title || `Pour ${p.deceased_name || 'cette personne'}`;
 
       // 4. Écrire la NOUVELLE Generation (numéro +1)
       const gen = await createGeneration({

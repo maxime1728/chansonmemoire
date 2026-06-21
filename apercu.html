@@ -1323,6 +1323,8 @@ body {
       if (picker) picker.style.display = 'block';
     }
 
+    var titleEl = wrap.querySelector('.cm-title');
+    if (titleEl && versions[def].titre) titleEl.textContent = versions[def].titre;   /* titre (depuis les détails) affiché avec l'aperçu */
     loadInto(versions[def].audio_url);
   })
   .catch(function() {});

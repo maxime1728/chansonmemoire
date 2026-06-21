@@ -31,11 +31,12 @@ exports.handler = async (event) => {
   const token         = (body.token || '').trim();
   const signatureName = (body.signature_name || '').trim();
   const textVersion   = (body.text_version || '').trim();
-  const acceptedNo    = parseInt(body.generation_no, 10);   // version choisie/acceptée (devient celle livrée)
 
   if (!token)         return { statusCode: 400, body: JSON.stringify({ error: 'Token manquant' }) };
   if (!UUID_V4.test(token)) return { statusCode: 400, body: JSON.stringify({ error: 'Token invalide' }) };
-  if (!signatureName) return { statusCode: 400, body: JSON.stringify({ error: 'Signature requise' }) };
+  // Pas de signature obligatoire : l'acceptation se fait par clic + popup de confirmation
+  // (preuve = clic + horodatage + IP + version du texte d'acceptation). ⚠️ Preuve plus faible
+  // que la signature — choix produit assumé, à faire valider par un pro (LPC / droit de résolution).
 
   // Métadonnées de preuve (best-effort).
   const ip = (event.headers['x-nf-client-connection-ip']
@@ -71,8 +72,8 @@ exports.handler = async (event) => {
     };
     // recevoir_clicked_at : ne pas écraser si déjà posé (1re intention).
     if (!projet.fields.recevoir_clicked_at) fields.recevoir_clicked_at = now;
-    // Version acceptée = celle qui sera livrée/téléchargée (lire-projet/telecharger servent purchased_generation_no).
-    if (Number.isInteger(acceptedNo) && acceptedNo >= 1) fields.purchased_generation_no = acceptedNo;
+    // La version livrée = celle ACHETÉE (purchased_generation_no, posé par MAKE D à l'achat).
+    // Pas de sélection de version ici : le client a choisi sa version au paiement Stripe.
 
     const rPatch = await fetch(`${API}/Projects/${projet.id}`, {
       method: 'PATCH',
