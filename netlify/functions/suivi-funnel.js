@@ -15,11 +15,8 @@ const API     = `https://api.airtable.com/v0/${BASE_ID}`;
 
 const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-// Événements autorisés → valeur funnel_step correspondante.
-const EVENTS = {
-  preview_played:   'preview_played',
-  checkout_started: 'checkout_started'
-};
+// Événements acceptés (front + serveur). Le nom de l'event Meta correspondant est dans CAPI_EVENT (plus bas).
+// preview_played / checkout_started = appelés par le navigateur (apercu) ; purchase = par MAKE D ; lead = par MAKE A.
 
 function formulaLiteral(v) {
   const s = String(v);
@@ -42,14 +39,14 @@ async function patchProject(id, fields, headers) {
 const crypto       = require('crypto');
 const CAPI_TOKEN   = process.env.META_CAPI_TOKEN;     // secret — var d'env Netlify, JAMAIS en dur
 const CAPI_DATASET = process.env.META_DATASET_ID;     // ex. 909919758755200 — var d'env Netlify
-const CAPI_EVENT   = { preview_played: 'PreviewPlayed', checkout_started: 'InitiateCheckout' };
+const CAPI_EVENT   = { preview_played: 'PreviewPlayed', checkout_started: 'InitiateCheckout', purchase: 'Purchase', lead: 'Lead' };
 
 function sha256(v) { return crypto.createHash('sha256').update(String(v).trim().toLowerCase()).digest('hex'); }
 
 // Lit le courriel du Client lié (best-effort), pour la qualité de matching (haché ensuite). Jamais exposé.
 async function clientEmailOf(projet, headers) {
   try {
-    const link  = projet.fields.client;
+    const link  = projet.fields.Client;   // champ lien « Client » (majuscule) — sinon email vide -> matching Meta dégradé
     const recId = Array.isArray(link) ? link[0] : null;
     if (!recId) return '';
     const r = await fetch(`${API}/Clients/${recId}`, { headers });
@@ -69,14 +66,19 @@ async function sendCapi(evt, projet, clientEmail, ip, ua) {
   if (f.fbp) user_data.fbp = f.fbp;
   if (ip)    user_data.client_ip_address = ip;
   if (ua)    user_data.client_user_agent = ua;
-  const payload = { data: [{
+  // Page source générique selon l'event — SANS token (token-safe).
+  const SRC = { preview_played: '/apercu', checkout_started: '/apercu', purchase: '/page-chanson', lead: '/souvenirs' };
+  const data0 = {
     event_name:       CAPI_EVENT[evt],
     event_time:       Math.floor(Date.now() / 1000),
     action_source:    'website',
     event_id:         sha256(`${projet.id}.${evt}`),   // dédup — haché, JAMAIS le token brut
-    event_source_url: 'https://chansonmemoire.ca/apercu',  // SANS token (token-safe)
+    event_source_url: 'https://chansonmemoire.ca' + (SRC[evt] || ''),  // SANS token
     user_data:        user_data
-  }] };
+  };
+  // Purchase : montant payé + devise (depuis Airtable) pour la valeur de conversion Meta.
+  if (evt === 'purchase') data0.custom_data = { currency: 'CAD', value: Number(f.amount) || 0 };
+  const payload = { data: [data0] };
   try {
     await fetch(`https://graph.facebook.com/v21.0/${CAPI_DATASET}/events?access_token=${encodeURIComponent(CAPI_TOKEN)}`, {
       method: 'POST',
@@ -95,7 +97,7 @@ exports.handler = async (event) => {
 
   const token = (body.token || '').trim();
   const evt   = (body.event || '').trim();
-  if (!UUID_V4.test(token) || !EVENTS[evt]) return { statusCode: 400, body: '{}' };
+  if (!UUID_V4.test(token) || !CAPI_EVENT[evt]) return { statusCode: 400, body: '{}' };
 
   const headers = { Authorization: `Bearer ${TOKEN}` };
   const now = new Date().toISOString();
@@ -109,18 +111,20 @@ exports.handler = async (event) => {
     const projet = dP.records[0];
     const f = projet.fields;
 
-    // 1. Horodatages dédiés (toujours sûrs, pas de dépendance single-select).
-    const stamp = {};
-    if (evt === 'preview_played') {
-      if (!f.preview_played_at) stamp.preview_played_at = now;       // 1er play seulement
-      stamp.preview_play_count = (Number(f.preview_play_count) || 0) + 1;
-    } else if (evt === 'checkout_started') {
-      if (!f.checkout_started_at) stamp.checkout_started_at = now;   // 1re intention seulement
+    // 1+2. Horodatages + funnel_step : UNIQUEMENT pour les events front (preview/checkout).
+    //      Pour purchase/lead, MAKE D / MAKE A possèdent déjà funnel_step + les champs achat -> on ne fait que la CAPI.
+    if (evt === 'preview_played' || evt === 'checkout_started') {
+      const stamp = {};
+      if (evt === 'preview_played') {
+        if (!f.preview_played_at) stamp.preview_played_at = now;       // 1er play seulement
+        stamp.preview_play_count = (Number(f.preview_play_count) || 0) + 1;
+      } else {
+        if (!f.checkout_started_at) stamp.checkout_started_at = now;   // 1re intention seulement
+      }
+      if (Object.keys(stamp).length) await patchProject(projet.id, stamp, headers);
+      // funnel_step — PATCH séparé best-effort (un 422 « option inexistante » n'impacte pas les horodatages).
+      try { await patchProject(projet.id, { funnel_step: evt }, headers); } catch (_) {}
     }
-    if (Object.keys(stamp).length) await patchProject(projet.id, stamp, headers);
-
-    // 2. funnel_step — PATCH séparé best-effort (un 422 « option inexistante » n'impacte pas les horodatages).
-    try { await patchProject(projet.id, { funnel_step: EVENTS[evt] }, headers); } catch (_) {}
 
     // 3. Meta CAPI (serveur, best-effort, token-safe). Ne bloque jamais la réponse.
     try {
