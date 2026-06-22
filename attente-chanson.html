@@ -185,6 +185,14 @@ body{font-family:"Mulish",system-ui,sans-serif;color:#2a2330;background:#faf8f5;
 .s-foot .em{font-family:"Fraunces",serif;font-style:italic;color:var(--plum);font-size:1.08rem;display:block;margin-bottom:8px;}
 .s-foot p{font-size:.92rem;color:var(--muted);line-height:1.58;}
 
+/* ── POPUP : délai / pépin technique ── */
+.cm-delay-overlay{position:fixed;inset:0;background:rgba(46,34,56,.55);display:none;align-items:center;justify-content:center;padding:20px;z-index:50;}
+.cm-delay-overlay.show{display:flex;}
+.cm-delay-box{background:#fff;border:1px solid var(--line);border-radius:18px;padding:30px 26px;max-width:420px;text-align:center;box-shadow:0 14px 50px rgba(46,34,56,.25);}
+.cm-delay-box h2{font-family:"Fraunces",serif;font-weight:600;color:var(--plum-deep);font-size:1.5rem;margin-bottom:12px;}
+.cm-delay-box p{font-size:.97rem;color:var(--muted);line-height:1.6;}
+.cm-delay-box .cm-delay-sub{font-size:.85rem;margin-top:12px;}
+
 @media(prefers-reduced-motion:reduce){
   .flame::before,.s-foot .flame-sm::before,
   .wstep,.wait-dots span,
@@ -387,6 +395,15 @@ body{font-family:"Mulish",system-ui,sans-serif;color:#2a2330;background:#faf8f5;
   </div>
 </section>
 
+<!-- POPUP : délai / pépin technique (déclenché à 8 min sans audio) -->
+<div class="cm-delay-overlay" id="cmDelayOverlay" aria-hidden="true" role="dialog" aria-modal="true">
+  <div class="cm-delay-box">
+    <h2 class="serif">Un petit délai technique</h2>
+    <p>Sa chanson met un peu plus de temps que d'habitude — rien d'inquiétant. On la finalise et <strong>on te l'envoie par courriel dès qu'elle est prête</strong>. Tu peux fermer cette page en toute tranquillité.</p>
+    <p class="cm-delay-sub">Tu peux aussi garder la page ouverte : elle s'ouvrira ici automatiquement dès que c'est prêt.</p>
+  </div>
+</div>
+
 <script>
 /* ════════════════════════════════════════
    INJECTION DU PRÉNOM DU DÉFUNT
@@ -469,7 +486,9 @@ var REDIRECT_BASE = "/apercu";   /* relatif => reste sur le domaine .ca courant 
 var UUID_V4    = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 var redirected = false;
 var attempts   = 0;
-var maxAttempts = 24; /* 24 x 20s = ~8 minutes */
+var maxAttempts = 24;   /* 24 x 20s = ~8 minutes -> popup « délai » */
+var hardStop   = 90;    /* ~30 min -> on cesse de sonder (le courriel + la sentinelle prennent le relais) */
+var popupShown = false;
 var pollingInterval;
 
 function getToken(){
@@ -477,19 +496,26 @@ function getToken(){
   catch(e){ return null; }
 }
 
+/* Popup digne au bout de 8 min sans audio. On CONTINUE de sonder en arrière-plan : si la chanson
+   arrive plus tard (ex. relancée par la sentinelle), on redirige quand même. */
+function showDelayPopup(){
+  var o = document.getElementById("cmDelayOverlay");
+  if(o){ o.classList.add("show"); o.setAttribute("aria-hidden","false"); }
+  var msg = document.getElementById("statusMsg");
+  if(msg){
+    var dots = msg.querySelector(".wait-dots");
+    if(dots) dots.remove();
+    msg.innerHTML = "Sa chanson arrive — on te l'envoie par courriel dès qu'elle est prête.";
+  }
+}
+
 function checkReady(){
   if(redirected) return;
 
-  if(attempts >= maxAttempts){
-    clearInterval(pollingInterval);
-    var msg = document.getElementById("statusMsg");
-    if(msg){
-      msg.innerHTML = "Nous rencontrons un délai inhabituel. Tu recevras le lien par courriel dès que ta chanson sera prête. Merci de ta patience.";
-    }
-    return;
-  }
-
   attempts++;
+  if(attempts >= maxAttempts && !popupShown){ showDelayPopup(); popupShown = true; }
+  if(attempts > hardStop){ clearInterval(pollingInterval); return; }   /* arrêt dur ~30 min */
+
   var token = getToken();
   if(!token || !UUID_V4.test(token)) return;
 
@@ -501,10 +527,14 @@ function checkReady(){
   })
     .then(function(r){ return r.ok ? r.json() : null; })
     .then(function(data){
-      /* audio_pending = Suno lancé, pas encore prêt -> on continue de sonder. */
+      /* audio_pending = Suno lancé, pas encore prêt -> on continue de sonder.
+         audio_generated peut arriver TARD (relance sentinelle) -> on redirige même après le popup. */
       if(data && data.statut === "audio_generated" && !redirected){
         clearInterval(pollingInterval);
         redirected = true;
+
+        var o = document.getElementById("cmDelayOverlay");
+        if(o){ o.classList.remove("show"); o.setAttribute("aria-hidden","true"); }
 
         var msg = document.getElementById("statusMsg");
         if(msg){
