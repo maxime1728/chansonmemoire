@@ -874,6 +874,14 @@ body {
 .cm-modal-confirm { background: var(--cm-plum-dark); border: none; color: #fff; }
 .cm-modal-confirm:disabled { opacity: 0.6; cursor: default; }
 .cm-modal-note { font-size: 12px; color: var(--cm-text-sub); margin-top: 12px; text-align: center; min-height: 1em; }
+/* Sélection de version + order bumps dans le popup d'achat */
+.cm-ver-opt { display:block; width:100%; margin-bottom:8px; padding:12px 16px; border-radius:14px; border:2px solid var(--cm-mauve); background:var(--cm-white); font:700 14px/1.3 'Mulish',sans-serif; color:var(--cm-text); cursor:pointer; text-align:left; transition:border-color .15s, background .15s; }
+.cm-ver-opt.selected { border-color:var(--cm-plum-dark); background:var(--cm-off-white); }
+.cm-buy-bumps-title { font:700 11px/1 'Mulish',sans-serif; letter-spacing:.06em; text-transform:uppercase; color:var(--cm-text-sub); margin:16px 0 8px; }
+.cm-bump { display:flex; gap:10px; align-items:flex-start; padding:12px 14px; border:1.5px solid var(--cm-mauve); border-radius:14px; margin-bottom:8px; cursor:pointer; background:var(--cm-white); }
+.cm-bump input { margin-top:2px; flex:none; width:18px; height:18px; accent-color:var(--cm-plum-dark); }
+.cm-bump span { font:600 14px/1.35 'Mulish',sans-serif; color:var(--cm-text); }
+.cm-bump small { display:block; font-weight:400; color:var(--cm-text-sub); margin-top:2px; }
 </style>
 </head>
 <body>
@@ -956,7 +964,7 @@ body {
       <p class="cm-anchor">Une œuvre sur mesure, sans les semaines d'attente ni la facture d'un compositeur professionnel.</p>
       <!-- Choix de version : déplacé dans un POPUP de confirmation au clic « acheter » (si >1 version). -->
 
-      <!-- Order bumps déplacés sur la PAGE STRIPE (optional_items, ajoutables d'un clic) — voir creer-checkout.js. -->
+      <!-- Order bumps : dans le POPUP de confirmation (#cm-buy-bumps, cases optionnelles) → line_items Stripe. -->
 
       <div class="cm-btn-wrap">
         <button id="stripeBtnPricing" class="stripe-btn">Obtenir la chanson complète</button>
@@ -1144,13 +1152,15 @@ body {
   <button class="cm-sticky-btn" id="stripeBtnSticky">Obtenir la chanson complète</button>
 </div>
 
-<!-- ══ MODAL : CONFIRMER LA VERSION À ACHETER (si >1 version) ══ -->
+<!-- ══ MODAL : CONFIRMER LA CHANSON + OPTIONS (order bumps) ══ -->
 <div class="cm-modal-overlay" id="cm-buy-overlay" aria-hidden="true">
   <div class="cm-modal" role="dialog" aria-modal="true" aria-labelledby="cm-buy-modal-title">
     <button type="button" class="cm-modal-close" id="cm-buy-close" aria-label="Fermer">&times;</button>
-    <div class="cm-modal-title" id="cm-buy-modal-title">Quelle version souhaitez-vous ?</div>
-    <p class="cm-modal-sub">Confirmez la version à recevoir — c'est celle qui vous sera livrée.</p>
+    <div class="cm-modal-title" id="cm-buy-modal-title">Confirmez votre chanson</div>
+    <p class="cm-modal-sub">Choisissez la version à recevoir, puis ajoutez des options si vous le souhaitez.</p>
     <div id="cm-buy-options"></div>
+    <div id="cm-buy-bumps"></div>
+    <button type="button" class="cm-modal-confirm" id="cm-buy-proceed" style="width:100%;margin-top:6px;">Procéder au paiement</button>
     <p class="cm-modal-note" id="cm-buy-status" role="status" aria-live="polite"></p>
   </div>
 </div>
@@ -1385,47 +1395,82 @@ body {
   if (token) loadVersions();   /* préchauffe au chargement */
 
   /* Lance la session Stripe pour une version précise. */
-  function startCheckout(genNo) {
+  function startCheckout(genNo, bumps) {
     if (!genNo) { busy = false; alert("Le paiement n'a pas pu démarrer. Réessayez dans un instant."); return; }
     fetch('/api/creer-checkout', {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ token: token, generation_no: genNo, email: email })   /* bumps = optional_items sur la page Stripe */
+      body: JSON.stringify({ token: token, generation_no: genNo, email: email, bumps: bumps || [] })
     })
     .then(function(r){ return r.ok ? r.json() : null; })
     .then(function(d){
-      /* DEBUG TEMPORAIRE : pourquoi les bumps n'apparaissent pas. À RETIRER une fois réglé. */
-      if (d && d._diag) { window.alert('DIAG bumps (temporaire) :\n\n' + d._diag); }
       if (d && d.url) { window.location.href = d.url; return; }   /* → Stripe Checkout */
       busy = false; alert("Le paiement n'a pas pu démarrer. Réessayez dans un instant.");
     })
     .catch(function(){ busy = false; alert("Le paiement n'a pas pu démarrer. Réessayez dans un instant."); });
   }
 
-  /* Popup de confirmation de version (≥ 2 versions) — plus précis que l'ancien sélecteur. */
+  /* Popup de confirmation : version (si >1) + order bumps optionnels → 1 seul checkout. */
   var buyOverlay = document.getElementById('cm-buy-overlay');
   var buyOptions = document.getElementById('cm-buy-options');
+  var buyBumps   = document.getElementById('cm-buy-bumps');
+  var buyProceed = document.getElementById('cm-buy-proceed');
   var buyClose   = document.getElementById('cm-buy-close');
+  var selectedGen = null;
+
+  /* Order bumps proposés. Le produit principal reste le héros : ceux-ci sont optionnels, décochés, en dessous. */
+  var BUMPS = [
+    { key:'instrumental',     label:'Version instrumentale',     price:'19,99 $', desc:'La trame musicale seule, sans voix.' },
+    { key:'paroles_vivantes', label:'Paroles vivantes en vidéo', price:'13,99 $', desc:'Les paroles animées, à partager.' }
+  ];
+
   function closeBuy(){ if (buyOverlay) { buyOverlay.classList.remove('show'); buyOverlay.setAttribute('aria-hidden','true'); } busy = false; }
   if (buyClose)   buyClose.addEventListener('click', closeBuy);
   if (buyOverlay) buyOverlay.addEventListener('click', function(e){ if (e.target === buyOverlay) closeBuy(); });
 
   function openBuy(versions) {
-    if (!buyOverlay || !buyOptions) { startCheckout(versions[versions.length - 1].generation_no); return; }
+    if (!buyOverlay) { startCheckout(versions[versions.length - 1].generation_no, []); return; }
+    selectedGen = versions[versions.length - 1].generation_no;   /* défaut : dernière version */
+
+    /* Versions (sélection) — affichées seulement s'il y en a plus d'une. */
     buyOptions.innerHTML = '';
-    versions.forEach(function(ver){
-      var bits = [ver.style, ver.ambiance].filter(Boolean);
-      var b = document.createElement('button');
-      b.type = 'button'; b.className = 'cm-modal-confirm';
-      b.style.cssText = 'display:block;width:100%;margin-bottom:10px;';
-      b.textContent = 'V' + ver.v + (bits.length ? ' · ' + bits.join(' · ') : '');
-      b.addEventListener('click', function(){
-        buyOverlay.classList.remove('show'); buyOverlay.setAttribute('aria-hidden','true');
-        startCheckout(ver.generation_no);
+    if (versions.length > 1) {
+      versions.forEach(function(ver){
+        var bits = [ver.style, ver.ambiance].filter(Boolean);
+        var b = document.createElement('button');
+        b.type = 'button'; b.className = 'cm-ver-opt';
+        b.textContent = 'V' + ver.v + (bits.length ? ' · ' + bits.join(' · ') : '');
+        if (ver.generation_no === selectedGen) b.classList.add('selected');
+        b.addEventListener('click', function(){
+          selectedGen = ver.generation_no;
+          [].forEach.call(buyOptions.children, function(c){ c.classList.remove('selected'); });
+          b.classList.add('selected');
+        });
+        buyOptions.appendChild(b);
       });
-      buyOptions.appendChild(b);
+    }
+
+    /* Order bumps (optionnels, décochés). */
+    buyBumps.innerHTML = '';
+    var t = document.createElement('div'); t.className = 'cm-buy-bumps-title';
+    t.textContent = 'Ajoutez à votre commande (optionnel)';
+    buyBumps.appendChild(t);
+    BUMPS.forEach(function(bp){
+      var lbl = document.createElement('label'); lbl.className = 'cm-bump';
+      var cb = document.createElement('input'); cb.type = 'checkbox'; cb.value = bp.key;
+      var span = document.createElement('span');
+      span.innerHTML = bp.label + ' · +' + bp.price + '<small>' + bp.desc + '</small>';
+      lbl.appendChild(cb); lbl.appendChild(span);
+      buyBumps.appendChild(lbl);
     });
+
     buyOverlay.classList.add('show'); buyOverlay.setAttribute('aria-hidden','false');
   }
+
+  if (buyProceed) buyProceed.addEventListener('click', function(){
+    var bumps = [].map.call(buyBumps.querySelectorAll('input:checked'), function(cb){ return cb.value; });
+    buyOverlay.classList.remove('show'); buyOverlay.setAttribute('aria-hidden','true');
+    startCheckout(selectedGen, bumps);
+  });
 
   function goStripe() {
     if (busy || !token) return;               /* aperçu legacy sans token : pas d'achat serveur */
@@ -1433,8 +1478,7 @@ body {
     if (window._cmFunnel) window._cmFunnel('checkout_started');   /* intention d'achat */
     loadVersions().then(function(versions){
       if (!versions || !versions.length) { busy = false; alert("Le paiement n'a pas pu démarrer. Réessayez dans un instant."); return; }
-      if (versions.length > 1) openBuy(versions);                 /* >1 version → popup de confirmation */
-      else startCheckout(versions[0].generation_no);              /* 1 seule version → direct */
+      openBuy(versions);   /* toujours : confirmation version + bumps → 1 seul checkout */
     });
   }
 
