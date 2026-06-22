@@ -89,63 +89,85 @@ exports.handler = async (event) => {
     const PRICE_INSTRU  = process.env.STRIPE_PRICE_INSTRUMENTAL;     // Prix Stripe 19,99 $
     const PRICE_PAROLES = process.env.STRIPE_PRICE_PAROLES_VIVANTES; // Prix Stripe 13,99 $
 
-    // 4. Crée la Checkout Session (form-encodé).
-    const params = new URLSearchParams();
-    params.append('mode', 'payment');
+    // 4. Construit les paramètres communs à toute session Checkout.
+    function paramsBase() {
+      const p = new URLSearchParams();
+      p.append('mode', 'payment');
+      p.append('client_reference_id', token);                  // MAKE D / fulfillment retrouvent le Project
+      p.append('metadata[token]', token);
+      p.append('metadata[generation_no]', String(generationNo));
+      if (songId) p.append('metadata[song_id]', songId);
+      p.append('success_url', `${SITE}/page-chanson?id=${encodeURIComponent(token)}`);
+      p.append('cancel_url',  `${SITE}/apercu?id=${encodeURIComponent(token)}`);
+      if (email && email.includes('@')) p.append('customer_email', email);
+      return p;
+    }
 
-    if (SONG_PRICE) {
-      // Chemin Price IDs : article principal = la chanson (Prix Stripe fixe).
-      params.append('line_items[0][price]', SONG_PRICE);
-      params.append('line_items[0][quantity]', '1');
-      // Bumps = articles OPTIONNELS, ajoutables d'un clic SUR la page Stripe (le client choisit 0 ou 1).
+    // Chemin A — Prix Stripe + order bumps (optional_items, ajoutables d'un clic sur la page Stripe).
+    function paramsAvecPrix() {
+      const p = paramsBase();
+      p.append('line_items[0][price]', SONG_PRICE);
+      p.append('line_items[0][quantity]', '1');
       let oi = 0;
       for (const pid of [PRICE_INSTRU, PRICE_PAROLES]) {
         if (!pid) continue;
-        params.append(`optional_items[${oi}][price]`, pid);
-        params.append(`optional_items[${oi}][quantity]`, '1');
-        params.append(`optional_items[${oi}][adjustable_quantity][enabled]`, 'true');
-        params.append(`optional_items[${oi}][adjustable_quantity][minimum]`, '0');
-        params.append(`optional_items[${oi}][adjustable_quantity][maximum]`, '1');
+        p.append(`optional_items[${oi}][price]`, pid);
+        p.append(`optional_items[${oi}][quantity]`, '1');
+        p.append(`optional_items[${oi}][adjustable_quantity][enabled]`, 'true');
+        p.append(`optional_items[${oi}][adjustable_quantity][minimum]`, '0');
+        p.append(`optional_items[${oi}][adjustable_quantity][maximum]`, '1');
         oi += 1;
       }
-    } else {
-      // Repli avant config des Prix Stripe : prix fixé serveur + libellé dynamique « V{rang} », sans bumps.
-      const bits     = [gen.gen_music_style, gen.gen_mood].filter(Boolean);
-      const lineName = `Chanson Mémoire — V${rang}` + (bits.length ? ` · ${bits.join(' · ')}` : '');
-      params.append('line_items[0][quantity]', '1');
-      params.append('line_items[0][price_data][currency]', CURRENCY);
-      params.append('line_items[0][price_data][unit_amount]', String(PRICE_CENTS));
-      params.append('line_items[0][price_data][product_data][name]', lineName);
+      return p;
     }
 
-    params.append('client_reference_id', token);                 // MAKE D / fulfillment retrouvent le Project
-    params.append('metadata[token]', token);
-    params.append('metadata[generation_no]', String(generationNo));
-    if (songId) params.append('metadata[song_id]', songId);
-    // NB : les bumps achetés ne sont PLUS en metadata — le fulfillment lira les line_items de la
-    //      session COMPLÉTÉE (un optional_item ajouté devient un vrai line item après paiement).
+    // Chemin B (repli PROUVÉ) — prix fixé serveur via price_data, libellé « V{rang} », sans bumps.
+    function paramsPriceData() {
+      const p = paramsBase();
+      const bits     = [gen.gen_music_style, gen.gen_mood].filter(Boolean);
+      const lineName = `Chanson Mémoire — V${rang}` + (bits.length ? ` · ${bits.join(' · ')}` : '');
+      p.append('line_items[0][quantity]', '1');
+      p.append('line_items[0][price_data][currency]', CURRENCY);
+      p.append('line_items[0][price_data][unit_amount]', String(PRICE_CENTS));
+      p.append('line_items[0][price_data][product_data][name]', lineName);
+      return p;
+    }
 
-    params.append('success_url', `${SITE}/page-chanson?id=${encodeURIComponent(token)}`);
-    params.append('cancel_url',  `${SITE}/apercu?id=${encodeURIComponent(token)}`);
-    if (email && email.includes('@')) params.append('customer_email', email);
+    // Appelle Stripe ; renvoie {ok, url} ou {ok:false, err}.
+    async function creerSession(params) {
+      const rS = await fetch('https://api.stripe.com/v1/checkout/sessions', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${STRIPE_SECRET_KEY}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params.toString()
+      });
+      const session = await rS.json();
+      if (rS.ok && session.url) return { ok: true, url: session.url };
+      return { ok: false, err: (session && session.error && session.error.message) || `HTTP ${rS.status}` };
+    }
 
-    const rS = await fetch('https://api.stripe.com/v1/checkout/sessions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${STRIPE_SECRET_KEY}`,
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: params.toString()
-    });
-    const session = await rS.json();
-    if (!rS.ok || !session.url) {
+    // 5. Tente le chemin Prix+bumps si configuré. Si Stripe le REFUSE (Prix manquant, mauvais mode
+    //    test/live, paramètre non supporté…), REPLI AUTOMATIQUE sur price_data : le bouton ne doit
+    //    JAMAIS rester cassé à cause d'une config de Prix incomplète. L'erreur Stripe est journalisée.
+    let resultat;
+    if (SONG_PRICE) {
+      resultat = await creerSession(paramsAvecPrix());
+      if (!resultat.ok) {
+        console.error('[creer-checkout] Chemin Prix/bumps refusé par Stripe → repli price_data. Détail:', resultat.err);
+        resultat = await creerSession(paramsPriceData());
+      }
+    } else {
+      resultat = await creerSession(paramsPriceData());
+    }
+
+    if (!resultat.ok) {
+      console.error('[creer-checkout] Stripe a refusé la session (repli inclus). Détail:', resultat.err);
       return { statusCode: 502, body: JSON.stringify({ error: 'Création du paiement échouée' }) };
     }
 
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url: session.url })
+      body: JSON.stringify({ url: resultat.url })
     };
   } catch (err) {
     return { statusCode: 500, body: JSON.stringify({ error: 'Erreur serveur' }) };
