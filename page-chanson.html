@@ -1,253 +1,282 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr-CA">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
 <title>Votre chanson — Chanson Mémoire</title>
-<!-- Livraison post-achat. Verrou = acceptation signée (preuve serveur), puis téléchargement libre.
-     Domaine .ca / chemins relatifs uniquement. -->
+<!-- Page d'ACCEPTATION post-achat. Affiche la version ACHETÉE (titre + style + ambiance) avec le
+     lecteur de l'aperçu. PAS de téléchargement ici. « Accepter cette version et télécharger »
+     -> popup de confirmation -> redirige vers /page-memoire (livraison + download). Pas de signature. -->
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400;1,9..144,600&family=Mulish:wght@400;500;600;700;800&family=Sora:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 <style>
   :root{
-    --plum-dark:#5C2D4A; --plum:#7A3E62; --paper:#FBF7F4; --ink:#3a2f37; --muted:#7a6b75;
-    --line:#e7dde4;
+    --cm-plum-dark:#5C2D4A; --cm-plum-mid:#8B4A6E; --cm-mauve:#C98BB0;
+    --cm-gold:#C4963A; --cm-gold-light:#E8C97A; --cm-off-white:#F5F0E8; --cm-white:#FDFAF7;
+    --cm-bg:#F8F4F0; --cm-text:#2E1A28; --cm-text-sub:#7A6070; --cm-border-w:2.5px;
   }
-  *{box-sizing:border-box;}
-  body{margin:0;background:var(--paper);color:var(--ink);font:400 16px/1.6 Mulish,system-ui,sans-serif;}
-  .wrap{max-width:640px;margin:0 auto;padding:48px 20px;}
-  h1{font:600 28px/1.25 Fraunces,Georgia,serif;color:var(--plum-dark);margin:0 0 8px;}
-  p.lead{color:var(--muted);margin:0 0 28px;}
-  .card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:26px;margin:18px 0;}
-  label{display:block;font-weight:600;margin:0 0 6px;color:var(--plum-dark);}
-  input[type=text]{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:10px;font:inherit;}
-  .accept{font-size:14px;color:var(--muted);margin:14px 0;}
-  .btn{display:inline-block;border:none;border-radius:999px;padding:14px 28px;font:600 16px/1 Mulish,sans-serif;
-       background:var(--plum-dark);color:#fff;cursor:pointer;text-decoration:none;}
-  .btn[disabled]{opacity:.5;cursor:not-allowed;}
-  .btn-ghost{background:none;border:1px solid var(--plum-dark);color:var(--plum-dark);}
-  .hidden{display:none;}
-  .actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;}
-  .err{color:#b3261e;font-size:14px;margin-top:8px;}
-  audio{width:100%;margin-top:8px;}
-  .muted-note{font-size:13px;color:var(--muted);}
-  .pc-select{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:10px;font:inherit;background:#fff;margin-bottom:10px;cursor:pointer;}
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--cm-bg);color:var(--cm-text);font:400 16px/1.6 Mulish,system-ui,sans-serif;padding-bottom:60px;}
+  .wrap{max-width:560px;margin:0 auto;padding:36px 20px;text-align:center;}
+  .cm-logo{font-family:'Fraunces',serif;font-style:italic;font-size:22px;font-weight:600;color:var(--cm-plum-dark);margin-bottom:28px;}
+  .cm-logo span{color:var(--cm-gold);}
+  .eyebrow{font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--cm-gold);margin-bottom:12px;}
+  h1#title{font-family:'Fraunces',Georgia,serif;font-style:italic;font-size:clamp(26px,6vw,34px);font-weight:400;color:var(--cm-plum-dark);margin:0 0 10px;line-height:1.25;}
+  .subtitle{color:var(--cm-text-sub);font-size:13px;margin:0 0 26px;text-transform:uppercase;letter-spacing:0.10em;font-weight:700;min-height:1em;}
+  .loading{color:var(--cm-text-sub);font-size:14px;margin:16px 0 0;}
+  .accept-zone{margin-top:32px;}
+  .note{font-size:12px;color:var(--cm-text-sub);margin-top:12px;}
+
+  /* ── LECTEUR (porté de l'aperçu, plein format) ── */
+  @property --cm-border-angle { syntax:'<angle>'; initial-value:0deg; inherits:false; }
+  #cm-player-root .cm-players-container { display:flex; justify-content:center; padding:0 20px; }
+  #cm-player-root .cm-player-wrap { display:flex; justify-content:center; font-family:'Sora',sans-serif; width:100%; max-width:300px; }
+  #cm-player-root .cm-player-box {
+    width:100%; padding:calc(24px + var(--cm-border-w)); border-radius:24px;
+    background: linear-gradient(var(--cm-white),var(--cm-white)) padding-box,
+      conic-gradient(from var(--cm-border-angle), #3D1A30 0%, var(--cm-mauve) 22%, #D4A030 40%, #F5D878 50%, #D4A030 60%, var(--cm-mauve) 78%, #3D1A30 100%) border-box;
+    border:2.5px solid transparent; animation:cm-spin-border 5s linear infinite; text-align:center;
+    box-shadow:0 0 0 2px rgba(0,0,0,0.08),0 0 12px 4px rgba(0,0,0,0.18),0 0 28px 10px rgba(0,0,0,0.13),0 0 50px 20px rgba(0,0,0,0.07),0 10px 36px rgba(92,45,74,0.10);
+  }
+  @keyframes cm-spin-border { to { --cm-border-angle:360deg; } }
+  @supports not (background: conic-gradient(from 1deg, red, red) border-box) {
+    #cm-player-root .cm-player-box { background:var(--cm-white); border:var(--cm-border-w) solid var(--cm-mauve); position:relative; overflow:hidden; }
+    #cm-player-root .cm-player-box::before { content:''; position:absolute; inset:-80px; background:conic-gradient(var(--cm-plum-dark),var(--cm-mauve),var(--cm-gold-light),var(--cm-off-white),var(--cm-gold),var(--cm-mauve),var(--cm-plum-dark)); animation:cm-spin-pseudo 5s linear infinite; z-index:0; }
+    #cm-player-root .cm-player-box::after { content:''; position:absolute; inset:var(--cm-border-w); background:var(--cm-white); border-radius:22px; z-index:1; }
+    #cm-player-root .cm-player-box > * { position:relative; z-index:2; }
+    @keyframes cm-spin-pseudo { to { transform:rotate(360deg); } }
+  }
+  #cm-player-root .cm-title { font-size:15px; font-weight:600; letter-spacing:0.1em; color:var(--cm-plum-dark); text-transform:uppercase; margin-bottom:14px; }
+  #cm-player-root .cm-equalizer { display:flex; justify-content:center; align-items:flex-end; gap:5px; height:30px; margin-bottom:14px; width:100%; }
+  #cm-player-root .cm-equalizer span { width:4px; height:10px; background:linear-gradient(to top,var(--cm-mauve),var(--cm-plum-dark)); border-radius:3px; flex-shrink:0; animation:cm-wave 0.9s infinite ease-in-out; animation-play-state:paused; }
+  #cm-player-root .cm-equalizer.active span { animation-play-state:running; }
+  #cm-player-root .cm-equalizer span:nth-child(1){animation-delay:0s;animation-duration:0.85s;}
+  #cm-player-root .cm-equalizer span:nth-child(2){animation-delay:0.12s;animation-duration:1.05s;}
+  #cm-player-root .cm-equalizer span:nth-child(3){animation-delay:0.25s;animation-duration:0.75s;}
+  #cm-player-root .cm-equalizer span:nth-child(4){animation-delay:0.07s;animation-duration:1.15s;}
+  #cm-player-root .cm-equalizer span:nth-child(5){animation-delay:0.40s;animation-duration:0.70s;}
+  #cm-player-root .cm-equalizer span:nth-child(6){animation-delay:0.18s;animation-duration:1.00s;}
+  #cm-player-root .cm-equalizer span:nth-child(7){animation-delay:0.33s;animation-duration:0.90s;}
+  #cm-player-root .cm-equalizer span:nth-child(8){animation-delay:0.05s;animation-duration:0.80s;}
+  #cm-player-root .cm-equalizer span:nth-child(9){animation-delay:0.50s;animation-duration:0.95s;}
+  @keyframes cm-wave { 0%,100%{height:8px;} 50%{height:26px;} }
+  #cm-player-root .cm-play-btn { width:64px; height:64px; border-radius:50%; border:none; background:linear-gradient(135deg,var(--cm-plum-mid),var(--cm-plum-dark)); color:#fff; font-size:18px; cursor:pointer; margin:12px 0; transition:transform 0.25s,box-shadow 0.25s; box-shadow:0 4px 16px rgba(92,45,74,0.28); }
+  #cm-player-root .cm-play-btn:hover { transform:scale(1.08); box-shadow:0 6px 24px rgba(92,45,74,0.40); }
+  #cm-player-root .cm-play-btn[disabled] { opacity:.5; cursor:default; }
+  #cm-player-root .cm-time { display:flex; justify-content:space-between; font-size:11px; color:var(--cm-text-sub); margin:10px 0; }
+  #cm-player-root .cm-progress-wrap { position:relative; width:100%; height:5px; background:rgba(92,45,74,0.10); border-radius:10px; }
+  #cm-player-root .cm-progress-bar { position:absolute; height:100%; width:0%; background:linear-gradient(to right,var(--cm-plum-mid),var(--cm-gold)); border-radius:10px; }
+  #cm-player-root .cm-progress { position:absolute; width:100%; height:20px; top:-7px; left:0; margin:0; opacity:0; cursor:pointer; z-index:2; }
+  #cm-player-root .cm-volume-wrap { display:flex; align-items:center; justify-content:center; gap:12px; margin-top:20px; }
+  #cm-player-root .cm-mute-btn { background:none; border:none; color:var(--cm-plum-mid); font-size:15px; cursor:pointer; transition:opacity 0.2s,transform 0.2s; padding:0; display:flex; align-items:center; justify-content:center; width:24px; height:24px; }
+  #cm-player-root .cm-mute-btn:hover { opacity:0.7; transform:scale(1.1); }
+  #cm-player-root .cm-volume-slider-wrap { position:relative; width:90px; height:4px; background:rgba(92,45,74,0.12); border-radius:10px; }
+  #cm-player-root .cm-volume-bar { position:absolute; height:100%; width:100%; background:linear-gradient(to right,var(--cm-mauve),var(--cm-gold)); border-radius:10px; transition:width 0.1s; }
+  #cm-player-root .cm-volume { position:absolute; width:100%; height:4px; opacity:0; cursor:pointer; top:0; left:0; margin:0; }
+  #cm-player-root .cm-ia-mention { display:flex; align-items:center; justify-content:center; gap:6px; margin-top:24px; font-family:'Sora',sans-serif; font-size:11px; color:var(--cm-text-sub); opacity:0.80; }
+  #cm-player-root .cm-ia-mention svg { flex-shrink:0; color:var(--cm-gold); }
+
+  /* ── BOUTON ACCEPTER ── */
+  @property --cm-btn-angle { syntax:'<angle>'; initial-value:0deg; inherits:false; }
+  .cm-btn-wrap { padding:1.5px; border-radius:999px; max-width:380px; margin:0 auto;
+    background:conic-gradient(from var(--cm-btn-angle), var(--cm-plum-dark) 0%, var(--cm-mauve) 25%, var(--cm-gold) 45%, var(--cm-gold-light) 50%, var(--cm-gold) 55%, var(--cm-mauve) 75%, var(--cm-plum-dark) 100%);
+    animation:cm-btn-spin 4s linear infinite; }
+  @keyframes cm-btn-spin { to { --cm-btn-angle:360deg; } }
+  .btn-accept { font-family:'Mulish',sans-serif; background:var(--cm-plum-dark); color:#fff; border:none; border-radius:999px; padding:16px 30px; font-size:16px; font-weight:700; cursor:pointer; width:100%; display:block; }
+  .btn-accept:hover { background:var(--cm-plum-mid); }
+  .btn-accept[disabled] { opacity:.6; cursor:default; }
+
+  /* ── MODAL CONFIRMATION ── */
+  .modal-overlay { position:fixed; inset:0; z-index:100; display:none; align-items:center; justify-content:center; padding:20px; background:rgba(46,26,40,0.55); -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px); }
+  .modal-overlay.show { display:flex; }
+  .modal { background:var(--cm-white); border-radius:20px; padding:28px 24px; max-width:420px; width:100%; box-shadow:0 12px 48px rgba(46,26,40,0.30); text-align:left; }
+  .modal-title { font-family:'Fraunces',serif; font-style:italic; font-size:22px; color:var(--cm-plum-dark); margin-bottom:10px; }
+  .modal-text { font-size:15px; line-height:1.55; color:var(--cm-text); margin-bottom:22px; }
+  .modal-actions { display:flex; gap:12px; }
+  .modal-cancel, .modal-confirm { flex:1; border-radius:999px; padding:13px; font:700 15px/1 Mulish,sans-serif; cursor:pointer; }
+  .modal-cancel { background:none; border:1.5px solid var(--cm-mauve); color:var(--cm-plum-dark); }
+  .modal-confirm { background:var(--cm-plum-dark); border:none; color:#fff; }
+  .modal-confirm[disabled] { opacity:.6; cursor:default; }
+
+  @media (prefers-reduced-motion: reduce) {
+    #cm-player-root .cm-player-box, .cm-btn-wrap { animation:none; }
+    #cm-player-root .cm-equalizer span { animation:none; height:14px; }
+  }
 </style>
 </head>
 <body>
 <div class="wrap">
+  <div class="cm-logo">Chanson<span>Mémoire</span></div>
 
-  <h1 id="title">Votre chanson est prête</h1>
-  <p class="lead">Une dernière étape pour la recevoir — puis elle est à vous.</p>
+  <div class="eyebrow">Votre chanson est prête</div>
+  <h1 id="title">Votre chanson</h1>
+  <p class="subtitle" id="subtitle"></p>
 
-  <!-- ÉTAPE 1 : gate « Recevoir ma chanson » -->
-  <div class="card" id="gate">
-    <button class="btn" id="btnRecevoir" type="button">Recevoir ma chanson</button>
-  </div>
-
-  <!-- ÉTAPE 2 : choisir la version + signature (acceptation) -->
-  <div class="card hidden" id="signCard">
-    <label for="pcVersion">Choisissez la version à recevoir</label>
-    <select id="pcVersion" class="pc-select" aria-label="Choisir la version à recevoir"></select>
-    <audio id="pcPreview" controls preload="none"></audio>
-
-    <label for="sigName" style="margin-top:18px;">Votre nom (signature)</label>
-    <input type="text" id="sigName" autocomplete="name" placeholder="Prénom et nom">
-    <p class="accept" id="acceptText">
-      En signant, je confirme recevoir le produit numérique (la chanson, dans la version choisie ci-dessus)
-      et l'accepter. Voir les <a href="/condition-de-vente" target="_blank" rel="noopener">conditions de vente</a>.
-    </p>
-    <button class="btn" id="btnSigner" type="button">Accepter cette version</button>
-    <p class="err hidden" id="sigErr">Merci d'inscrire votre nom pour confirmer.</p>
-  </div>
-
-  <!-- ÉTAPE 3 : chanson révélée -->
-  <div class="hidden" id="songCard">
-    <div class="card">
-      <audio id="player" controls preload="none"></audio>
-      <div class="actions">
-        <button class="btn" id="btnDownload" type="button">Télécharger ma chanson</button>
-      </div>
-      <p class="muted-note">La chanson vous appartient. Téléchargez-la pour la garder pour toujours.</p>
-    </div>
-
-    <!-- Actions post-achat -->
-    <div class="card">
-      <label>Envie d'ajustements ?</label>
-      <div class="actions">
-        <a class="btn btn-ghost" id="actLyrics" href="#">Modifier les paroles</a>
-        <button class="btn btn-ghost" id="actSong" type="button">Régénérer la chanson</button>
-        <button class="btn btn-ghost" id="actCover" type="button">Créer un cover</button>
-      </div>
-
-      <!-- Formulaire cover (garde la mélodie, ajuste les paroles) -->
-      <div class="hidden" id="coverForm" style="margin-top:14px;">
-        <label for="coverNotes">Vos ajustements (paroles, prononciation, style)</label>
-        <input type="text" id="coverNotes" placeholder="Ex : remplacer « maman » par « ma mère », garder la même mélodie…">
-        <div class="actions" style="margin-top:10px;">
-          <button class="btn" id="coverSubmit" type="button">Lancer le cover</button>
+  <!-- LECTEUR (porté de l'aperçu) -->
+  <div id="cm-player-root">
+    <div class="cm-players-container">
+      <div class="cm-player-wrap">
+        <div class="cm-player-box">
+          <div class="cm-title" id="playerTitle">Votre chanson</div>
+          <div class="cm-equalizer cm-eq">
+            <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+          </div>
+          <audio class="cm-audio"><source src="" type="audio/mpeg"></audio>
+          <button class="cm-play-btn" type="button" disabled><i class="fa-solid fa-play"></i></button>
+          <div class="cm-time"><span class="cm-current">0:00</span><span class="cm-total">0:00</span></div>
+          <div class="cm-progress-wrap">
+            <div class="cm-progress-bar"></div>
+            <input class="cm-progress" type="range" min="0" max="100" step="0.01" value="0">
+          </div>
+          <div class="cm-volume-wrap">
+            <button class="cm-mute-btn" type="button"><i class="fa-solid fa-volume-high"></i></button>
+            <div class="cm-volume-slider-wrap">
+              <div class="cm-volume-bar"></div>
+              <input class="cm-volume" type="range" min="0" max="1" step="0.01" value="1">
+            </div>
+          </div>
         </div>
       </div>
-
-      <p class="muted-note">Plafond de 5 régénérations (chanson + cover) après l'achat.</p>
-      <p class="muted-note hidden" id="actMsg"></p>
+    </div>
+    <div class="cm-ia-mention">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2z"/></svg>
+      Chanson créée par intelligence artificielle à partir des souvenirs partagés
     </div>
   </div>
 
+  <p class="loading" id="loading">La chanson se télécharge… quelques secondes d'attente.</p>
+
+  <div class="accept-zone">
+    <div class="cm-btn-wrap">
+      <button class="btn-accept" id="btnAccept" type="button">Accepter cette version et télécharger</button>
+    </div>
+    <p class="note">Vous recevrez votre chanson et vos paroles en PDF sur votre page.</p>
+  </div>
+</div>
+
+<!-- MODAL CONFIRMATION -->
+<div class="modal-overlay" id="confirmOverlay" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+    <div class="modal-title" id="confirmTitle">Confirmer votre version</div>
+    <p class="modal-text">Vous êtes sur le point d'accepter cette version. Vous recevrez votre chanson et vos paroles en PDF sur votre page. Confirmer ?</p>
+    <div class="modal-actions">
+      <button class="modal-cancel" id="confirmCancel" type="button">Pas encore</button>
+      <button class="modal-confirm" id="confirmOk" type="button">Oui, accepter</button>
+    </div>
+  </div>
 </div>
 
 <script>
 (function(){
   'use strict';
-  var ACCEPT_TEXT_VERSION = 'cgv-livraison-v1-2026-06';
-  /* Webhook direct CM - MAKE C-gen. (Proxy remis a la fin, une fois le coeur teste.) */
-  var MAKE_C_GEN_WEBHOOK = 'https://hook.us1.make.com/uxpwxw1xqjm3x7mt35qjvdm2t8y9fvv4';
   var UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  var ACCEPT_TEXT_VERSION = 'cgv-livraison-v2-2026-06';
   var token = new URLSearchParams(window.location.search).get('id') || '';
-
-  var gate     = document.getElementById('gate');
-  var signCard = document.getElementById('signCard');
-  var songCard = document.getElementById('songCard');
 
   if(!UUID_V4.test(token)){
     document.getElementById('title').textContent = 'Lien invalide';
-    gate.classList.add('hidden');
+    document.getElementById('cm-player-root').style.display = 'none';
+    document.querySelector('.accept-zone').style.display = 'none';
+    document.getElementById('loading').style.display = 'none';
     return;
   }
 
-  /* Étape 1 -> 2 : révèle le choix de version + signature */
-  document.getElementById('btnRecevoir').addEventListener('click', function(){
-    gate.classList.add('hidden');
-    signCard.classList.remove('hidden');
-    chargerVersions();
+  var wrap     = document.querySelector('.cm-player-wrap');
+  var audio    = wrap.querySelector('.cm-audio');
+  var source   = audio.querySelector('source');
+  var playBtn  = wrap.querySelector('.cm-play-btn');
+  var eq       = wrap.querySelector('.cm-eq');
+  var progress = wrap.querySelector('.cm-progress');
+  var bar      = wrap.querySelector('.cm-progress-bar');
+  var curEl    = wrap.querySelector('.cm-current');
+  var totEl    = wrap.querySelector('.cm-total');
+  var volInput = wrap.querySelector('.cm-volume');
+  var volBar   = wrap.querySelector('.cm-volume-bar');
+  var muteBtn  = wrap.querySelector('.cm-mute-btn');
+  var loading  = document.getElementById('loading');
+  var lastVol = 1, isDragging = false;
+
+  function fmt(t){ if(!isFinite(t)) t = 0; var m=Math.floor(t/60), s=Math.floor(t%60); return m+':'+(s<10?'0'+s:s); }
+
+  /* 1. Charge la version ACHETÉE : titre + style + ambiance + audio complet (lire-projet, gaté serveur). */
+  fetch('/api/lire-projet', {
+    method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ token: token })
+  })
+  .then(function(r){ return r.ok ? r.json() : null; })
+  .then(function(d){
+    if(!d) { loading.textContent = "Lien introuvable."; return; }
+    if(d.titre){
+      document.getElementById('title').textContent = d.titre;
+      document.getElementById('playerTitle').textContent = d.titre;
+      document.title = d.titre + ' — Chanson Mémoire';
+    }
+    var bits = [d.style, d.ambiance].filter(Boolean);
+    if(bits.length) document.getElementById('subtitle').textContent = bits.join(' · ');
+    if(d.audio_url){ source.src = d.audio_url; audio.load(); }
+    else { loading.textContent = "Votre chanson se finalise — réessayez dans un instant."; }
+  })
+  .catch(function(){ loading.textContent = "Une erreur est survenue. Réessayez dans un instant."; });
+
+  /* 2. Lecteur plein format (durée réelle). */
+  audio.addEventListener('loadedmetadata', function(){
+    progress.max = audio.duration || 100;
+    totEl.textContent = fmt(audio.duration);
+    loading.style.display = 'none';
+    playBtn.disabled = false;
+  });
+  audio.addEventListener('error', function(){ loading.textContent = "Lecture indisponible pour le moment."; });
+
+  playBtn.addEventListener('click', function(){
+    if(playBtn.disabled || !source.src) return;
+    if(audio.paused){ audio.play().then(function(){ playBtn.innerHTML='<i class="fa-solid fa-pause"></i>'; eq.classList.add('active'); }).catch(function(){}); }
+    else { audio.pause(); playBtn.innerHTML='<i class="fa-solid fa-play"></i>'; eq.classList.remove('active'); }
+  });
+  audio.addEventListener('timeupdate', function(){
+    if(isDragging) return;
+    var dur = audio.duration || 1;
+    progress.value = audio.currentTime;
+    bar.style.width = ((audio.currentTime/dur)*100) + '%';
+    curEl.textContent = fmt(audio.currentTime);
+  });
+  audio.addEventListener('ended', function(){ audio.currentTime=0; playBtn.innerHTML='<i class="fa-solid fa-play"></i>'; eq.classList.remove('active'); bar.style.width='0%'; });
+  progress.addEventListener('mousedown', function(){ isDragging=true; });
+  progress.addEventListener('touchstart', function(){ isDragging=true; });
+  progress.addEventListener('mouseup', function(){ isDragging=false; });
+  progress.addEventListener('touchend', function(){ isDragging=false; });
+  progress.addEventListener('input', function(){
+    var dur = audio.duration || 1; var val = parseFloat(progress.value);
+    audio.currentTime = val; bar.style.width = ((val/dur)*100) + '%'; curEl.textContent = fmt(val);
+  });
+  function setVolIcon(v){ muteBtn.innerHTML = v==0 ? '<i class="fa-solid fa-volume-xmark"></i>' : v<0.5 ? '<i class="fa-solid fa-volume-low"></i>' : '<i class="fa-solid fa-volume-high"></i>'; }
+  volInput.addEventListener('input', function(){ var v=parseFloat(volInput.value); audio.volume=v; volBar.style.width=(v*100)+'%'; setVolIcon(v); });
+  muteBtn.addEventListener('click', function(){
+    if(audio.volume>0){ lastVol=audio.volume; audio.volume=0; volInput.value=0; volBar.style.width='0%'; setVolIcon(0); }
+    else { audio.volume=lastVol||1; volInput.value=audio.volume; volBar.style.width=(audio.volume*100)+'%'; setVolIcon(audio.volume); }
   });
 
-  /* Remplit le menu de versions (audio complet post-achat) + lecteur d'écoute. */
-  function chargerVersions(){
-    var sel  = document.getElementById('pcVersion');
-    var prev = document.getElementById('pcPreview');
-    if(!sel) return;
-    fetch('/api/lire-versions', {
-      method:'POST', headers:{ 'Content-Type':'application/json' },
-      body:JSON.stringify({ token: token })
-    })
-    .then(function(r){ return r.ok ? r.json() : null; })
-    .then(function(d){
-      if(!d || !Array.isArray(d.versions) || !d.versions.length) return;
-      sel.innerHTML = '';
-      d.versions.forEach(function(v){
-        var o = document.createElement('option');
-        o.value = String(v.generation_no);
-        var bits = [v.style, v.ambiance].filter(Boolean);
-        o.textContent = 'V' + v.v + (bits.length ? ' · ' + bits.join(' · ') : '');
-        o.setAttribute('data-url', v.audio_url || '');
-        sel.appendChild(o);
-      });
-      sel.selectedIndex = d.versions.length - 1;          /* plus récente par défaut */
-      function ecouter(){ var o = sel.options[sel.selectedIndex]; if(prev && o){ prev.src = o.getAttribute('data-url') || ''; } }
-      ecouter();
-      sel.addEventListener('change', ecouter);
-    })
-    .catch(function(){});
-  }
+  /* 3. Accepter -> popup -> confirme -> accepter-livraison (SANS signature) -> /page-memoire. */
+  var overlay = document.getElementById('confirmOverlay');
+  document.getElementById('btnAccept').addEventListener('click', function(){ overlay.classList.add('show'); overlay.setAttribute('aria-hidden','false'); });
+  document.getElementById('confirmCancel').addEventListener('click', function(){ overlay.classList.remove('show'); overlay.setAttribute('aria-hidden','true'); });
+  overlay.addEventListener('click', function(e){ if(e.target===overlay){ overlay.classList.remove('show'); } });
 
-  /* Étape 2 : signature -> accepter-livraison.js (écrit la preuve serveur) */
-  document.getElementById('btnSigner').addEventListener('click', function(){
-    var name = document.getElementById('sigName').value.trim();
-    var err  = document.getElementById('sigErr');
-    if(name.length < 2){ err.classList.remove('hidden'); return; }
-    err.classList.add('hidden');
-
-    var btn = document.getElementById('btnSigner');
-    btn.disabled = true; btn.textContent = 'Un instant…';
-
+  document.getElementById('confirmOk').addEventListener('click', function(){
+    var b = this; b.disabled = true; b.textContent = 'Un instant…';
     fetch('/api/accepter-livraison', {
       method:'POST', headers:{ 'Content-Type':'application/json' },
-      body:JSON.stringify({ token: token, signature_name: name, text_version: ACCEPT_TEXT_VERSION, generation_no: parseInt((document.getElementById('pcVersion')||{}).value, 10) || undefined })
+      body:JSON.stringify({ token: token, text_version: ACCEPT_TEXT_VERSION })
     })
     .then(function(r){ return r.ok ? r.json() : null; })
     .then(function(res){
       if(!res || !res.ok){ throw new Error('refus'); }
-      revealSong();
+      window.location.href = '/page-memoire?id=' + encodeURIComponent(token);
     })
     .catch(function(){
-      btn.disabled = false; btn.textContent = 'Confirmer et recevoir';
-      err.textContent = 'Une erreur est survenue. Veuillez réessayer.';
-      err.classList.remove('hidden');
+      b.disabled = false; b.textContent = 'Oui, accepter';
+      alert("Une erreur est survenue. Veuillez réessayer.");
     });
-  });
-
-  /* Étape 3 : révèle la chanson (lecture via lire-projet, gaté payé côté serveur) */
-  function revealSong(){
-    signCard.classList.add('hidden');
-    songCard.classList.remove('hidden');
-
-    fetch('/api/lire-projet', {
-      method:'POST', headers:{ 'Content-Type':'application/json' },
-      body:JSON.stringify({ token: token })
-    })
-    .then(function(r){ return r.ok ? r.json() : null; })
-    .then(function(d){
-      if(d && d.titre){ document.getElementById('title').textContent = d.titre; }
-      if(d && d.audio_url){ document.getElementById('player').src = d.audio_url; }
-    })
-    .catch(function(){});
-
-    /* Modifier les paroles = page revision existante (régén paroles directe, non plafonnée). */
-    document.getElementById('actLyrics').href = '/revision?id=' + encodeURIComponent(token);
-  }
-
-  /* Déclenche une (re)génération Suno via MAKE C-gen. Plafond 5 post-achat enforced SERVEUR. */
-  function triggerSuno(payload, btn){
-    btn.disabled = true;
-    fetch(MAKE_C_GEN_WEBHOOK, {
-      method:'POST', headers:{ 'Content-Type':'application/json' },
-      body:JSON.stringify(payload)
-    })
-    .then(function(r){ return r.json().catch(function(){ return {}; }); })
-    .then(function(res){
-      if(res && res.status === 'plafond'){
-        // Plafond atteint -> message « nous contacter », on réactive le bouton.
-        btn.disabled = false;
-        showActMsg(res.message || 'Vous avez atteint la limite de régénérations. Écrivez-nous et nous vous aiderons avec plaisir.');
-        return;
-      }
-      showActMsg('Votre nouvelle version est en cours — vous la recevrez par courriel et elle apparaîtra ici dans quelques minutes.');
-    })
-    .catch(function(){
-      btn.disabled = false;
-      showActMsg('Une erreur est survenue. Veuillez réessayer.');
-    });
-  }
-  function showActMsg(t){ var m=document.getElementById('actMsg'); m.textContent=t; m.classList.remove('hidden'); }
-
-  /* Régénérer la chanson : nouvelle mélodie, mêmes paroles. */
-  document.getElementById('actSong').addEventListener('click', function(){
-    if(!window.confirm('Régénérer créera une nouvelle mélodie à partir des mêmes paroles. Continuer ?')) return;
-    triggerSuno({ token: token, mode: 'song_regeneration', post_purchase: true }, this);
-  });
-  /* Cover : garde la mélodie, ajuste les paroles (décortique Anthropic côté Make). */
-  document.getElementById('actCover').addEventListener('click', function(){
-    document.getElementById('coverForm').classList.toggle('hidden');
-  });
-  document.getElementById('coverSubmit').addEventListener('click', function(){
-    var notes = document.getElementById('coverNotes').value.trim();
-    triggerSuno({ token: token, mode: 'cover', post_purchase: true, demande_client: notes }, this);
-  });
-
-  /* Téléchargement gaté + journalisé -> renvoie l'URL complète */
-  document.getElementById('btnDownload').addEventListener('click', function(){
-    var btn = this; btn.disabled = true;
-    fetch('/api/telecharger', {
-      method:'POST', headers:{ 'Content-Type':'application/json' },
-      body:JSON.stringify({ token: token })
-    })
-    .then(function(r){ return r.ok ? r.json() : null; })
-    .then(function(res){
-      btn.disabled = false;
-      if(res && res.audio_url){ window.location.href = res.audio_url; }
-    })
-    .catch(function(){ btn.disabled = false; });
   });
 })();
 </script>
