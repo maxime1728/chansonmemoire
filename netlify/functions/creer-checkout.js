@@ -43,6 +43,12 @@ exports.handler = async (event) => {
     return { statusCode: 400, body: JSON.stringify({ error: 'Version invalide' }) };
   }
 
+  // Order bumps cochés sur la page de confirmation (clés connues uniquement → anti-tamper).
+  const BUMP_KEYS = ['instrumental', 'paroles_vivantes'];
+  const bumpsRequested = Array.isArray(body.bumps)
+    ? body.bumps.filter(b => BUMP_KEYS.includes(b))
+    : [];
+
   const headers = { Authorization: `Bearer ${AT_TOKEN}` };
 
   try {
@@ -78,10 +84,10 @@ exports.handler = async (event) => {
       return { statusCode: 400, body: JSON.stringify({ error: 'Version introuvable' }) };
     }
 
-    // 3. Articles. Pour des ORDER BUMPS natifs (optional_items, ajoutables sur la PAGE STRIPE), les
-    //    articles doivent être des Prix Stripe : Stripe interdit optional_items avec un montant
-    //    personnalisé (price_data). Donc si STRIPE_PRICE_SONG est défini -> chemin Price IDs + bumps ;
-    //    sinon repli price_data (libellé dynamique, sans bumps natifs) pour ne rien casser avant config.
+    // 3. Articles. Les ORDER BUMPS sont choisis sur NOTRE page de confirmation (layout maîtrisé) et
+    //    deviennent des line_items Stripe (1 transaction). Ça exige des Prix Stripe (price IDs). Donc si
+    //    STRIPE_PRICE_SONG est défini -> chemin Price IDs (chanson + bumps cochés) ; sinon repli price_data
+    //    (chanson seule, libellé « V{rang} ») pour que le bouton marche même avant config des Prix.
     const songId = gen.song_id || '';
     const email  = (body.email || '').trim();
 
@@ -103,20 +109,20 @@ exports.handler = async (event) => {
       return p;
     }
 
-    // Chemin A — Prix Stripe + order bumps (optional_items, ajoutables d'un clic sur la page Stripe).
+    // Chemin A — Prix Stripe : chanson + bumps CHOISIS sur la page de confirmation (line_items,
+    //  une seule transaction). Les bumps sont décidés sur notre page (layout maîtrisé), pas sur Stripe.
     function paramsAvecPrix() {
       const p = paramsBase();
       p.append('line_items[0][price]', SONG_PRICE);
       p.append('line_items[0][quantity]', '1');
-      let oi = 0;
-      for (const pid of [PRICE_INSTRU, PRICE_PAROLES]) {
-        if (!pid) continue;
-        p.append(`optional_items[${oi}][price]`, pid);
-        p.append(`optional_items[${oi}][quantity]`, '1');
-        p.append(`optional_items[${oi}][adjustable_quantity][enabled]`, 'true');
-        p.append(`optional_items[${oi}][adjustable_quantity][minimum]`, '0');
-        p.append(`optional_items[${oi}][adjustable_quantity][maximum]`, '1');
-        oi += 1;
+      const bumpMap = { instrumental: PRICE_INSTRU, paroles_vivantes: PRICE_PAROLES };
+      let li = 1;
+      for (const key of bumpsRequested) {
+        const pid = bumpMap[key];
+        if (!pid) continue;                       // env de prix manquante -> on saute (le repli protège)
+        p.append(`line_items[${li}][price]`, pid);
+        p.append(`line_items[${li}][quantity]`, '1');
+        li += 1;
       }
       return p;
     }
@@ -146,36 +152,28 @@ exports.handler = async (event) => {
     }
 
     // 5. Tente le chemin Prix+bumps si configuré. Si Stripe le REFUSE (Prix manquant, mauvais mode
-    //    test/live, paramètre non supporté…), REPLI AUTOMATIQUE sur price_data : le bouton ne doit
-    //    JAMAIS rester cassé à cause d'une config de Prix incomplète. L'erreur Stripe est journalisée.
+    //    test/live…), REPLI AUTOMATIQUE sur price_data (chanson seule) : le bouton ne doit JAMAIS
+    //    rester cassé à cause d'une config de Prix incomplète. L'erreur Stripe est journalisée.
     let resultat;
-    let diagPrix = null;   // DIAGNOSTIC TEMPORAIRE : raison Stripe du refus du chemin Prix/bumps
     if (SONG_PRICE) {
       resultat = await creerSession(paramsAvecPrix());
       if (!resultat.ok) {
-        diagPrix = resultat.err;
         console.error('[creer-checkout] Chemin Prix/bumps refusé par Stripe → repli price_data. Détail:', resultat.err);
         resultat = await creerSession(paramsPriceData());
       }
     } else {
-      diagPrix = 'STRIPE_PRICE_SONG non défini → chemin price_data (sans bumps).';
       resultat = await creerSession(paramsPriceData());
     }
 
     if (!resultat.ok) {
       console.error('[creer-checkout] Stripe a refusé la session (repli inclus). Détail:', resultat.err);
-      return { statusCode: 502, body: JSON.stringify({ error: 'Création du paiement échouée', _diag: resultat.err }) };
+      return { statusCode: 502, body: JSON.stringify({ error: 'Création du paiement échouée' }) };
     }
-
-    // _diag = TEMPORAIRE : pourquoi les bumps n'apparaissent pas (visible dans l'onglet Réseau → réponse
-    // de /api/creer-checkout). À RETIRER une fois le chemin Prix/bumps validé.
-    const out = { url: resultat.url };
-    if (diagPrix) out._diag = diagPrix;
 
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(out)
+      body: JSON.stringify({ url: resultat.url })
     };
   } catch (err) {
     return { statusCode: 500, body: JSON.stringify({ error: 'Erreur serveur' }) };
