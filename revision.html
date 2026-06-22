@@ -239,7 +239,7 @@
 
     /* ── Polling (chargement initial) ── */
     const POLL_INTERVAL = 5000;
-    const MAX_ESSAIS    = 24;
+    const MAX_ESSAIS    = 12;   /* 12 x 5s = ~60s avant le message d'erreur (les paroles sont rapides ; au-delà = échec probable) */
     const STATUTS_PRETS = ['lyrics_generated', 'audio_generated', 'validated'];
     let essais = 0, pollTimer = null, fini = false;
 
@@ -300,7 +300,7 @@
     }
 
     function afficherAttenteLongue(){
-      setTexte('erreur-detail', "La création prend un peu plus de temps que prévu. Nous vous enverrons un courriel dès que vos paroles seront prêtes — vous pourrez revenir avec le lien reçu.");
+      setTexte('erreur-detail', "La création a pris plus de temps que prévu — ça arrive rarement. Clique « Réessayer » pour relancer (c'est généralement instantané).");
       montrer('etat-erreur');
     }
     /* Paroles non générables (réponses trop minces) : message utile + Réessayer relance la génération. */
@@ -324,7 +324,7 @@
         if(res.ok && d && d.paroles){ arreterPolling(); afficher(d); return; }
         throw new Error('retry');
       } catch(e){
-        setTexte('erreur-detail', "La création n'a pas pu aboutir cette fois. Nous finalisons vos paroles et vous enverrons un courriel dès qu'elles seront prêtes — vous pourrez revenir avec le lien reçu.");
+        setTexte('erreur-detail', "La création n'a pas pu aboutir cette fois. Réessaie dans un instant — si ça persiste, contacte-nous et on règle ça avec toi tout de suite.");
         if(btn){ btn.disabled = false; btn.textContent = 'Réessayer'; }
       }
     }
