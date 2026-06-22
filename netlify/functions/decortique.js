@@ -28,8 +28,9 @@ MODE : "cover" par défaut (garde la mélodie existante, ajuste les paroles). "r
 PROMPT STYLE AJUSTÉ (en anglais, directives musicales courtes) — RÈGLES DURES, non négociables :
 - JAMAIS de noms d'artistes ni de titres de chansons existantes.
 - TOUJOURS inclure "Quebec French accent, Canadian French".
-- Ne contredis PAS le style/ambiance/voix existants, sauf demande explicite du client.
-- Format : genre, instrumentation, tempo, type de voix (m/f), langue/accent.
+- NE mentionne JAMAIS le genre de la voix ("male voice" / "female voice", "homme", "femme") : la voix est DÉJÀ choisie par le client et gérée séparément (vocalGender Suno). N'inclus rien sur la voix dans le prompt style.
+- Ne contredis PAS le style/ambiance existants, sauf demande explicite du client.
+- Format : genre, instrumentation, tempo, langue/accent (PAS de voix).
 
 PAROLES AJUSTÉES (en français québécois) — UNIQUEMENT si la demande touche paroles/souvenirs/prononciation :
 - Garde TOUT ce qui fonctionne ; applique SEULEMENT la demande. N'invente AUCUN fait, nom ni lieu.
