@@ -65,12 +65,12 @@ prioritaire et attends mon go.
 - **CAPI Meta serveur** ✅ : `suivi-funnel.js` envoie **PreviewPlayed** + **InitiateCheckout** côté serveur (email **sha256**, **token-safe** : jamais le token à Meta, `event_id`=sha256(`recId.evt`), `event_source_url` générique sans `?id=`). Lit `META_CAPI_TOKEN` + `META_DATASET_ID` (dataset = `909919758755200`) en env (no-op si absents). Consentement = inclus dans les CGV (confirmé Maxime).
 - **Popups d'échec (principe : tout pépin → client informé + envoi/redirection auto une fois réglé)** ✅ :
   - `attente-chanson.html` : à **8 min** sans audio (24×20s) → **popup digne** (« petit délai, on t'envoie par courriel dès que prêt ») + la page **continue de sonder ~30 min** → redirige automatiquement si la chanson arrive tard (relance sentinelle).
-  - `revision.html` (paroles) : timeout **60 s** (au lieu de 2 min) + **fausse promesse de courriel RETIRÉE** (aucun courriel de paroles n'est envoyé ; le courriel-filet existe pour la CHANSON seulement). *(PR `fix/revision-timing-message` — à merger.)*
+  - `revision.html` (paroles) : **fenêtre 2 min avec AUTO-RELANCE backend** — 0-30 s sonde MAKE A (voie normale), puis relance `generate-lyrics` mode retry (anti-doublon) plusieurs fois jusqu'à 2 min → un échec transitoire de MAKE A se répare tout seul, sans clic ; message « Réessayer » manuel seulement après 2 min. **Fausse promesse de courriel RETIRÉE** (aucun courriel de paroles ; le courriel-filet est pour la CHANSON).
 - **`generate-lyrics.js`** ✅ durci : UUID strict + `formulaLiteral` en modes regenerate/retry (était la seule vraie faille d'injection du flag §10 sécurité).
 
 ## 4. EN COURS / branches non mergées
-- **PR `fix/revision-timing-message`** — timeout paroles 60 s + retrait fausse promesse courriel. *(poussée, à merger.)*
-- Tout le reste de la série juin est mergé.
+- **Rien en attente côté code** — toute la série juin est mergée (dont l'auto-relance des paroles `feat/revision-auto-retry`).
+- **Reste les actions Make/Airtable/Stripe de Maxime** (§7), dont **finaliser + activer la Sentinelle** (id 4794995, créée inactive).
 
 ## 5. PLAN POST-ACHAT (roadmap — détail dans `cm-post-achat-plan.md`)
 - **A. Aperçu** ✅ · **B. Page acceptation** ✅ · **C. page-memoire** ✅ MERGÉE.
@@ -87,7 +87,7 @@ prioritaire et attends mon go.
   - **C-cb — callback Suno** id `4792855`, webhook callback `…amlfm9t…`. Reçoit l'audio Suno → Cloudinary → met `cloudinary_audio_url` + `generation_status=audio_generated`.
   - **MAKE D — Stripe (achat)** id `4793505`, hook `2752092`. **⚠️ vraie clé Stripe restreinte TEST (module 2) → édition MANUELLE.**
   - **Cadeaux** id `4794401` — squelette (à finir, Phase D).
-  - **Sentinelle** — **À BÂTIR** (voir §9).
+  - **Sentinelle** id `4794995` (« CM - Sentinelle (relance chansons bloquees) ») — **CRÉÉE via MCP, INACTIVE** : planifiée /30 min, clé Suno = placeholder à coller. Voir §9.
   - Connexions : Airtable OAuth `4766682`, Cloudinary `4732918` (cloud `dcx1tfm47`), Gmail/Google `3661126`, keychain Anthropic `92227`. Data Store « Songs styles » `86715`.
 - **Airtable** base `appIADNKzDOVtpjWj` (pré-launch = test, OK d'écrire) :
   - Clients `tblQbF1OlE3uRxFra` · Projects `tblh7O8eoog7RyTMJ` · Generations `tblfrHFe1zH9apNlp` · Upsells `tbl0Z52D8l4555Has`.
@@ -109,33 +109,33 @@ prioritaire et attends mon go.
 9. **Validation légale** (un pro) : retrait signature, wording cadeaux/waitlist, consentement photos (vidéo), CGV (consentement CAPI inclus).
 
 ## 8. PROCHAINES ÉTAPES (ordre)
-1. **Merger** `fix/revision-timing-message`.
-2. **SENTINELLE** (§9) — la robustesse manquante : relance auto des chansons bloquées + (avec MAKE A retry + C-gen retry) « tout pépin → réglé tout seul ».
+1. **Finaliser + activer la SENTINELLE** (id 4794995, §9) : coller la clé Suno, vérifier les connexions, activer. Dernière brique « tout pépin → réglé tout seul » (avec MAKE A retry + C-gen retry).
 3. **Phase D** : finir Make Cadeaux (paroles PDF) + fulfillment des bumps payés.
 4. **Boucle décortique complète** (E/F) : Gmail envoi/lecture + Suno upload-cover + approbation.
 5. **CAPI Purchase (MAKE D) + Lead (MAKE A)**.
 6. **Signets v2** (Canva) ; **flip Stripe TEST→LIVE** ; validations légales.
 
-## 9. ROBUSTESSE & ÉCHECS — principe + SENTINELLE (à bâtir)
+## 9. ROBUSTESSE & ÉCHECS — principe + SENTINELLE (créée, à finaliser)
 **Principe acté (Maxime) : tout pépin de génération → le client est TOUJOURS informé (popup) + la chanson est envoyée / la page redirige automatiquement une fois le problème réglé.** Deux types d'échec, trois filets :
 
 - **Échec au LANCEMENT** (Suno refuse l'appel) → **retry 3×** dans C-gen (action Maxime §7.3). MAKE A (paroles) → **retry Anthropic** (§7.4).
 - **Échec de CALLBACK** (Suno lancé OK, `suno_task_id` posé, mais le callback C-cb n'arrive jamais → Generation reste `audio_pending` sans `cloudinary_audio_url`) → **SENTINELLE**.
-- **Côté client** : `attente-chanson` (popup 8 min + sonde 30 min, redirige si recovery) et `revision` (60 s) sont déjà en place.
+- **Côté client** : `attente-chanson` (popup 8 min + sonde 30 min, redirige si recovery) et `revision` (fenêtre 2 min + auto-relance backend de `generate-lyrics`) sont en place.
 
 ### Diagnostic du 22/06 (à retenir)
 Projet « sdgf » : le **1er appel Anthropic de MAKE A a échoué transitoirement** (pas un `invalid_input` — l'input était valide). MAKE A a alerté Maxime + créé le Project **sans** Generation (et a posé `funnel_step=lyrics_generated`, trompeur). Un retry manuel ~10 min plus tard a réussi (g1). **Leçon** : MAKE A a besoin d'un **retry auto** sur Anthropic (§7.4) ; et la page paroles ne doit pas promettre un courriel (corrigé). *(Note : MAKE A pose `funnel_step=lyrics_generated` même en échec — à durcir un jour : ne le poser que si `statusCode=200`.)*
 
-### SENTINELLE — spécification à bâtir (nouveau scénario Make)
-**But** : rattraper les chansons bloquées en `audio_pending` (callback perdu), **sans brûler de version**.
+### SENTINELLE — CRÉÉE (scénario Make id 4794995), à finaliser par Maxime
+**STATUT : créée via MCP, INACTIVE.** Maxime doit : ① coller la vraie clé Suno (= celle de C-gen module 8, header `Authorization`) à la place du placeholder `REMPLACER_PAR_CLE_SUNO` ; ② vérifier que chaque module est relié à la bonne connexion (Airtable 4766682, Gmail 3661126, Data Store 86715 — `islinked=false` à la création) ; ③ *(option)* ajouter un champ `sentinel_retries` + cap ; ④ **activer**.
+**But** : rattraper les chansons bloquées en `audio_pending` (callback perdu), **sans brûler de version**. Flow réel bâti :
 
-- **Déclencheur** : scheduler **toutes les 30 min**.
-- **Module 1 — Search Generations** (Airtable) : `generation_status = "audio_pending"` **ET** `cloudinary_audio_url` vide **ET** `created_date` antérieur à **~12 min** (`DATEADD(NOW(),-12,'minutes')`, pour ne pas attraper les générations fraîches encore normales). *(Optionnel : un compteur `sentinel_retries` pour plafonner à ~3 relances et éviter une boucle infinie sur une chanson définitivement morte → au-delà, route « alerte Maxime ».)*
+- **Déclencheur** : planifié **toutes les 30 min** (`{"type":"indefinitely","interval":1800}`).
+- **Module 1 — Search Generations** (Airtable) : `AND({generation_status}="audio_pending", {cloudinary_audio_url}="", IS_BEFORE({created_date}, DATEADD(NOW(),-12,'minutes')), IS_AFTER({created_date}, DATEADD(NOW(),-180,'minutes')))` → bloquées depuis 12 min à 3 h (la fenêtre se ferme seule après 3 h = borne les relances sans champ dédié). `maxRecords` 10.
 - **Pour chaque** Generation trouvée :
   - **Re-lancer Suno** : `POST` vers l'endpoint Suno generate **identique à C-gen module 8** (récupérer l'URL + les headers exacts via `scenarios_get 4792851`, ne pas deviner), `Authorization: Bearer <CLÉ SUNO>`, modèle **V5_5**, custom mode, `prompt` = `{{lyrics}}` de la Generation (échappement : `replace(replace(lyrics; '"'; "'"); newline; "\n")`), `style` = prompt style depuis le **Data Store « Songs styles » (86715)** selon `gen_music_style` × `gen_mood`, `title` = `{{song_title}}`, `vocalGender` depuis `{{gen_voice}}`, **`callBackUrl` = le webhook C-cb** (`…amlfm9t…`).
   - **Update la MÊME Generation** (PAS de create) : écrire le nouveau `suno_task_id` (et incrémenter `sentinel_retries` si on l'ajoute). Réutiliser la même ligne = ne pas gonfler `generations_count` / le plafond.
 - **Récupération** : le callback repart vers C-cb (existant) → `cloudinary_audio_url` + `audio_generated` → la page `attente-chanson` encore ouverte redirige (sonde 30 min) **et** (à venir) un courriel-filet part.
-- **⚠️ Contient la clé Suno** → comme C-gen / Cadeaux : **bâtir le squelette via MCP, Maxime colle la clé + relie les connexions à la main** ; ne jamais `scenarios_update` ce scénario ensuite sans préserver la clé. Réutiliser **verbatim** la structure du module 8 de C-gen (lue via `scenarios_get 4792851`) pour le bloc Suno — c'est la partie fragile (échappement de la chaîne data).
+- **⚠️ Contient la clé Suno** (placeholder pour l'instant) → ne JAMAIS `scenarios_update` ce scénario une fois la vraie clé collée (ça l'effacerait). Le bloc Suno reprend **verbatim** le module 8 de C-gen (même URL `api.sunoapi.org/api/v1/generate`, même échappement de la chaîne `data`, même `callBackUrl` C-cb).
 
 ## 10. MÉTHODE DE TRAVAIL
 - Plan court → « go » → **diff avant tout commit** → branche + PR (jamais `main` direct) → additif et testé.
