@@ -12,11 +12,45 @@ const TOKEN   = process.env.AIRTABLE_TOKEN;
 const API     = `https://api.airtable.com/v0/${BASE_ID}`;
 const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+// Mailgun TRANSACTIONNEL (post-achat). No-op si non configuré (ne casse jamais l'enregistrement).
+const MG_KEY     = process.env.MAILGUN_API_KEY;
+const MG_DOMAIN  = process.env.MAILGUN_DOMAIN;     // sous-domaine transactionnel (= celui de lancer-cadeau)
+const MG_FROM    = process.env.MAILGUN_FROM || 'Chanson Mémoire <info@chansonmemoire.ca>';
+const TEAM_EMAIL = process.env.TEAM_NOTIFY_EMAIL;  // destinataire de l'alerte interne « à approuver »
+
 function formulaLiteral(v) {
   const s = String(v);
   if (!s.includes('"')) return `"${s}"`;
   if (!s.includes("'")) return `'${s}'`;
   return null;
+}
+
+function esc(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/\n/g, '<br>'); }
+
+// Courriel Mailgun (HTML). best-effort -> false si non configuré / échec.
+async function envoyerCourriel(to, subject, html) {
+  if (!MG_KEY || !MG_DOMAIN || !to || !to.includes('@')) return false;
+  const form = new FormData();
+  form.append('from', MG_FROM);
+  form.append('to', to);
+  form.append('subject', subject);
+  form.append('html', html);
+  const auth = 'Basic ' + Buffer.from('api:' + MG_KEY).toString('base64');
+  const r = await fetch(`https://api.mailgun.net/v3/${MG_DOMAIN}/messages`, { method: 'POST', headers: { Authorization: auth }, body: form });
+  return r.ok;
+}
+
+// Courriel de l'acheteur (sur le Client lié) — jamais exposé au navigateur.
+async function emailClient(projet, headers) {
+  try {
+    const link  = projet.fields.Client;
+    const recId = Array.isArray(link) ? link[0] : null;
+    if (!recId) return '';
+    const r = await fetch(`${API}/Clients/${recId}`, { headers });
+    if (!r.ok) return '';
+    const d = await r.json();
+    return (d.fields && d.fields.email) || '';
+  } catch (_) { return ''; }
 }
 
 const SYSTEM = `Tu prépares une DEMANDE DE MODIFICATION post-achat pour une chanson hommage (Chanson Mémoire, Québec). Tu N'EXÉCUTES pas tout : tu analyses la demande et prépares le travail pour l'équipe.
@@ -143,6 +177,32 @@ ${demande}`;
     if (!rU.ok) {
       return { statusCode: 502, body: JSON.stringify({ error: 'Enregistrement impossible' }) };
     }
+
+    // 5. Courriels transactionnels (best-effort) — la demande est DÉJÀ enregistrée, ceci ne bloque rien :
+    //    (a) alerte interne « à approuver » à l'équipe ; (b) confirmation chaleureuse au client.
+    try {
+      if (TEAM_EMAIL) {
+        const teamHtml =
+          `<div style="font-family:Georgia,serif;color:#2E1A28;line-height:1.6;max-width:620px;">` +
+          `<h2 style="color:#5C2D4A;margin:0 0 4px;">Demande de modification à approuver</h2>` +
+          `<p style="color:#7A6070;margin:0 0 16px;">Réf. ${esc(refId)} · ${esc(categories)} · mode ${esc(mode)}</p>` +
+          `<p><strong>Personne honorée :</strong> ${esc(p.deceased_name || '')}<br>` +
+          `<strong>Titre actuel :</strong> ${esc(gen.song_title || '')}</p>` +
+          `<p><strong>Demande du client :</strong><br>${esc(demande)}</p>` +
+          `<p><strong>Analyse :</strong><br>${esc(compteRendu)}</p>` +
+          (adjLyrics ? `<p><strong>Paroles ajustées proposées :</strong><br>${esc(adjLyrics)}</p>` : '') +
+          (adjStyle ? `<p><strong>Prompt style ajusté :</strong><br>${esc(adjStyle)}</p>` : '') +
+          `<p style="color:#7A6070;margin-top:18px;">Pour approuver : passez <code>approval_status</code> à « approved » dans Airtable (projet « ${esc(p.project || '')} »).</p></div>`;
+        await envoyerCourriel(TEAM_EMAIL, `À approuver — ${refId} (${categories})`, teamHtml);
+      }
+      const to = await emailClient(projet, headers);
+      const clientHtml =
+        `<div style="font-family:Georgia,serif;color:#2E1A28;line-height:1.7;max-width:560px;">` +
+        `<p>Votre demande de modification est bien reçue.</p>` +
+        `<p>Notre équipe prépare votre nouvelle version avec soin et vous revient très bientôt. Vous n'avez rien à faire d'ici là.</p>` +
+        `<p style="color:#7A6070;margin-top:18px;">— L'équipe Chanson Mémoire</p></div>`;
+      await envoyerCourriel(to, 'Votre demande de modification est bien reçue', clientHtml);
+    } catch (_) { /* les courriels ne bloquent jamais l'enregistrement */ }
 
     return {
       statusCode: 200,
