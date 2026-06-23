@@ -12,11 +12,17 @@
   var p = new URLSearchParams(window.location.search);
   window._CM = {
     nom:    p.get('name')    || '',
-    email:  p.get('email')   || '',
     taskid: p.get('taskid')  || '',
     id:     p.get('id')      || '',   /* token UUID — clé de régénération */
     mp3:    p.get('preview1')|| ''
   };
+  /* Loi 25 — on NE garde PAS de PII dans l'URL : dès le chargement, on nettoie la barre d'adresse
+     pour ne laisser que le token (?id=). Le nom est gardé EN MÉMOIRE (perso ci-dessous) mais ne
+     persiste plus dans l'historique / le presse-papier / un partage de lien. L'email n'est plus
+     lu du tout (creer-checkout va le chercher côté serveur sur le Client lié). */
+  if (window._CM.id) {
+    try { history.replaceState({}, '', '/apercu?id=' + encodeURIComponent(window._CM.id)); } catch (e) {}
+  }
   /* Titre de l'onglet personnalisé */
   if (window._CM.nom) {
     document.title = 'Aperçu pour ' + window._CM.nom + ' — Chanson Mémoire';
@@ -1378,7 +1384,6 @@ body {
    Remplace le Payment Link. Crée la session via /api/creer-checkout (prix fixé serveur,
    version en metadata) puis redirige vers session.url. Un menu près du bouton choisit la version. */
 (function() {
-  var email = (window._CM && window._CM.email) || '';
   var token = (window._CM && window._CM.id)    || '';
   var busy = false;
   var cachedVersions = null;   /* versions chargées une fois (réutilisées par le popup d'achat) */
@@ -1399,7 +1404,7 @@ body {
     if (!genNo) { busy = false; alert("Le paiement n'a pas pu démarrer. Réessayez dans un instant."); return; }
     fetch('/api/creer-checkout', {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ token: token, generation_no: genNo, email: email, bumps: bumps || [] })
+      body: JSON.stringify({ token: token, generation_no: genNo, bumps: bumps || [] })
     })
     .then(function(r){ return r.ok ? r.json() : null; })
     .then(function(d){

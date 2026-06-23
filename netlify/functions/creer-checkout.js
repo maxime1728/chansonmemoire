@@ -89,7 +89,18 @@ exports.handler = async (event) => {
     //    STRIPE_PRICE_SONG est défini -> chemin Price IDs (chanson + bumps cochés) ; sinon repli price_data
     //    (chanson seule, libellé « V{rang} ») pour que le bouton marche même avant config des Prix.
     const songId = gen.song_id || '';
-    const email  = (body.email || '').trim();
+
+    // Courriel de l'acheteur : récupéré CÔTÉ SERVEUR sur le Client lié — jamais reçu du client ni
+    // de l'URL (Loi 25, minimisation). Préremplit le checkout ; Stripe le collecte de toute façon si absent.
+    let clientEmail = '';
+    try {
+      const link  = projet.fields.Client;
+      const recId = Array.isArray(link) ? link[0] : null;
+      if (recId) {
+        const rC = await fetch(`${API}/Clients/${recId}`, { headers });
+        if (rC.ok) { const dC = await rC.json(); clientEmail = (dC.fields && dC.fields.email) || ''; }
+      }
+    } catch (_) { /* best-effort : Stripe demandera l'email sinon */ }
 
     const SONG_PRICE    = process.env.STRIPE_PRICE_SONG;             // Prix Stripe one-time 139,97 $ CAD
     const PRICE_INSTRU  = process.env.STRIPE_PRICE_INSTRUMENTAL;     // Prix Stripe 19,99 $
@@ -105,7 +116,7 @@ exports.handler = async (event) => {
       if (songId) p.append('metadata[song_id]', songId);
       p.append('success_url', `${SITE}/page-chanson?id=${encodeURIComponent(token)}`);
       p.append('cancel_url',  `${SITE}/apercu?id=${encodeURIComponent(token)}`);
-      if (email && email.includes('@')) p.append('customer_email', email);
+      if (clientEmail && clientEmail.includes('@')) p.append('customer_email', clientEmail);
       return p;
     }
 
