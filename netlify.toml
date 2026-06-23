@@ -12,6 +12,18 @@
 [functions."nurture-cron"]
   schedule = "@hourly"
 
+# Sentinelle : récupère/relance les chansons bloquées (interroge Suno, régénère si vrai échec). Toutes les 30 min.
+[functions."sentinelle-cron"]
+  schedule = "*/30 * * * *"
+
+# Alerte 10h : courriel interne si une chanson reste bloquée >10h. Toutes les heures.
+[functions."alerte-cron"]
+  schedule = "@hourly"
+
+# Relance cover : déclenche la cover des corrections approuvées. Toutes les 15 min.
+[functions."cover-cron"]
+  schedule = "*/15 * * * *"
+
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
