@@ -29,6 +29,7 @@ function toHttps(u) {
 }
 
 const crypto = require('crypto');
+const { stripSectionTags } = require('./_lib/lyrics');
 
 // Extrait {cloud, type, publicId, ext} d'une URL Cloudinary. Gère /upload/ (public, anciens assets)
 // ET /authenticated/ déjà signée (s--sig--/ + version éventuelle à ignorer).
@@ -125,7 +126,7 @@ exports.handler = async (event) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         titre:             gen.song_title || '',
-        paroles:           gen.lyrics || '',
+        paroles:           stripSectionTags(gen.lyrics || ''),   // balises [Verse]/[Chorus] masquées au client
         statut:            gen.generation_status || '',     // lyrics_generated / audio_generated / validated
         audio_url:         audioUrl,
         suggestions:       gen.suggestions || '[]',         // bulles dynamiques — exposition INTENTIONNELLE (au-delà des 5 champs §6 ; à refléter dans CLAUDE.md §6)

@@ -11,6 +11,7 @@
 // Sécurité : POST, UUID v4, gaté purchased + approval_status=approved. Clés en env (SUNO_API_KEY, CLOUDINARY).
 
 const crypto = require('crypto');
+const { accentFor } = require('./_lib/lyrics');
 
 const BASE_ID  = process.env.AIRTABLE_BASE_ID;
 const AT_TOKEN = process.env.AIRTABLE_TOKEN;
@@ -92,7 +93,7 @@ exports.handler = async (event) => {
     const prompt = (p.adjusted_lyrics && p.adjusted_lyrics.trim()) || g.lyrics || '';
     if (!prompt.trim()) return { statusCode: 409, body: JSON.stringify({ error: 'Paroles introuvables' }) };
     const style = (p.adjusted_style_prompt && p.adjusted_style_prompt.trim())
-      || [g.gen_music_style || p.music_style, g.gen_mood || p.mood, 'Quebec French accent, Canadian French'].filter(Boolean).join(', ');
+      || [g.gen_music_style || p.music_style, g.gen_mood || p.mood, accentFor(p.language)].filter(Boolean).join(', ');
     const vocalGender = /Masculin/i.test(g.gen_voice || p.voice || '') ? 'm' : 'f';
 
     // 4. Suno Upload & Cover (async -> callback-cover).

@@ -10,6 +10,7 @@
 
 const PDFDocument = require('pdfkit');
 const crypto = require('crypto');
+const { stripSectionTags } = require('./_lib/lyrics');
 
 const BASE_ID  = process.env.AIRTABLE_BASE_ID;
 const AT_TOKEN = process.env.AIRTABLE_TOKEN;
@@ -176,7 +177,7 @@ exports.handler = async (event) => {
     if (!gen || !gen.fields.lyrics) return { statusCode: 409, body: JSON.stringify({ error: 'Paroles introuvables' }) };
 
     const titre   = gen.fields.song_title || '';
-    const paroles = gen.fields.lyrics || '';
+    const paroles = stripSectionTags(gen.fields.lyrics || '');   // PDF + courriel : balises Suno masquées
     const prenom  = projet.fields.deceased_name || '';
 
     // 1. PDF -> 2. Cloudinary -> 3. Airtable (pdf_url + marqueur pdf_template).

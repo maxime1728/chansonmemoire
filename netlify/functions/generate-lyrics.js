@@ -12,6 +12,7 @@
 const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
 const BASE_ID        = process.env.AIRTABLE_BASE_ID;
 const AT_API         = `https://api.airtable.com/v0/${BASE_ID}`;
+const { stripSectionTags } = require('./_lib/lyrics');   // masque les balises [Verse]/[Chorus] à l'affichage client
 
 // Token légitime = UUID v4 (généré par crypto.randomUUID()). Validé AVANT tout appel Airtable
 // dans les modes appelés par le client (regenerate/retry) : anti-injection filterByFormula +
@@ -67,14 +68,14 @@ TRUTH — ABSOLUTE RULE: use ONLY the information provided. NEVER invent a name,
 
 INVALID INPUT — LAST RESORT ONLY: return {"error":"invalid_input"} ONLY when the inputs are pure gibberish or random keystrokes (e.g. "asdfgh", "kkkk", "....") with NO usable detail at all. A first name plus even ONE short detail, brief answers, or typos (e.g. "ete au chalet", "conduite cowwwboy") are ENOUGH — write the song from what is there, correcting obvious typos. When in doubt, WRITE THE SONG. Never refuse just because the answers are short.
 
-STRUCTURE (in order, sections not named in the text):
-Verse 1: who they were, concrete, past tense. Verse 2: specific memories (place, moment, habit). Pre-chorus: lift toward gratitude. Chorus: celebrate the person, first name if natural. Bridge: most intimate, what went unsaid. Outro: how they live on, end on peace.
+STRUCTURE — precede EACH section with its Suno tag on its own line ([Intro], [Verse], [Pre-Chorus], [Chorus], [Bridge], [Outro]), in this order:
+[Intro] (optional, short, instrumental-feel or a soft line). [Verse] who they were, concrete, past tense. [Verse] specific memories (place, moment, habit). [Pre-Chorus] lift toward gratitude. [Chorus] celebrate the person, first name if natural. [Bridge] most intimate, what went unsaid. [Outro] how they live on, end on peace.
 
 REGISTER: avoid heavy words (mort, décès, disparu, enterrement, cercueil). FORBIDDEN: clichés ("tu es ma lumière", "ange gardien", "étoile qui brille") and heavy religious imagery (ange, là-haut, ciel).
 
 STYLE ADAPTATION: Pop direct/emotional; Country concrete+storytelling; R&B sensory; Folk/Acoustic intimate; Jazz sophisticated; Rock energy; Hip-hop syllabic; Cinematic sweeping; Latin/Salsa warm; Reggae steady groove; Electronic/Dance pulse.
 
-TECHNICAL: 2200-2800 characters. Consistent rhyme. Singable, even lines. Numbers in letters. NO brackets, NO section titles, NO commentary.
+TECHNICAL: 2200-2800 characters. Consistent rhyme. Singable, even lines. Numbers in letters. Use ONLY the Suno section tags above in brackets (e.g. [Verse], [Chorus]) on their own lines; no other brackets, no commentary.
 
 TITLE: create it FROM THE PROVIDED DETAILS (first name, what made them unique, the relationship, the memories) — NOT from the lyrics text. 2-6 words, evocative and dignified, never generic or cliché. It names the song as a whole and must stay stable across regenerations.
 ${SUGGESTIONS_RULES}
@@ -91,7 +92,7 @@ CRITICAL — PRESERVE CONTEXT: you are given the CURRENT lyrics and the client's
 
 Keep the same overall structure, tone, dignity and language as the current lyrics. Same intent: honor who the person was, love and gratitude that remain.
 
-TECHNICAL: keep it 2200-2800 characters, consistent rhyme, singable. NO brackets, NO section titles, NO commentary. Numbers in letters.
+TECHNICAL: keep it 2200-2800 characters, consistent rhyme, singable. Keep the Suno section tags ([Verse], [Chorus]…) on their own lines; no other brackets, no commentary. Numbers in letters.
 
 TITLE: KEEP the existing title EXACTLY as is. Do NOT change it unless the client EXPLICITLY asked to change the title.
 ${SUGGESTIONS_RULES}
@@ -233,7 +234,7 @@ exports.handler = async (event) => {
           statusCode: 200, headers: { 'content-type': 'application/json' },
           body: JSON.stringify({
             titre:       derniere.fields.song_title || '',
-            paroles:     derniere.fields.lyrics,
+            paroles:     stripSectionTags(derniere.fields.lyrics),
             suggestions: normSuggestions(sugg),
             statut:      derniere.fields.generation_status || 'lyrics_generated'
           })
@@ -276,7 +277,7 @@ exports.handler = async (event) => {
 
       return {
         statusCode: 200, headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ titre: titre, paroles: parsed.lyrics, suggestions: suggestions, statut: 'lyrics_generated' })
+        body: JSON.stringify({ titre: titre, paroles: stripSectionTags(parsed.lyrics), suggestions: suggestions, statut: 'lyrics_generated' })
       };
     } catch (err) {
       return { statusCode: 500, body: JSON.stringify({ error: 'Erreur serveur' }) };
@@ -356,7 +357,7 @@ ${modifications}`;
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
           titre:       nouveauTitre,
-          paroles:     parsed.lyrics,
+          paroles:     stripSectionTags(parsed.lyrics),
           suggestions: suggestions,
           statut:      'lyrics_generated'
         })
