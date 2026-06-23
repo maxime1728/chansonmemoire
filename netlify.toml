@@ -8,6 +8,10 @@
   # Les vraies clés (CLOUDINARY_API_SECRET, AIRTABLE_TOKEN, ANTHROPIC_API_KEY…) restent scannées.
   SECRETS_SCAN_OMIT_KEYS = "CLOUDINARY_CLOUD_NAME"
 
+# Séquence marketing « rattrapage » : moteur planifié (toutes les heures).
+[functions."nurture-cron"]
+  schedule = "@hourly"
+
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
