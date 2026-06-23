@@ -89,23 +89,39 @@ ${OUTPUT_RULES}`;
 }
 
 /* ───────────────────── Appel Anthropic + parsing ───────────────────── */
+// Réessai sur erreurs Anthropic TRANSITOIRES (surcharge/limite/coupure) — ces échecs reviennent vite,
+// donc 3 tentatives + court backoff tiennent dans le budget de temps. Les vraies pannes longues sont
+// gérées en amont par le réessai automatique de MAKE A (gestionnaire d'erreur). 4xx « client » = pas de réessai.
+const ANTHROPIC_RETRYABLE = new Set([429, 500, 502, 503, 529]);
+
 async function callAnthropic(systemPrompt, userPrompt, apiKey) {
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01'
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 2500,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: userPrompt }]
-    })
-  });
-  const data = await res.json();
-  return { ok: res.ok, status: res.status, data };
+  const ATTEMPTS = 3;
+  let last = { ok: false, status: 0, data: null };
+  for (let i = 0; i < ATTEMPTS; i++) {
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 2500,
+          system: systemPrompt,
+          messages: [{ role: 'user', content: userPrompt }]
+        })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok || !ANTHROPIC_RETRYABLE.has(res.status)) return { ok: res.ok, status: res.status, data };
+      last = { ok: false, status: res.status, data };          // transitoire -> on réessaie
+    } catch (e) {
+      last = { ok: false, status: 0, data: { error: e && e.message } };  // coupure réseau -> on réessaie
+    }
+    if (i < ATTEMPTS - 1) await new Promise(r => setTimeout(r, 1000 * (i + 1)));  // backoff 1s puis 2s
+  }
+  return last;
 }
 
 function parseModel(data) {
