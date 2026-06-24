@@ -168,7 +168,18 @@ body{font-family:'Mulish',sans-serif;background:var(--cm-bg);color:var(--cm-text
       <button class="cm-choice" data-value="Masculin"><span class="cm-choice-emoji">🎙️</span> Masculin</button>
       <button class="cm-choice" data-value="Féminin"><span class="cm-choice-emoji">🎤</span> Féminin</button>
     </div>
-    <div class="cm-nav"><button class="cm-btn-prev" data-target="4"><i class="fa-solid fa-arrow-left"></i> Retour</button></div>
+    <div class="cm-error" id="err-voice">Choisis une voix pour continuer.</div>
+    <label class="cm-consent-label" for="input-language" style="display:block;text-align:left;margin:18px 0 6px;">Langue de la chanson</label>
+    <select class="cm-input" id="input-language">
+      <option value="fr-CA">Français (Canada)</option>
+      <option value="fr-FR">Français (France)</option>
+      <option value="en">English</option>
+      <option value="es">Español</option>
+    </select>
+    <div class="cm-nav">
+      <button class="cm-btn-prev" data-target="4"><i class="fa-solid fa-arrow-left"></i> Retour</button>
+      <button class="cm-btn-next" id="btn-next-5">Continuer <i class="fa-solid fa-arrow-right"></i></button>
+    </div>
   </div>
 
   <div class="cm-step-card" data-step="6">
@@ -245,13 +256,6 @@ body{font-family:'Mulish',sans-serif;background:var(--cm-bg);color:var(--cm-text
     <div class="cm-q-eyebrow">Dernière étape</div>
     <h2 class="cm-q-title">Où veux-tu recevoir ta chanson ?</h2>
     <p class="cm-q-sub">Ton aperçu sera prêt en quelques minutes. Entre ton courriel pour le recevoir.</p>
-    <label class="cm-consent-label" for="input-language" style="display:block;text-align:left;margin-bottom:6px;">Langue de la chanson</label>
-    <select class="cm-input" id="input-language" style="margin-bottom:14px;">
-      <option value="fr-CA">Français (Canada)</option>
-      <option value="fr-FR">Français (France)</option>
-      <option value="en">English</option>
-      <option value="es">Español</option>
-    </select>
     <input class="cm-input" type="email" id="input-email" placeholder="ton@courriel.com" autocomplete="email">
     <div class="cm-error" id="err-email">Entre un courriel valide.</div>
     <div class="cm-consent">
@@ -379,8 +383,21 @@ body{font-family:'Mulish',sans-serif;background:var(--cm-bg);color:var(--cm-text
   }
   bindChoices('choices-relationship', 'relationship', 4);
   bindChoices('choices-music_style',  'music_style',  5);
-  bindChoices('choices-voice',        'voice',        6);
   bindChoices('choices-mood',         'mood',         7);
+
+  /* Voix : sélection SANS auto-avance (la langue est sur la même étape) -> bouton Continuer. */
+  document.querySelectorAll('#choices-voice .cm-choice').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('#choices-voice .cm-choice').forEach(function(b){ b.classList.remove('selected'); });
+      btn.classList.add('selected'); data.voice=btn.dataset.value;
+      var e=document.getElementById('err-voice'); if(e) e.classList.remove('show');
+    });
+  });
+  document.getElementById('btn-next-5').addEventListener('click', function(){
+    if(!data.voice){ document.getElementById('err-voice').classList.add('show'); return; }
+    var langSel=document.getElementById('input-language'); if(langSel) data.language=langSel.value;
+    goTo(6);
+  });
 
   /* ── PRÉ-REMPLISSAGE (régénération chanson) ──
      Relit les réponses précédentes via lire-survey.js (champs minimisés) et les réinjecte.
