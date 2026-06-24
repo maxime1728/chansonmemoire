@@ -1,7 +1,9 @@
 // netlify/functions/suivi-funnel.js
-// Suivi de parcours (funnel) pour les 2 événements CLIENT que Make ne peut pas capter :
-//   - preview_played   : le client a écouté l'aperçu (≠ aperçu seulement généré)
-//   - checkout_started : le client a cliqué « payer » (intention) avant de compléter Stripe
+// Suivi de parcours (funnel) + CAPI Meta (serveur) pour les événements du parcours.
+//   - preview_played   : le client a écouté l'aperçu (≠ aperçu seulement généré)   [navigateur]
+//   - checkout_started : le client a cliqué « payer » (intention) avant Stripe       [navigateur]
+//   - lead             : le projet vient d'être créé (survey)                         [MAKE A, serveur]
+//   - purchase         : achat confirmé                                               [MAKE D + page-chanson]
 //
 // EXCEPTION ASSUMÉE à « Make écrit, Netlify lit » (écriture ponctuelle, champs dédiés, best-effort).
 // PRINCIPE : le suivi NE DOIT JAMAIS casser l'UX → tout est best-effort, on répond 200 quoi qu'il arrive.
@@ -16,7 +18,7 @@ const API     = `https://api.airtable.com/v0/${BASE_ID}`;
 const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 // Événements acceptés (front + serveur). Le nom de l'event Meta correspondant est dans CAPI_EVENT (plus bas).
-// preview_played / checkout_started = appelés par le navigateur (apercu) ; purchase = par MAKE D ; lead = par MAKE A.
+// preview_played / checkout_started = appelés par le navigateur (apercu) ; purchase = MAKE D + page-chanson ; lead = MAKE A.
 
 function formulaLiteral(v) {
   const s = String(v);
@@ -40,6 +42,8 @@ const crypto       = require('crypto');
 const CAPI_TOKEN   = process.env.META_CAPI_TOKEN;     // secret — var d'env Netlify, JAMAIS en dur
 const CAPI_DATASET = process.env.META_DATASET_ID;     // ex. 909919758755200 — var d'env Netlify
 const CAPI_EVENT   = { preview_played: 'PreviewPlayed', checkout_started: 'InitiateCheckout', purchase: 'Purchase', lead: 'Lead' };
+// Drapeau d'idempotence par event (observabilité + anti-double-compte). preview_played n'a pas de drapeau (dédup gérée par event_id).
+const CAPI_SENT_FIELD = { lead: 'capi_lead_sent', checkout_started: 'capi_checkout_sent', purchase: 'capi_purchase_sent' };
 
 function sha256(v) { return crypto.createHash('sha256').update(String(v).trim().toLowerCase()).digest('hex'); }
 
@@ -57,12 +61,20 @@ async function clientEmailOf(projet, headers) {
 }
 
 // Envoi best-effort d'un événement CAPI. Ne lève jamais. No-op si token/dataset/événement absents.
-async function sendCapi(evt, projet, clientEmail, ip, ua) {
-  if (!CAPI_TOKEN || !CAPI_DATASET || !CAPI_EVENT[evt]) return;
+// Retourne { sent, summary } pour l'observabilité (capi_last_response) + l'idempotence (drapeau si sent).
+async function sendCapi(evt, projet, clientEmail, ip, ua, token) {
+  if (!CAPI_TOKEN || !CAPI_DATASET || !CAPI_EVENT[evt]) return { sent: false, summary: 'capi-off (env manquante)' };
   const f = projet.fields || {};
   const user_data = {};
   if (clientEmail && clientEmail.includes('@')) user_data.em = [sha256(clientEmail)];  // email HACHÉ
-  if (f.fbc) user_data.fbc = f.fbc;                 // fbc/fbp/IP/UA : NON hachés (spec Meta)
+  // fbc : cookie si présent, sinon RECONSTRUIT depuis fbclid (fb.1.<timestamp_ms>.<fbclid>)
+  // -> récupère l'attribution des clics payants quand le cookie _fbc manque (souvent le cas server-to-server).
+  let fbc = f.fbc;
+  if (!fbc && f.fbclid) {
+    const ts = Date.parse(f.created_date || '') || Date.now();
+    fbc = `fb.1.${ts}.${f.fbclid}`;
+  }
+  if (fbc)   user_data.fbc = fbc;                  // fbc/fbp/IP/UA : NON hachés (spec Meta)
   if (f.fbp) user_data.fbp = f.fbp;
   if (ip)    user_data.client_ip_address = ip;
   if (ua)    user_data.client_user_agent = ua;
@@ -72,7 +84,7 @@ async function sendCapi(evt, projet, clientEmail, ip, ua) {
     event_name:       CAPI_EVENT[evt],
     event_time:       Math.floor(Date.now() / 1000),
     action_source:    'website',
-    event_id:         sha256(`${projet.id}.${evt}`),   // dédup — haché, JAMAIS le token brut
+    event_id:         sha256(`${token}.${evt}`),   // dédup — basé sur le TOKEN (reproductible navigateur+serveur), haché, jamais brut
     event_source_url: 'https://chansonmemoire.ca' + (SRC[evt] || ''),  // SANS token
     user_data:        user_data
   };
@@ -80,12 +92,16 @@ async function sendCapi(evt, projet, clientEmail, ip, ua) {
   if (evt === 'purchase') data0.custom_data = { currency: 'CAD', value: Number(f.amount) || 0 };
   const payload = { data: [data0] };
   try {
-    await fetch(`https://graph.facebook.com/v21.0/${CAPI_DATASET}/events?access_token=${encodeURIComponent(CAPI_TOKEN)}`, {
+    const resp = await fetch(`https://graph.facebook.com/v21.0/${CAPI_DATASET}/events?access_token=${encodeURIComponent(CAPI_TOKEN)}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
-  } catch (_) { /* la CAPI ne casse jamais l'UX */ }
+    const txt = await resp.text().catch(() => '');
+    return { sent: resp.ok, summary: `${resp.status} ${String(txt).slice(0, 300)}` };
+  } catch (e) {
+    return { sent: false, summary: 'fetch-error ' + (e && e.message ? e.message : '') };  // la CAPI ne casse jamais l'UX
+  }
 }
 
 exports.handler = async (event) => {
@@ -128,10 +144,21 @@ exports.handler = async (event) => {
 
     // 3. Meta CAPI (serveur, best-effort, token-safe). Ne bloque jamais la réponse.
     try {
-      const ip = (event.headers['x-nf-client-connection-ip'] || event.headers['x-forwarded-for'] || '').split(',')[0].trim();
-      const ua = event.headers['user-agent'] || '';
-      const email = await clientEmailOf(projet, headers);
-      await sendCapi(evt, projet, email, ip, ua);
+      const sentField = CAPI_SENT_FIELD[evt];          // lead/checkout/purchase ont un drapeau d'idempotence
+      if (!sentField || f[sentField] !== true) {       // pas encore envoyé (ou event sans drapeau = preview)
+        // IP/UA : priorité au body (appel serveur MAKE A/D = vrai client) sinon headers (appel navigateur).
+        const ip = (body.client_ip_address || '').trim()
+          || (event.headers['x-nf-client-connection-ip'] || event.headers['x-forwarded-for'] || '').split(',')[0].trim();
+        const ua = (body.client_user_agent || '').trim() || event.headers['user-agent'] || '';
+        const email = await clientEmailOf(projet, headers);
+        const res = await sendCapi(evt, projet, email, ip, ua, token);
+        // Observabilité + idempotence : drapeau posé SEULEMENT si Meta a accepté (permet le réessai si échec).
+        if (sentField) {
+          const upd = { capi_last_response: res.summary };
+          if (res.sent) upd[sentField] = true;
+          try { await patchProject(projet.id, upd, headers); } catch (_) {}
+        }
+      }
     } catch (_) { /* CAPI best-effort */ }
 
     return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ok: true }) };

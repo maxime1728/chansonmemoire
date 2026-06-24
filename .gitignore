@@ -1,3 +1,5 @@
 *.blueprint*.json
 CM-C-gen-REBUILD.blueprint.json
 node_modules/
+.env
+.env.*
