@@ -76,7 +76,7 @@ exports.handler = async () => {
   try {
     // 1. INSCRIPTION des nouveaux leads (fenêtre 48 h -> n'enrôle jamais l'historique au déploiement).
     const aEnroler = await atList(
-      `AND({nurture_status}=BLANK(), {commercial_status}!='purchased', IS_AFTER({created_date}, DATEADD(NOW(),-48,'hours')))`,
+      `AND({nurture_status}=BLANK(), {commercial_status}!='purchased', {commercial_status}!='refunded', IS_AFTER({created_date}, DATEADD(NOW(),-48,'hours')))`,
       MAX_PER_RUN
     );
     for (const p of aEnroler) {
@@ -85,13 +85,15 @@ exports.handler = async () => {
       try { await atPatch(p.id, { nurture_status: 'active', nurture_step: 0, nurture_next_at: nextAt }); } catch (_) {}
     }
 
-    // 2. ARRÊT des convertis (ont acheté pendant la séquence).
+    // 2. ARRÊT de ceux pour qui la relance n'a plus de sens : achat -> converted ; remboursement -> done.
     const aConvertir = await atList(`AND({nurture_status}='active', {commercial_status}='purchased')`, MAX_PER_RUN);
     for (const p of aConvertir) { try { await atPatch(p.id, { nurture_status: 'converted' }); } catch (_) {} }
+    const aStopper = await atList(`AND({nurture_status}='active', {commercial_status}='refunded')`, MAX_PER_RUN);
+    for (const p of aStopper) { try { await atPatch(p.id, { nurture_status: 'done' }); } catch (_) {} }
 
     // 3. ENVOI des courriels dus.
     const aEnvoyer = await atList(
-      `AND({nurture_status}='active', {commercial_status}!='purchased', IS_BEFORE({nurture_next_at}, NOW()))`,
+      `AND({nurture_status}='active', {commercial_status}!='purchased', {commercial_status}!='refunded', IS_BEFORE({nurture_next_at}, NOW()))`,
       MAX_PER_RUN
     );
     let sent = 0;
