@@ -57,6 +57,7 @@ exports.handler = async (event) => {
 
   const token = (body.token || '').trim();
   if (!UUID_V4.test(token)) return { statusCode: 400, body: JSON.stringify({ error: 'Token invalide' }) };
+  const regenerate = !!body.regenerate;   // true = chanson COMPLÈTE (nouvelle mélodie, /generate) ; false = cover (mélodie préservée)
 
   const headers = { Authorization: `Bearer ${AT_TOKEN}` };
 
@@ -87,7 +88,7 @@ exports.handler = async (event) => {
     const g = gen.fields;
 
     const uploadUrl = fullAudioUrl(g.cloudinary_audio_url || '');
-    if (!uploadUrl) return { statusCode: 409, body: JSON.stringify({ error: 'Audio source introuvable' }) };
+    if (!regenerate && !uploadUrl) return { statusCode: 409, body: JSON.stringify({ error: 'Audio source introuvable' }) };
 
     // Paroles ajustées (decortique) -> sinon paroles d'origine. Style ajusté -> sinon style d'origine.
     const prompt = (p.adjusted_lyrics && p.adjusted_lyrics.trim()) || g.lyrics || '';
@@ -96,21 +97,26 @@ exports.handler = async (event) => {
       || [g.gen_music_style || p.music_style, g.gen_mood || p.mood, accentFor(p.language)].filter(Boolean).join(', ');
     const vocalGender = /Masculin/i.test(g.gen_voice || p.voice || '') ? 'm' : 'f';
 
-    // 4. Suno Upload & Cover (async -> callback-cover).
-    const rS = await fetch('https://api.sunoapi.org/api/v1/generate/upload-cover', {
+    // 4. Suno (async -> callback-cover). regenerate=true : /generate (NOUVELLE mélodie, sans source) ;
+    //    sinon : /upload-cover (mélodie PRÉSERVÉE, à partir de l'audio source).
+    const sunoPayload = {
+      customMode: true,
+      instrumental: false,
+      model: MODEL,
+      prompt: prompt.slice(0, 5000),
+      style: style.slice(0, 1000),
+      title: (g.song_title || 'Pour toujours').slice(0, 100),
+      vocalGender,
+      callBackUrl: `${SITE}/api/callback-cover${process.env.CALLBACK_SECRET ? '?s=' + encodeURIComponent(process.env.CALLBACK_SECRET) : ''}`
+    };
+    if (!regenerate) sunoPayload.uploadUrl = uploadUrl;   // la cover a besoin de l'audio source
+    const sunoEndpoint = regenerate
+      ? 'https://api.sunoapi.org/api/v1/generate'
+      : 'https://api.sunoapi.org/api/v1/generate/upload-cover';
+    const rS = await fetch(sunoEndpoint, {
       method: 'POST',
       headers: { Authorization: `Bearer ${SUNO_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        uploadUrl,
-        customMode: true,
-        instrumental: false,
-        model: MODEL,
-        prompt: prompt.slice(0, 5000),
-        style: style.slice(0, 1000),
-        title: (g.song_title || 'Pour toujours').slice(0, 100),
-        vocalGender,
-        callBackUrl: `${SITE}/api/callback-cover${process.env.CALLBACK_SECRET ? '?s=' + encodeURIComponent(process.env.CALLBACK_SECRET) : ''}`
-      })
+      body: JSON.stringify(sunoPayload)
     });
     const dS = await rS.json();
     const taskId = dS && dS.data && dS.data.taskId;
