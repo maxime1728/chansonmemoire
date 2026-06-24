@@ -13,10 +13,26 @@ const SITE     = 'https://chansonmemoire.ca';
 
 exports.handler = async () => {
   let launched = 0;
+  const headers = { Authorization: `Bearer ${AT_TOKEN}` };
   try {
+    // 0. REFAIRE LE COVER (1-clic) : projets cochés `relancer_cover` -> on réarme (approved + champs
+    //    cover vidés) + décoche, puis on relance. Re-chante avec adjusted_lyrics/adjusted_style_prompt.
+    const rRedo = await fetch(`${API}/${PROJECTS}?filterByFormula=${encodeURIComponent('{relancer_cover}')}&maxRecords=20`, { headers });
+    const dRedo = await rRedo.json().catch(() => ({}));
+    for (const rec of (dRedo.records || [])) {
+      const tok = rec.fields.token;
+      try {
+        await fetch(`${API}/${PROJECTS}/${rec.id}`, {
+          method: 'PATCH', headers: { ...headers, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fields: { approval_status: 'approved', cover_task_id: '', cover_launched_at: '', relancer_cover: false } })
+        });
+        if (tok) { await fetch(`${SITE}/api/lancer-cover`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: tok }) }); launched++; }
+      } catch (_) {}
+    }
+
     const r = await fetch(`${API}/${PROJECTS}?filterByFormula=${encodeURIComponent(
       `AND({approval_status}="approved", {cover_launched_at}="")`
-    )}&maxRecords=20`, { headers: { Authorization: `Bearer ${AT_TOKEN}` } });
+    )}&maxRecords=20`, { headers });
     const d = await r.json();
     const recs = (d && d.records) || [];
 
