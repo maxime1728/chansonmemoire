@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
-<title>Votre chanson — Chanson Mémoire</title>
+<title>Ta chanson · Chanson Mémoire</title>
 <!-- Page d'ACCEPTATION post-achat. Affiche la version ACHETÉE (titre + style + ambiance) avec le
      lecteur de l'aperçu. PAS de téléchargement ici. « Accepter cette version et télécharger »
      -> popup de confirmation -> redirige vers /page-memoire (livraison + download). Pas de signature. -->
@@ -120,8 +120,8 @@
 <div class="wrap">
   <div class="cm-logo">Chanson<span>Mémoire</span></div>
 
-  <div class="eyebrow">Votre chanson est prête</div>
-  <h1 id="title">Votre chanson</h1>
+  <div class="eyebrow">Ta chanson est prête</div>
+  <h1 id="title">Ta chanson</h1>
   <p class="subtitle" id="subtitle"></p>
 
   <!-- LECTEUR (porté de l'aperçu) -->
@@ -129,7 +129,7 @@
     <div class="cm-players-container">
       <div class="cm-player-wrap">
         <div class="cm-player-box">
-          <div class="cm-title" id="playerTitle">Votre chanson</div>
+          <div class="cm-title" id="playerTitle">Ta chanson</div>
           <div class="cm-equalizer cm-eq">
             <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
           </div>
@@ -162,13 +162,13 @@
     <div class="cm-btn-wrap">
       <button class="btn-accept" id="btnAccept" type="button">Accepter cette version et télécharger</button>
     </div>
-    <p class="note">Vous recevrez votre chanson et vos paroles en PDF sur votre page.</p>
+    <p class="note">Tu recevras ta chanson et tes paroles en PDF sur ta page.</p>
   </div>
 
   <!-- DEMANDE DE MODIFICATION (avant ou après acceptation) -->
   <div class="modif-zone" id="modifZone" style="display:none;">
-    <p class="modif-intro">Quelque chose à ajuster — un prénom, un mot, un détail ? Demandez une modification, on s'en occupe.</p>
-    <textarea id="modifText" class="modif-text" rows="3" placeholder="Ex. : « On prononce Joséphine au complet », « Ajoutez un mot sur ses étés au chalet »…"></textarea>
+    <p class="modif-intro">Quelque chose à ajuster (un prénom, un mot, un détail) ? Demande une modification, on s'en occupe.</p>
+    <textarea id="modifText" class="modif-text" rows="3" placeholder="Ex. : « On prononce Joséphine au complet », « Ajoute un mot sur ses étés au chalet »…"></textarea>
     <div><button class="btn-modif" id="btnModif" type="button">Envoyer ma demande de modification</button></div>
     <p class="modif-ok" id="modifMsg"></p>
   </div>
@@ -177,8 +177,8 @@
 <!-- MODAL CONFIRMATION -->
 <div class="modal-overlay" id="confirmOverlay" aria-hidden="true">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
-    <div class="modal-title" id="confirmTitle">Confirmer votre version</div>
-    <p class="modal-text">Vous êtes sur le point d'accepter cette version. Vous recevrez votre chanson et vos paroles en PDF sur votre page. Confirmer ?</p>
+    <div class="modal-title" id="confirmTitle">Confirmer ta version</div>
+    <p class="modal-text">Tu es sur le point d'accepter cette version. Tu recevras ta chanson et tes paroles en PDF sur ta page. Confirmer ?</p>
     <div class="modal-actions">
       <button class="modal-cancel" id="confirmCancel" type="button">Pas encore</button>
       <button class="modal-confirm" id="confirmOk" type="button">Oui, accepter</button>
@@ -228,12 +228,12 @@
     if(d.titre){
       document.getElementById('title').textContent = d.titre;
       document.getElementById('playerTitle').textContent = d.titre;
-      document.title = d.titre + ' — Chanson Mémoire';
+      document.title = d.titre + ' · Chanson Mémoire';
     }
     var bits = [d.style, d.ambiance].filter(Boolean);
     if(bits.length) document.getElementById('subtitle').textContent = bits.join(' · ');
     if(d.audio_url){ source.src = d.audio_url; audio.load(); }
-    else { loading.textContent = "Votre chanson se finalise — réessayez dans un instant."; }
+    else { loading.textContent = "Ta chanson se finalise, réessaie dans un instant."; }
     /* Demande de modification : réservée aux acheteurs (gaté serveur aussi). */
     if(d.commercial_status === 'purchased'){ var mz = document.getElementById('modifZone'); if(mz) mz.style.display = 'block'; }
   })
@@ -295,7 +295,7 @@
     })
     .catch(function(){
       b.disabled = false; b.textContent = 'Oui, accepter';
-      alert("Une erreur est survenue. Veuillez réessayer.");
+      alert("Une erreur est survenue. Réessaie.");
     });
   });
 
@@ -313,7 +313,7 @@
     .then(function(res){
       if(res && res.ok){
         var m = document.getElementById('modifMsg');
-        m.textContent = 'Demande reçue ✓ Notre équipe la prépare et vous revient sous peu.';
+        m.textContent = 'Demande reçue ✓ Notre équipe la prépare et te revient sous peu.';
         m.style.display = 'block';
         ta.style.display = 'none'; b.style.display = 'none';
         document.querySelector('.modif-intro').style.display = 'none';

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="robots" content="noindex, nofollow" />
   <meta name="referrer" content="no-referrer" />
-  <title>Vos paroles — Chanson Mémoire</title>
+  <title>Tes paroles · Chanson Mémoire</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
@@ -124,9 +124,9 @@
   </header>
 
   <div class="etapes">
-    <div class="etape done"><div class="etape-dot"></div> Vos souvenirs</div>
+    <div class="etape done"><div class="etape-dot"></div> Tes souvenirs</div>
     <div class="etape-sep">›</div>
-    <div class="etape active"><div class="etape-dot"></div> Vos paroles</div>
+    <div class="etape active"><div class="etape-dot"></div> Tes paroles</div>
     <div class="etape-sep">›</div>
     <div class="etape"><div class="etape-dot"></div> Création</div>
   </div>
@@ -135,7 +135,7 @@
     <!-- CHARGEMENT / ATTENTE (polling) -->
     <div id="etat-chargement">
       <div class="spinner"></div>
-      <div class="chargement-titre">Nous composons vos paroles…</div>
+      <div class="chargement-titre">On compose tes paroles…</div>
       <div class="chargement-sous">Cela prend généralement moins d'une minute.<br>Cette page se mettra à jour automatiquement.</div>
     </div>
 
@@ -149,12 +149,12 @@
 
     <!-- CONTENU -->
     <div id="contenu">
-      <div class="titre-chanson">Vos paroles personnalisées</div>
+      <div class="titre-chanson">Tes paroles personnalisées</div>
       <h1 class="intro-titre">Voici <em id="titre-chanson-affiche"></em></h1>
-      <p class="intro-sous">Prenez le temps de relire ces paroles attentivement.</p>
+      <p class="intro-sous">Prends le temps de relire ces paroles attentivement.</p>
 
       <div class="avis-important">
-        <strong>Ces paroles façonneront votre chanson.</strong> Vous pouvez les ajuster autant de fois que nécessaire ici. Une fois la chanson créée, des ajustements restent possibles, mais plus limités — c'est donc le meilleur moment pour tout perfectionner.
+        <strong>Ces paroles façonneront ta chanson.</strong> Tu peux les ajuster autant de fois que nécessaire ici. Une fois la chanson créée, des ajustements restent possibles, mais plus limités, c'est donc le meilleur moment pour tout perfectionner.
       </div>
 
       <!-- PAROLES (lecture seule) -->
@@ -164,18 +164,18 @@
           <span class="nom-chanson" id="nom-chanson-header"></span>
         </div>
         <div class="paroles-texte" id="paroles-affichees"></div>
-        <div class="lecture-seule-note">Pour modifier, décrivez vos changements dans l'encadré ci-dessous — les paroles seront réécrites selon vos demandes.</div>
+        <div class="lecture-seule-note">Pour modifier, décris tes changements dans l'encadré ci-dessous : les paroles seront réécrites selon tes demandes.</div>
       </div>
 
       <!-- MODIFICATIONS -->
       <div class="section-modifs">
         <div class="modifs-header">
-          <div class="modifs-label">Vos retours</div>
-          <h2 class="modifs-titre">Souhaitez-vous ajuster quelque chose ?</h2>
-          <p class="modifs-description">Décrivez ce que vous aimeriez ajouter, retirer ou reformuler. Les nouvelles paroles garderont tout ce qui fonctionne et n'appliqueront que vos changements.</p>
+          <div class="modifs-label">Tes retours</div>
+          <h2 class="modifs-titre">Souhaites-tu ajuster quelque chose ?</h2>
+          <p class="modifs-description">Décris ce que tu aimerais ajouter, retirer ou reformuler. Les nouvelles paroles garderont tout ce qui fonctionne et n'appliqueront que tes changements.</p>
         </div>
         <div class="modifs-exemples">
-          <div class="exemples-titre">Quelques pistes, inspirées de vos réponses</div>
+          <div class="exemples-titre">Quelques pistes, inspirées de tes réponses</div>
           <ul class="exemples-liste" id="liste-suggestions">
             <li class="exemple-chip vide">Les suggestions apparaîtront ici…</li>
           </ul>
@@ -189,7 +189,7 @@
         </div>
         <div class="modifs-champ">
           <textarea id="modifications" placeholder="Ex. : Mettre davantage l'accent sur ses dimanches dans la cuisine. Garder le refrain tel quel…"></textarea>
-          <div class="champ-hint">Soyez aussi précis que possible — chaque détail aide à personnaliser davantage.</div>
+          <div class="champ-hint">Sois aussi précis que possible : chaque détail aide à personnaliser davantage.</div>
         </div>
         <div class="modifs-champ" style="padding-top:0;">
           <button class="btn-regen" id="btn-regen" onclick="regenerer()">
@@ -209,8 +209,8 @@
     <!-- SOUMISSION CONFIRMÉE -->
     <div id="etat-soumission">
       <div class="soumission-icone"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
-      <div class="soumission-titre">Merci. Votre chanson est en création.</div>
-      <div class="soumission-sous">Vous serez redirigé dans un instant vers la page de suivi.</div>
+      <div class="soumission-titre">Merci. Ta chanson est en création.</div>
+      <div class="soumission-sous">Tu seras redirigé dans un instant vers la page de suivi.</div>
     </div>
   </main>
 
@@ -218,7 +218,7 @@
   <div class="overlay" id="overlay">
     <div class="popup">
       <div class="popup-titre">Confirmer ces paroles ?</div>
-      <div class="popup-texte">Votre chanson sera créée à partir de <strong>ces paroles exactes</strong>. Après cette étape, les ajustements deviennent plus limités. Êtes-vous prêt·e à continuer ?</div>
+      <div class="popup-texte">Ta chanson sera créée à partir de <strong>ces paroles exactes</strong>. Après cette étape, les ajustements deviennent plus limités. Es-tu prêt·e à continuer ?</div>
       <div class="popup-actions">
         <button class="popup-oui" onclick="confirmerProd()">Oui, créer ma chanson</button>
         <button class="popup-non" onclick="fermerPopup()">Pas encore, je veux relire</button>
@@ -298,7 +298,7 @@
     }
 
     function afficher(d){
-      setTexte('titre-chanson-affiche', d.titre || 'votre chanson');
+      setTexte('titre-chanson-affiche', d.titre || 'ta chanson');
       setTexte('nom-chanson-header',   d.titre || '');
       setTexte('paroles-affichees',    d.paroles || '');
       rendreSuggestions(d.suggestions);
@@ -306,12 +306,12 @@
     }
 
     function afficherAttenteLongue(){
-      setTexte('erreur-detail', "La création a pris plus de temps que prévu — ça arrive rarement. Clique « Réessayer » pour relancer (c'est généralement instantané).");
+      setTexte('erreur-detail', "La création a pris plus de temps que prévu, ça arrive rarement. Clique « Réessayer » pour relancer (c'est généralement instantané).");
       montrer('etat-erreur');
     }
     /* Paroles non générables (réponses trop minces) : message utile + Réessayer relance la génération. */
     function afficherInputInsuffisant(){
-      setTexte('erreur-detail', "Les réponses fournies étaient un peu courtes pour composer la chanson. Cliquez « Réessayer » pour relancer, ou recommencez le formulaire en ajoutant un souvenir ou ce qui rendait la personne unique.");
+      setTexte('erreur-detail', "Les réponses fournies étaient un peu courtes pour composer la chanson. Clique « Réessayer » pour relancer, ou recommence le formulaire en ajoutant un souvenir ou ce qui rendait la personne unique.");
       montrer('etat-erreur');
     }
     function arreterPolling(){ fini=true; if(pollTimer){ clearTimeout(pollTimer); pollTimer=null; } }
@@ -320,7 +320,7 @@
     async function reessayer(){
       var btn = document.querySelector('.btn-reessayer');
       if(btn){ btn.disabled = true; btn.textContent = 'Un instant…'; }
-      setTexte('erreur-detail', 'Nous relançons la création de vos paroles…');
+      setTexte('erreur-detail', 'On relance la création de tes paroles…');
       try {
         var res = await fetch('/api/generate-lyrics', {
           method:'POST', headers:{'Content-Type':'application/json'},
@@ -330,7 +330,7 @@
         if(res.ok && d && d.paroles){ arreterPolling(); afficher(d); return; }
         throw new Error('retry');
       } catch(e){
-        setTexte('erreur-detail', "La création n'a pas pu aboutir cette fois. Réessaie dans un instant — si ça persiste, contacte-nous et on règle ça avec toi tout de suite.");
+        setTexte('erreur-detail', "La création n'a pas pu aboutir cette fois. Réessaie dans un instant. Si ça persiste, contacte-nous et on règle ça avec toi tout de suite.");
         if(btn){ btn.disabled = false; btn.textContent = 'Réessayer'; }
       }
     }
@@ -402,10 +402,10 @@
           el('modifications').value='';      // on vide le champ pour le prochain tour
           window.scrollTo({top:0,behavior:'smooth'});
         } else {
-          alert("La réécriture n'a pas pu aboutir. Veuillez reformuler vos changements.");
+          alert("La réécriture n'a pas pu aboutir. Reformule tes changements.");
         }
       } catch(e){
-        alert("Une erreur est survenue. Veuillez réessayer.");
+        alert("Une erreur est survenue. Réessaie.");
       }
       btn.disabled=false;
       btn.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg> Régénérer mes paroles';
@@ -428,7 +428,7 @@
         try { data = await res.json(); } catch(e){}
         if(data && data.status === 'plafond'){
           // Plafond atteint -> on affiche le message « nous contacter », pas de redirection.
-          setTexte('erreur-detail', data.message || "Vous avez atteint la limite de régénérations. Écrivez-nous et nous vous aiderons avec plaisir.");
+          setTexte('erreur-detail', data.message || "Tu as atteint la limite de régénérations. Écris-nous et on t'aidera avec plaisir.");
           montrer('etat-erreur');
           return;
         }
@@ -443,7 +443,7 @@
 
     /* ── INIT ── */
     if(!token){
-      setTexte('erreur-detail', "Lien invalide ou expiré. Veuillez recommencer depuis le début.");
+      setTexte('erreur-detail', "Lien invalide ou expiré. Recommence depuis le début.");
       montrer('etat-erreur');
     } else {
       montrer('etat-chargement');
