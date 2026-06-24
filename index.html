@@ -688,9 +688,9 @@ a{color:inherit;}
   <p class="tag">Fait avec ❤️ pour le réconfort</p>
   <p class="em">Courriel : <a href="mailto:brigitte@chansonmemoire.com">brigitte@chansonmemoire.com</a></p>
   <nav aria-label="Liens légaux">
-    <a href="https://chansonmemoire.com/politique-de-confidentialite">Politique de confidentialité</a>
-    <a href="https://chansonmemoire.com/conditions-dutilisation">Conditions d'utilisation</a>
-    <a href="https://chansonmemoire.com/politique-de-remboursement">Politique de remboursement</a>
+    <a href="https://chansonmemoire.ca/politique-de-confidentialite">Politique de confidentialité</a>
+    <a href="https://chansonmemoire.ca/conditions-dutilisation">Conditions d'utilisation</a>
+    <a href="https://chansonmemoire.ca/politique-de-remboursement">Politique de remboursement</a>
   </nav>
   <p class="copy">©2026 Chanson Mémoire. Tous droits réservés.</p>
   <p class="manage"><button type="button" onclick="reopenConsent()">Gérer mes préférences de témoins</button></p>
@@ -703,7 +703,7 @@ a{color:inherit;}
 
 <!-- CONSENT -->
 <div class="consent" id="consent" role="dialog" aria-label="Consentement aux témoins">
-  <p class="consent-txt">Nous utilisons des témoins (cookies) et des outils de mesure pour améliorer le site et nos publicités. Tu peux accepter ou refuser. Détails dans notre <a href="https://chansonmemoire.com/politique-de-confidentialite">politique de confidentialité</a>.</p>
+  <p class="consent-txt">Nous utilisons des témoins (cookies) et des outils de mesure pour améliorer le site et nos publicités. Tu peux accepter ou refuser. Détails dans notre <a href="https://chansonmemoire.ca/politique-de-confidentialite">politique de confidentialité</a>.</p>
   <div class="consent-row">
     <button type="button" class="consent-btn consent-accept" onclick="consentSet(true)">Accepter</button>
     <button type="button" class="consent-btn consent-refuse" onclick="consentSet(false)">Refuser</button>
@@ -779,7 +779,7 @@ function tSeek(seekDiv,e){
 (function(){var c=localStorage.getItem('cm_consent');if(!c){document.getElementById('consent').classList.add('show');}else if(c==='yes'){loadPixel();}})();
 function consentSet(ok){localStorage.setItem('cm_consent',ok?'yes':'no');var b=document.getElementById('consent');b.classList.remove('show','docked');if(ok)loadPixel();}
 function reopenConsent(){var b=document.getElementById('consent');b.classList.add('show');if(document.getElementById('sticky').classList.contains('show'))b.classList.add('docked');else b.classList.remove('docked');}
-function loadPixel(){if(window._px)return;window._px=true;!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','TON_PIXEL_ID');fbq('track','PageView');}
+function loadPixel(){if(window._px)return;window._px=true;!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','909919758755200');fbq('track','PageView');}
 
 /* ════ FAQ ════ */
 function qFaq(btn){var i=btn.closest('.faq-item'),open=i.classList.contains('open');document.querySelectorAll('.faq-item.open').forEach(function(x){x.classList.remove('open');x.querySelector('.faq-q').setAttribute('aria-expanded','false');});if(!open){i.classList.add('open');btn.setAttribute('aria-expanded','true');}}

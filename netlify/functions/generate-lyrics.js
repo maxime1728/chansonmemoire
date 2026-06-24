@@ -12,6 +12,7 @@
 const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
 const BASE_ID        = process.env.AIRTABLE_BASE_ID;
 const AT_API         = `https://api.airtable.com/v0/${BASE_ID}`;
+const GENERATE_LYRICS_SECRET = process.env.GENERATE_LYRICS_SECRET || '';  // mode create (MAKE A) : exigé si défini. Var DÉDIÉE -> inerte tant que non posée (merge sans risque).
 const { stripSectionTags } = require('./_lib/lyrics');   // masque les balises [Verse]/[Chorus] à l'affichage client
 
 // Token légitime = UUID v4 (généré par crypto.randomUUID()). Validé AVANT tout appel Airtable
@@ -353,7 +354,7 @@ CLIENT'S REQUESTED CHANGES (apply ONLY these, keep the rest):
 ${modifications}`;
 
       const r = await callAnthropic(systemRegenerate(langOf(p.language), p.song_type === 'cadeau'), userPrompt, apiKey);
-      if (!r.ok) return { statusCode: 502, body: JSON.stringify({ error: 'Erreur de génération', anthropic_status: r.status, anthropic_detail: r.data }) };
+      if (!r.ok) return { statusCode: 502, body: JSON.stringify({ error: 'Erreur de génération' }) };
 
       const parsed = parseModel(r.data);
       if (!parsed || !parsed.lyrics || !String(parsed.lyrics).trim()) {
@@ -376,7 +377,7 @@ ${modifications}`;
         suggestions:       JSON.stringify(suggestions)
       });
       if (!gen.ok) {
-        return { statusCode: 502, body: JSON.stringify({ error: 'Écriture Airtable échouée', detail: gen.data }) };
+        return { statusCode: 502, body: JSON.stringify({ error: 'Écriture Airtable échouée' }) };
       }
 
       // Suivi du parcours : régén paroles = retour à l'étape « paroles » du funnel (best-effort).
@@ -399,6 +400,11 @@ ${modifications}`;
   }
 
   /* ═══════════════ MODE CRÉATION (Make) ═══════════════ */
+  // Sécurité : ce mode vient de MAKE A. Si MAKE_WEBHOOK_SECRET est défini en env, on l'EXIGE (anti cost-bombing Anthropic).
+  // Inerte tant que l'env n'est pas posée -> déploiement SANS risque ; n'activer qu'APRÈS que MAKE A envoie { secret }.
+  if (GENERATE_LYRICS_SECRET && d.secret !== GENERATE_LYRICS_SECRET) {
+    return { statusCode: 401, body: JSON.stringify({ error: 'Non autorisé' }) };
+  }
   const deceased_name    = d.deceased_name    || 'cette personne';
   const relationship     = d.relationship     || '';
   const music_style      = d.music_style      || 'douce mélodie';
