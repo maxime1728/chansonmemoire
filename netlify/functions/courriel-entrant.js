@@ -139,6 +139,7 @@ exports.handler = async (event) => {
   const subject = (body.subject || '').toString().trim();
   const message = (body.body || '').toString().trim();
   const msgId   = (body.message_id || '').toString().trim();
+  const recipient = (body.recipient || '').toString().trim();   // adresse d'arrivée -> pré-remplit repondre_de
 
   if (!from) return { statusCode: 200, body: JSON.stringify({ ok: true, skipped: 'no_sender' }) };
   if (estAdresseInterne(from)) return { statusCode: 200, body: JSON.stringify({ ok: true, skipped: 'internal' }) };
@@ -221,6 +222,11 @@ exports.handler = async (event) => {
       thread_key: threadKey
     };
     if (liens.length) champs.Projet = liens;
+    // Adresse d'arrivée : seulement à la CRÉATION (ne pas écraser un repondre_de ajusté par l'humain).
+    if (!existing) {
+      if (recipient) champs.destinataire = recipient;
+      champs.repondre_de = recipient;   // « De » par défaut = l'adresse à laquelle le client a écrit (modifiable)
+    }
 
     if (existing) {
       const rU = await fetch(`${API}/${CONVOS}/${existing.id}`, {

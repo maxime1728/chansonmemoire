@@ -22,7 +22,7 @@ const API      = `https://api.airtable.com/v0/${BASE_ID}`;
 const SECRET   = process.env.MAKE_WEBHOOK_SECRET;
 
 const MG_KEY    = process.env.MAILGUN_API_KEY;
-const MG_DOMAIN = process.env.MAILGUN_DOMAIN_SUPPORT || 'chansonmemoire.ca';
+const MG_DOMAIN = process.env.MAILGUN_DOMAIN_SUPPORT || 'support.chansonmemoire.ca';  // sous-domaine d'ENVOI (protège la racine)
 const MG_FROM   = process.env.MAILGUN_FROM_SUPPORT || 'Chanson Mémoire <nathalie@chansonmemoire.ca>';
 
 const CONVOS = 'tbl3KBgXthCPromxF';
@@ -74,9 +74,16 @@ exports.handler = async (event) => {
     let subject = (f.sujet || '').toString().trim() || 'votre message';
     if (!/^\s*re\s*:/i.test(subject)) subject = 'Re: ' + subject;
 
-    // 4. Envoi Mailgun, DANS LE FIL (In-Reply-To/References = message_id d'origine).
+    // 4. « De » : l'adresse de repondre_de (pré-remplie = adresse d'arrivée, modifiable), sinon défaut.
+    //    L'ENVOI réel passe toujours par MG_DOMAIN (sous-domaine support) -> la racine n'est pas « brûlée » ;
+    //    le « De » peut afficher la racine (nathalie@chansonmemoire.ca) car l'alignement DMARC est relâché
+    //    (sous-domaine et racine = même domaine d'organisation -> DKIM/SPF s'alignent).
+    const deRaw = (f.repondre_de || '').toString().trim();
+    const from  = deRaw ? (deRaw.includes('<') ? deRaw : `Chanson Mémoire <${deRaw}>`) : MG_FROM;
+
+    // Envoi Mailgun, DANS LE FIL (In-Reply-To/References = message_id d'origine).
     const form = new FormData();
-    form.append('from', MG_FROM);
+    form.append('from', from);
     form.append('to', to);
     form.append('subject', subject);
     form.append('text', corps);
@@ -98,7 +105,7 @@ exports.handler = async (event) => {
     // 5. Marque la conversation comme répondue (et garde le texte envoyé).
     await fetch(`${API}/${CONVOS}/${id}`, {
       method: 'PATCH', headers: { ...headers, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fields: { statut: 'repondu', repondu_le: new Date().toISOString(), reponse: corps } })
+      body: JSON.stringify({ fields: { statut: 'repondu', repondu_le: new Date().toISOString(), reponse: corps, envoyer: false } })
     });
 
     return { statusCode: 200, body: JSON.stringify({ ok: true, to }) };
