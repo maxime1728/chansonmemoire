@@ -24,6 +24,10 @@
 [functions."cover-cron"]
   schedule = "*/15 * * * *"
 
+# Envoi des réponses support : expédie les conversations cochées « envoyer ». Chaque minute (réactif).
+[functions."envoyer-cron"]
+  schedule = "* * * * *"
+
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
