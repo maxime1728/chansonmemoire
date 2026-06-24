@@ -30,6 +30,21 @@ exports.handler = async () => {
       } catch (_) {}
     }
 
+    // 0b. RÉGÉNÉRER (1-clic) : projets cochés `regenerer` -> chanson COMPLÈTE (nouvelle mélodie). Même
+    //     réarmement, mais on passe regenerate=true à lancer-cover (-> Suno /generate).
+    const rReg = await fetch(`${API}/${PROJECTS}?filterByFormula=${encodeURIComponent('{regenerer}')}&maxRecords=20`, { headers });
+    const dReg = await rReg.json().catch(() => ({}));
+    for (const rec of (dReg.records || [])) {
+      const tok = rec.fields.token;
+      try {
+        await fetch(`${API}/${PROJECTS}/${rec.id}`, {
+          method: 'PATCH', headers: { ...headers, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fields: { approval_status: 'approved', cover_task_id: '', cover_launched_at: '', regenerer: false } })
+        });
+        if (tok) { await fetch(`${SITE}/api/lancer-cover`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: tok, regenerate: true }) }); launched++; }
+      } catch (_) {}
+    }
+
     const r = await fetch(`${API}/${PROJECTS}?filterByFormula=${encodeURIComponent(
       `AND({approval_status}="approved", {cover_launched_at}="")`
     )}&maxRecords=20`, { headers });
