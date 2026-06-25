@@ -899,6 +899,17 @@ body {
 .cm-bump input { margin-top:2px; flex:none; width:18px; height:18px; accent-color:var(--cm-plum-dark); }
 .cm-bump span { font:600 14px/1.35 'Mulish',sans-serif; color:var(--cm-text); }
 .cm-bump small { display:block; font-weight:400; color:var(--cm-text-sub); margin-top:2px; }
+/* ════════ EFFETS (continuité avec l'accueil) ════════ */
+.cm-hero{position:relative;}
+.cm-hero::before{content:"";position:absolute;top:-24px;left:50%;width:560px;max-width:150%;height:320px;transform:translateX(-50%);z-index:-1;pointer-events:none;background:radial-gradient(ellipse at center,rgba(232,201,122,.30),rgba(232,201,122,.06) 48%,transparent 72%);animation:cm-fx-breathe 7s ease-in-out infinite;will-change:transform,opacity;}
+@keyframes cm-fx-breathe{0%,100%{opacity:.55;transform:translateX(-50%) scale(.97);}50%{opacity:1;transform:translateX(-50%) scale(1.06);}}
+#cm-player-root .cm-play-btn{position:relative;}
+#cm-player-root .cm-play-btn::after{content:"";position:absolute;inset:-5px;border-radius:50%;border:2px solid rgba(196,150,58,.45);animation:cm-fx-ring 2.6s ease-out infinite;pointer-events:none;}
+@keyframes cm-fx-ring{0%{transform:scale(.92);opacity:.65;}70%{opacity:0;}100%{transform:scale(1.5);opacity:0;}}
+.stripe-btn,.stripe-btn-2,.cm-sticky-btn{position:relative;overflow:hidden;}
+.stripe-btn::after,.stripe-btn-2::after,.cm-sticky-btn::after{content:"";position:absolute;top:0;left:-130%;width:55%;height:100%;background:linear-gradient(110deg,transparent,rgba(255,255,255,.45),transparent);transform:skewX(-18deg);transition:left .6s;pointer-events:none;}
+@media(hover:hover){.stripe-btn:hover::after,.stripe-btn-2:hover::after,.cm-sticky-btn:hover::after{left:150%;}}
+@media (prefers-reduced-motion:reduce){.cm-hero::before{animation:none;opacity:.7;}#cm-player-root .cm-play-btn::after{display:none;}}
 </style>
 </head>
 <body>
@@ -973,7 +984,7 @@ body {
       </div>
       <ul class="cm-value">
         <li><span class="cm-spark">✦</span> <span id="cm-value-nom">Une chanson originale, composée uniquement pour honorer sa mémoire</span></li>
-        <li><span class="cm-spark">✦</span> Une page privée à partager avec toute la famille, pour garder sa mémoire vivante</li>
+        <li><span class="cm-spark">✦</span> <span id="cm-value-share">Une page privée à partager avec toute la famille, pour garder sa mémoire vivante</span></li>
         <li><span class="cm-spark">✦</span> Fichier MP3 à télécharger et garder pour toujours</li>
         <li><span class="cm-spark">✦</span> Qualité studio professionnelle</li>
         <li><span class="cm-spark">✦</span> Révisions illimitées jusqu'à satisfaction, sans frais</li>
@@ -1030,7 +1041,7 @@ body {
       <div class="cm-step-num">3</div>
       <div class="cm-step-body">
         <div class="cm-step-label">Pour toujours</div>
-        <div class="cm-step-title">Tu partages sa mémoire avec ceux qui comptent</div>
+        <div class="cm-step-title" id="cm-step-share-title">Tu partages sa mémoire avec ceux qui comptent</div>
         <div class="cm-step-desc">Ta page privée est accessible à toute la famille, à tout moment. Un endroit doux où retrouver sa voix, à ton rythme.</div>
       </div>
     </div>
@@ -1054,7 +1065,7 @@ body {
 <!-- ══ STORYTELLING ══════════════════════════════════════ -->
 <section class="cm-story">
   <p class="cm-story-quote">« Les mots qu'on n'a pas eu le temps de dire méritent d'être chantés. »</p>
-  <p class="cm-story-sub">Cette chanson est née des souvenirs que tu as partagés. Elle n'existe nulle part ailleurs. Elle ne ressemble à personne d'autre. Elle lui ressemble, à ce qu'il ou elle représentait pour toi.<br><br>Certaines familles la font jouer lors des funérailles. D'autres la partagent en souvenir d'anniversaire. D'autres encore l'écoutent seuls, les soirs où l'absence se fait plus lourde.<br><br>Il n'y a pas de bonne façon de garder quelqu'un vivant dans son cœur.</p>
+  <p class="cm-story-sub" id="cm-story-sub">Cette chanson est née des souvenirs que tu as partagés. Elle n'existe nulle part ailleurs. Elle ne ressemble à personne d'autre. Elle lui ressemble, à ce qu'il ou elle représentait pour toi.<br><br>Certaines familles la font jouer lors des funérailles. D'autres la partagent en souvenir d'anniversaire. D'autres encore l'écoutent seuls, les soirs où l'absence se fait plus lourde.<br><br>Il n'y a pas de bonne façon de garder quelqu'un vivant dans son cœur.</p>
 </section>
 
 <div class="cm-divider"><span class="cm-divider-icon">✦</span></div>
@@ -1350,6 +1361,7 @@ body {
   })
   .then(function(r) { return r.ok ? r.json() : null; })
   .then(function(d) {
+    if (d && window._CM) { window._CM.type = d.song_type || 'hommage'; if (window.cmPersonnaliser) window.cmPersonnaliser(); }
     if (!d || !Array.isArray(d.versions) || d.versions.length === 0) return;
     var versions = d.versions;
     var def = versions.length - 1;   /* la plus recente par defaut */
@@ -1376,41 +1388,47 @@ body {
   .catch(function() {});
 })();
 
-/* ── PERSONNALISATION NOM ───────────────────────────── */
-(function() {
-  var nom = (window._CM && window._CM.nom) ? window._CM.nom : '';
+/* ── PERSONNALISATION NOM + TYPE (hommage / cadeau) ──────────────────────
+   song_type vient de lire-versions (async) -> fonction globale ré-appelée quand
+   le type est connu. Par défaut = hommage (le HTML est déjà en hommage). */
+window.cmPersonnaliser = function() {
+  var nom    = (window._CM && window._CM.nom) ? window._CM.nom : '';
+  var cadeau = (window._CM && window._CM.type) === 'cadeau';
+  var strong = nom ? '<strong>' + nom + '</strong>' : '';
+  function setH(id, html){ var el = document.getElementById(id); if (el) el.innerHTML = html; }
+  function setT(id, txt){ var el = document.getElementById(id); if (el) el.textContent = txt; }
 
-  function nomHTML() {
-    return nom
-      ? 'la mémoire de <strong>' + nom + '</strong>'
-      : 'sa mémoire';
-  }
-  function nomTexte() {
-    return nom ? 'la mémoire de ' + nom : 'sa mémoire';
-  }
+  /* Hero */
+  if (cadeau) setH('cm-hero-title', nom ? 'Voici la chanson composée pour ' + strong : 'Voici la chanson composée juste pour elle');
+  else if (nom) setH('cm-hero-title', 'Voici la chanson composée pour honorer la mémoire de ' + strong);
 
-  if (!nom) return; /* fallback générique déjà en place */
+  /* Valeur — ligne 1 */
+  if (cadeau) setH('cm-value-nom', nom ? 'Une chanson originale, composée uniquement pour ' + strong : 'Une chanson originale, composée uniquement pour elle');
+  else if (nom) setH('cm-value-nom', 'Une chanson originale, composée uniquement pour honorer la mémoire de ' + strong);
 
-  /* Hero title */
-  var heroTitle = document.getElementById('cm-hero-title');
-  if (heroTitle) heroTitle.innerHTML = 'Voici la chanson composée pour honorer ' + nomHTML();
+  /* Valeur — page à partager */
+  if (cadeau) setT('cm-value-share', 'Une page privée à partager avec ceux que tu aimes');
 
-  /* Value list item 1 */
-  var valNom = document.getElementById('cm-value-nom');
-  if (valNom) valNom.innerHTML = 'Une chanson originale, composée uniquement pour honorer ' + nomHTML();
+  /* Étape « partage » */
+  if (cadeau) setT('cm-step-share-title', 'Tu la partages avec ceux qui comptent');
 
-  /* Garantie title */
-  var garantie = document.getElementById('cm-guarantee-title');
-  if (garantie) garantie.innerHTML = 'Révisée jusqu\'à ce qu\'elle ressemble vraiment à <strong>' + nom + '</strong>';
+  /* Récit */
+  if (cadeau) setH('cm-story-sub',
+    'Cette chanson est née des souvenirs que tu as partagés. Elle n\'existe nulle part ailleurs. Elle ne ressemble à personne d\'autre. Elle lui ressemble, à ce qu\'il ou elle représente pour toi.<br><br>' +
+    'Certains l\'offrent pour un anniversaire, un mariage, une fête. D\'autres juste pour faire plaisir, sans raison particulière.<br><br>' +
+    'Une chanson, c\'est une façon de dire ce qu\'on n\'ose pas toujours dire.');
+
+  /* Garantie (basée sur le prénom — identique hommage/cadeau) */
+  if (nom) setH('cm-guarantee-title', 'Révisée jusqu\'à ce qu\'elle ressemble vraiment à ' + strong);
 
   /* CTA bas */
-  var ctaPre = document.getElementById('cm-cta-pre');
-  if (ctaPre) ctaPre.innerHTML = 'La mémoire de <strong>' + nom + '</strong> mérite une chanson qui lui ressemble.';
+  if (cadeau) setH('cm-cta-pre', nom ? strong + ' mérite une chanson qui lui ressemble.' : 'Elle mérite une chanson qui lui ressemble.');
+  else if (nom) setH('cm-cta-pre', 'La mémoire de ' + strong + ' mérite une chanson qui lui ressemble.');
 
-  /* Sticky dock — ajouter le prénom */
-  var stickyBtn = document.getElementById('stripeBtnSticky');
-  if (stickyBtn) stickyBtn.textContent = 'Obtenir la chanson de ' + nom;
-})();
+  /* Sticky (identique) */
+  if (nom) setT('stripeBtnSticky', 'Obtenir la chanson de ' + nom);
+};
+window.cmPersonnaliser();
 
 /* ── STRIPE — session Checkout serveur (version choisie) ──────────────
    Remplace le Payment Link. Crée la session via /api/creer-checkout (prix fixé serveur,
