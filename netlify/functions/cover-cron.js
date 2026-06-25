@@ -27,7 +27,7 @@ exports.handler = async () => {
       try {
         await fetch(`${API}/${PROJECTS}/${rec.id}`, {
           method: 'PATCH', headers: { ...headers, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ fields: { approval_status: 'approved', cover_task_id: '', cover_launched_at: '', refaire: null } })
+          body: JSON.stringify({ fields: { approval_status: 'approved', cover_task_id: '', cover_launched_at: null, refaire: null } })
         });
         if (tok) { await fetch(`${SITE}/api/lancer-cover`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: tok, regenerate }) }); launched++; }
       } catch (_) {}
