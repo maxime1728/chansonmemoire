@@ -71,7 +71,6 @@ async function chansonPrete(projPrimary) {
 
 const wrap   = (inner) => `<div style="font-family:Georgia,serif;color:#2E1A28;line-height:1.7;max-width:560px;">${inner}<p style="color:#7A6070;margin-top:18px;">— L'équipe Chanson Mémoire</p></div>`;
 const bouton = (href, txt) => `<p style="margin:22px 0;"><a href="${href}" style="background:#5C2D4A;color:#F5F0EA;text-decoration:none;padding:12px 22px;border-radius:8px;display:inline-block;">${txt}</a></p>`;
-const spam   = `<p style="color:#7A6070;">Astuce : si tu ne trouves pas ce courriel, pense à vérifier tes courriels indésirables.</p>`;
 
 exports.handler = async () => {
   if (!AT_TOKEN) return { statusCode: 200, body: JSON.stringify({ ok: false, reason: 'no_airtable' }) };
@@ -91,7 +90,7 @@ exports.handler = async () => {
         let pret = await parolesPretes(p.project);
         if (!pret) {
           const att = Number(p.recovery_attempts) || 0;
-          if (att >= MAX_RETRIES) { await patchProjet(rec.id, { recovery_pending: '' }); gaveUp++; continue; }  // abandon auto -> humain
+          if (att >= MAX_RETRIES) { await patchProjet(rec.id, { recovery_pending: null }); gaveUp++; continue; }  // abandon auto -> humain
           try {
             const rr = await fetch(`${SITE}/api/generate-lyrics`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mode: 'retry', token }) });
             const d = await rr.json().catch(() => ({}));
@@ -103,8 +102,8 @@ exports.handler = async () => {
         if (pret) {
           const to = await emailDuClient(p);
           const ok = await envoyerCourriel(to, 'Tes paroles sont prêtes',
-            wrap(`<p>Bonne nouvelle : les paroles de ta chanson sont prêtes !</p><p>Tu peux les relire, les ajuster si tu veux, puis lancer la création de la chanson.</p>${bouton(`${SITE}/revision?id=${encodeURIComponent(token)}`, 'Voir mes paroles')}${spam}`));
-          if (ok) { await patchProjet(rec.id, { recovery_email_sent_at: now, recovery_pending: '' }); sent++; } else { waiting++; }
+            wrap(`<p>Bonne nouvelle : les paroles de ta chanson sont prêtes !</p><p>Tu peux les relire, les ajuster si tu veux, puis lancer la création de la chanson.</p>${bouton(`${SITE}/revision?id=${encodeURIComponent(token)}`, 'Voir mes paroles')}`));
+          if (ok) { await patchProjet(rec.id, { recovery_email_sent_at: now, recovery_pending: null }); sent++; } else { waiting++; }
         } else { waiting++; }
       }
 
@@ -112,8 +111,8 @@ exports.handler = async () => {
         if (await chansonPrete(p.project)) {
           const to = await emailDuClient(p);
           const ok = await envoyerCourriel(to, 'Sa chanson est prête',
-            wrap(`<p>Sa chanson est prête à écouter !</p>${bouton(`${SITE}/apercu?id=${encodeURIComponent(token)}`, 'Écouter sa chanson')}${spam}`));
-          if (ok) { await patchProjet(rec.id, { recovery_email_sent_at: now, recovery_pending: '' }); sent++; } else { waiting++; }
+            wrap(`<p>Sa chanson est prête à écouter !</p>${bouton(`${SITE}/apercu?id=${encodeURIComponent(token)}`, 'Écouter sa chanson')}`));
+          if (ok) { await patchProjet(rec.id, { recovery_email_sent_at: now, recovery_pending: null }); sent++; } else { waiting++; }
         } else { waiting++; }
       }
     }

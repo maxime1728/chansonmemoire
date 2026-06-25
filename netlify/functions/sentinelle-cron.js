@@ -21,7 +21,9 @@ const AT_TOKEN = process.env.AIRTABLE_TOKEN;
 const API      = `https://api.airtable.com/v0/${BASE_ID}`;
 const GENS     = 'tblfrHFe1zH9apNlp';
 const SUNO_API_KEY = process.env.SUNO_API_KEY;
-const CCB_HOOK     = process.env.MAKE_CCB_WEBHOOK_URL;          // webhook C-cb (pour le callback des régénérations)
+const CALLBACK_SECRET = process.env.CALLBACK_SECRET || '';
+const CCB_BASE     = process.env.MAKE_CCB_WEBHOOK_URL;          // callback des régénérations (Netlify callback-chanson, ou webhook Make)
+const CCB_HOOK     = CCB_BASE ? CCB_BASE + (CALLBACK_SECRET ? (CCB_BASE.includes('?') ? '&' : '?') + 's=' + encodeURIComponent(CALLBACK_SECRET) : '') : '';
 const CAP          = parseInt(process.env.SENTINELLE_MAX_RETRIES, 10) || 5;
 const MODEL        = 'V5_5';
 const MAX_PER_RUN  = 20;
