@@ -1736,6 +1736,7 @@ setTimeout(function(){ if (window.cmReady) window.cmReady(); }, 3000);  /* filet
         if (dG && dG.status === 'plafond') {
           showCapHelp(dG.message); return;
         }
+        if (!rG.ok || !(dG && dG.ok)) throw new Error('launch');   // échec du lancement -> .catch (message + bouton réactivé)
         window.location.href = '/attente-chanson?id=' + encodeURIComponent(token);
       }); });
     })
