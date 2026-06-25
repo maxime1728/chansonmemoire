@@ -28,6 +28,17 @@ async function moveAsset(url) {
   return { newUrl: d.secure_url };
 }
 
+// REVERT : remet UN asset de cm_purchased vers la racine (public_id = nom de base). Inverse de moveAsset.
+async function moveAssetBack(url) {
+  const p = parseCloudinaryUrl(url);
+  if (!p) return null;
+  if (!p.publicId.startsWith(FOLDER + '/')) return { already: true };   // déjà à la racine
+  const to = baseName(p.publicId);
+  const d = await rename(p.publicId, to, { resourceType: p.resourceType, type: p.type });
+  if (!d || !d.secure_url) return null;
+  return { newUrl: d.secure_url };
+}
+
 async function rangerProjet(api, headers, projet) {
   const p = projet.fields;
   let moved = 0, skipped = 0, failed = 0;
@@ -82,4 +93,47 @@ async function rangerProjet(api, headers, projet) {
   return { moved, skipped, failed };
 }
 
-module.exports = { rangerProjet };
+// REVERT d'un projet : remet tous ses assets de cm_purchased vers la racine + restaure les URLs
+// Airtable + décoche cloudinary_range. Sert à annuler un rangement (ex. la lecture signée casse).
+async function rangerRevert(api, headers, projet) {
+  const p = projet.fields;
+  let moved = 0, skipped = 0, failed = 0;
+  try {
+    const l = lit(p.project);
+    if (l) {
+      const r = await fetch(`${api}/${GENS}?filterByFormula=${encodeURIComponent(`{project}=${l}`)}`, { headers });
+      const gens = (((await r.json()) || {}).records) || [];
+      for (const g of gens) {
+        const url = g.fields && g.fields.cloudinary_audio_url;
+        if (!url) continue;
+        const res = await moveAssetBack(url);
+        if (!res) { failed++; continue; }
+        if (res.already) { skipped++; continue; }
+        const np = parseCloudinaryUrl(res.newUrl);
+        await fetch(`${api}/${GENS}/${g.id}`, {
+          method: 'PATCH', headers: { ...headers, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fields: { cloudinary_audio_url: res.newUrl, cloudinary_public_id: np ? np.publicId : undefined } })
+        });
+        moved++;
+      }
+    }
+  } catch (_) { failed++; }
+  const patch = {};
+  for (const c of UPSELL_FIELDS) {
+    if (!p[c]) continue;
+    try {
+      const res = await moveAssetBack(p[c]);
+      if (!res) { failed++; continue; }
+      if (res.already) { skipped++; continue; }
+      patch[c] = res.newUrl; moved++;
+    } catch (_) { failed++; }
+  }
+  patch.cloudinary_range = false;   // toujours décocher : le projet n'est plus rangé
+  await fetch(`${api}/${PROJECTS}/${projet.id}`, {
+    method: 'PATCH', headers: { ...headers, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fields: patch })
+  });
+  return { moved, skipped, failed };
+}
+
+module.exports = { rangerProjet, rangerRevert };
