@@ -6,7 +6,7 @@
 // Sécurité : POST, token UUID v4, gaté `purchased`, secret OPTIONNEL (RANGER_SECRET) inerte tant
 // que non posé. Idempotent (cloudinary_range).
 
-const { rangerProjet } = require('./_lib/ranger');
+const { rangerProjet, rangerRevert } = require('./_lib/ranger');
 
 const BASE_ID  = process.env.AIRTABLE_BASE_ID;
 const AT_TOKEN = process.env.AIRTABLE_TOKEN;
@@ -36,8 +36,14 @@ exports.handler = async (event) => {
     if (!dP.records || !dP.records.length) return { statusCode: 404, body: JSON.stringify({ error: 'Introuvable' }) };
     const projet = dP.records[0];
     if (projet.fields.commercial_status !== 'purchased') return { statusCode: 403, body: JSON.stringify({ error: 'Réservé aux projets achetés' }) };
-    if (projet.fields.cloudinary_range) return { statusCode: 200, body: JSON.stringify({ ok: true, already: true }) };
 
+    // Mode REVERT : remet les assets à la racine + restaure les URLs (annule un rangement).
+    if (body.revert) {
+      const res = await rangerRevert(API, headers, projet);
+      return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ok: true, reverted: true, ...res }) };
+    }
+
+    if (projet.fields.cloudinary_range) return { statusCode: 200, body: JSON.stringify({ ok: true, already: true }) };
     const res = await rangerProjet(API, headers, projet);
     return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ok: true, ...res }) };
   } catch (err) {
