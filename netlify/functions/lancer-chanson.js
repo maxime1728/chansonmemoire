@@ -33,6 +33,7 @@ const GEN = {
   generation_no:     'fldYQz30pRWwQfnYd',
   type:              'fld0ElSpJMdrMkAJy',
   lyrics:            'fld9q1iqsYSx6iGaI',
+  lyrics_phonetique: 'fldvaV15TNu6zM8f2',
   song_title:        'fldlcfIdzfDFaG9EG',
   generation_status: 'fldUnmeYy9Uk4zBDq',
   suno_task_id:      'fldJSTPxdzLNzPPs6',
@@ -145,9 +146,14 @@ exports.handler = async (event) => {
       }
     }
 
-    // Paroles : cover -> paroles ajustées (decortique) si présentes ; sinon -> paroles de la dernière Generation.
-    const lyrics = ((mode === 'cover' && p.adjusted_lyrics && p.adjusted_lyrics.trim()) ? p.adjusted_lyrics : (gen.lyrics || '')).trim();
-    if (!lyrics) return { statusCode: 409, body: JSON.stringify({ error: 'Paroles introuvables' }) };
+    // Paroles AFFICHÉES/stockées (propres) : cover -> paroles ajustées (decortique) si présentes ;
+    // sinon -> paroles de la dernière Generation.
+    const lyricsClean = ((mode === 'cover' && p.adjusted_lyrics && p.adjusted_lyrics.trim()) ? p.adjusted_lyrics : (gen.lyrics || '')).trim();
+    if (!lyricsClean) return { statusCode: 409, body: JSON.stringify({ error: 'Paroles introuvables' }) };
+    // #12 — Paroles ENVOYÉES À SUNO : version phonétique (corrections de prononciation) si elle
+    // existe, sinon les paroles propres. Le client voit TOUJOURS lyricsClean ; Suno chante la phonétique.
+    const phon       = (mode !== 'cover' && gen.lyrics_phonetique && gen.lyrics_phonetique.trim()) ? gen.lyrics_phonetique.trim() : '';
+    const lyricsSuno = phon || lyricsClean;
 
     const title       = (gen.song_title || `Pour ${p.deceased_name || 'toi'}`).slice(0, 100);
     const dernierNo   = num(gen.generation_no, 0);
@@ -164,7 +170,7 @@ exports.handler = async (event) => {
         customMode: true,
         instrumental: false,
         model: SUNO_MODEL,
-        prompt: lyrics.slice(0, 5000),
+        prompt: lyricsSuno.slice(0, 5000),
         style: style,
         title: title,
         vocalGender: vocalGender,
@@ -183,7 +189,8 @@ exports.handler = async (event) => {
     fields[GEN.project]           = [projet.id];
     fields[GEN.generation_no]     = dernierNo + 1;
     fields[GEN.type]              = type;
-    fields[GEN.lyrics]            = lyrics;
+    fields[GEN.lyrics]            = lyricsClean;
+    if (phon) fields[GEN.lyrics_phonetique] = phon;   // propage le fix phonétique à la nouvelle version
     fields[GEN.song_title]        = title;
     fields[GEN.generation_status] = 'audio_pending';
     fields[GEN.suno_task_id]      = String(taskId);

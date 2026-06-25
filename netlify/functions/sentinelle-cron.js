@@ -126,7 +126,7 @@ exports.handler = async () => {
           headers: { Authorization: `Bearer ${SUNO_API_KEY}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({
             customMode: true, instrumental: false, model: MODEL,
-            prompt: (g.lyrics || '').slice(0, 5000),
+            prompt: (((g.lyrics_phonetique && g.lyrics_phonetique.trim()) || g.lyrics || '')).slice(0, 5000),   // #12 : phonétique si présente
             style: styleRelance.slice(0, 1000),
             title: (g.song_title || 'Pour toujours').slice(0, 100),
             vocalGender: /Masculin/i.test(g.gen_voice || '') ? 'm' : 'f',
