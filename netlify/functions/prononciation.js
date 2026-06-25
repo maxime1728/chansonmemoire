@@ -98,14 +98,15 @@ exports.handler = async (event) => {
     const projet = dP.records[0];
     const p = projet.fields;
 
-    // 2. Paroles de la version la plus récente (contexte pour l'IA).
-    let lyrics = '';
+    // 2. Dernière Generation : contexte pour l'IA + cible où stocker la version phonétique (#12).
+    let lyrics = '', genId = '', lyricsPhonExistant = '';
     const projLit = formulaLiteral(p.project);
     if (projLit !== null) {
       const fG = encodeURIComponent(`{project}=${projLit}`);
       const rG = await fetch(`${API}/Generations?filterByFormula=${fG}&sort%5B0%5D%5Bfield%5D=generation_no&sort%5B0%5D%5Bdirection%5D=desc&maxRecords=1`, { headers });
       const dG = await rG.json();
-      lyrics = (dG.records && dG.records[0] && dG.records[0].fields.lyrics) || '';
+      const g0 = dG.records && dG.records[0];
+      if (g0) { genId = g0.id; lyrics = g0.fields.lyrics || ''; lyricsPhonExistant = g0.fields.lyrics_phonetique || ''; }
     }
 
     // 3. Claude : réécriture phonétique + explication (best-effort ; un échec n'empêche pas l'alerte).
@@ -138,6 +139,24 @@ ${(lyrics || '').slice(0, 2500)}`;
         explication = (parsed && parsed.explication || '').toString().slice(0, 1200);
       }
     } catch (_) { /* analyse best-effort */ }
+
+    // 3b. #12 — Stocke la version PHONÉTIQUE des paroles sur la dernière Generation (cumulative) :
+    //     le mot signalé y est réécrit phonétiquement, mais `lyrics` (affiché au client) reste
+    //     intact. Une régé ultérieure (lancer-chanson) enverra CETTE version à Suno. Best-effort.
+    if (mot && phonetique && genId) {
+      try {
+        const base = (lyricsPhonExistant && lyricsPhonExistant.trim()) ? lyricsPhonExistant : lyrics;
+        const motEsc = mot.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const rx = new RegExp('(?<![\\wÀ-ÿ])' + motEsc + '(?![\\wÀ-ÿ])', 'gi');   // limites de mot tolérant les accents
+        const nouveau = base.replace(rx, phonetique);
+        if (nouveau && nouveau !== base) {
+          await fetch(`${API}/Generations/${genId}`, {
+            method: 'PATCH', headers: { ...headers, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fields: { lyrics_phonetique: nouveau } })
+          });
+        }
+      } catch (_) { /* le stockage phonétique ne bloque jamais l'alerte équipe */ }
+    }
 
     // 4. Courriel à l'équipe (best-effort) — c'est la sortie principale de cette demande.
     try {

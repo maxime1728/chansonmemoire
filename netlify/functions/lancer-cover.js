@@ -91,7 +91,7 @@ exports.handler = async (event) => {
     if (!regenerate && !uploadUrl) return { statusCode: 409, body: JSON.stringify({ error: 'Audio source introuvable' }) };
 
     // Paroles ajustées (decortique) -> sinon paroles d'origine. Style ajusté -> sinon style d'origine.
-    const prompt = (p.adjusted_lyrics && p.adjusted_lyrics.trim()) || g.lyrics || '';
+    const prompt = (p.adjusted_lyrics && p.adjusted_lyrics.trim()) || (g.lyrics_phonetique && g.lyrics_phonetique.trim()) || g.lyrics || '';   // #12 : phonétique si présente
     if (!prompt.trim()) return { statusCode: 409, body: JSON.stringify({ error: 'Paroles introuvables' }) };
     const style = (p.adjusted_style_prompt && p.adjusted_style_prompt.trim())
       || await styleFor({ music_style: g.gen_music_style || p.music_style, mood: g.gen_mood || p.mood, cadeau: p.song_type === 'cadeau', language: p.language });
