@@ -52,8 +52,13 @@
   /* ── VIDÉO paroles vivantes ── */
   .video-frame{border-radius:14px;overflow:hidden;background:#241019;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;}
   .video-frame video{width:100%;height:100%;display:block;object-fit:cover;}
-  .video-ph{color:var(--cm-off-white);text-align:center;padding:20px;font-size:14px;line-height:1.6;opacity:.85;}
+  .video-ph{color:var(--cm-off-white);text-align:center;padding:24px 20px;font-size:14px;line-height:1.6;}
   .video-ph i{font-size:26px;color:var(--cm-gold-light);display:block;margin-bottom:10px;}
+  .gen-btn{margin-top:14px;background:var(--cm-gold);color:#3a2410;border:0;border-radius:999px;padding:11px 22px;font-weight:800;font-size:14px;cursor:pointer;font-family:'Mulish',sans-serif;}
+  .gen-btn:hover{background:var(--cm-gold-light);}
+  .gen-btn[disabled]{opacity:.65;cursor:default;}
+  .spin{width:30px;height:30px;border-radius:50%;border:3px solid rgba(245,240,234,.3);border-top-color:var(--cm-gold-light);animation:spin .8s linear infinite;margin:0 auto 12px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
 
   /* ── LECTEUR (porté de page-memoire.html) ── */
   @property --cm-border-angle { syntax:'<angle>'; initial-value:0deg; inherits:false; }
@@ -254,14 +259,65 @@
            a.innerHTML = '<i class="fa-solid fa-file-pdf"></i>&nbsp; PDF des paroles · bientôt'; }
   })();
 
-  /* ── Vidéo : injecte le <video> si une URL est fournie. ── */
+  /* ── Vidéo paroles vivantes ──────────────────────────────────────────────────
+     Source : la fonction Netlify /api/exemple-paroles-vivantes (rendu Creatomate +
+     ré-hébergement Cloudinary, idempotent). Au chargement on vérifie si la vidéo
+     existe déjà ; sinon un bouton lance le rendu (≈1-2 min) puis l'affiche.
+     VIDEO_URL (en haut) sert d'override manuel si jamais tu veux figer une URL. ── */
   (function video(){
-    if(!VIDEO_URL) return;
     var f = document.getElementById('videoFrame');
-    f.innerHTML = '';
-    var v = document.createElement('video');
-    v.src = VIDEO_URL; v.controls = true; v.preload = 'metadata'; v.setAttribute('playsinline','');
-    f.appendChild(v);
+    var API = '/api/exemple-paroles-vivantes';
+
+    function showVideo(url){
+      f.innerHTML = '';
+      var v = document.createElement('video');
+      v.src = url; v.controls = true; v.preload = 'metadata'; v.setAttribute('playsinline','');
+      f.appendChild(v);
+    }
+    function showPh(html){ f.innerHTML = '<div class="video-ph">' + html + '</div>'; }
+
+    if(VIDEO_URL){ showVideo(VIDEO_URL); return; }
+
+    var polls = 0;
+    function poll(renderId){
+      polls++;
+      if(polls > 45){ showPh('<i class="fa-solid fa-clock"></i>Le rendu prend plus de temps que prévu. Recharge la page dans un moment.'); return; }
+      fetch(API + '?render_id=' + encodeURIComponent(renderId), { cache:'no-store' })
+        .then(function(r){ return r.ok ? r.json() : null; })
+        .then(function(d){
+          if(d && d.status === 'done' && d.url){ showVideo(d.url); return; }
+          if(d && d.status === 'failed'){ showPh('<i class="fa-solid fa-triangle-exclamation"></i>Le rendu a échoué. Réessaie plus tard.'); return; }
+          setTimeout(function(){ poll(renderId); }, 4000);
+        })
+        .catch(function(){ setTimeout(function(){ poll(renderId); }, 4000); });
+    }
+    function trigger(btn){
+      if(btn){ btn.disabled = true; }
+      showPh('<div class="spin"></div>On génère la vidéo des paroles…<br><small style="opacity:.8;">Ça prend environ 1 à 2 minutes.</small>');
+      fetch(API, { method:'POST', cache:'no-store' })
+        .then(function(r){ return r.ok ? r.json() : null; })
+        .then(function(d){
+          if(d && d.status === 'done' && d.url){ showVideo(d.url); return; }
+          if(d && d.render_id){ poll(d.render_id); return; }
+          showPh('<i class="fa-solid fa-triangle-exclamation"></i>Génération indisponible pour le moment.');
+        })
+        .catch(function(){ showPh('<i class="fa-solid fa-triangle-exclamation"></i>Génération indisponible pour le moment.'); });
+    }
+    function showButton(){
+      showPh('<i class="fa-solid fa-film"></i>Un aperçu des paroles qui défilent en musique.<br>'
+        + '<button class="gen-btn" type="button" id="genVideoBtn">Générer l’aperçu vidéo</button>');
+      var b = document.getElementById('genVideoBtn');
+      if(b) b.addEventListener('click', function(){ trigger(b); });
+    }
+
+    /* État initial : la vidéo est-elle déjà rendue ? */
+    fetch(API, { cache:'no-store' })
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(d){
+        if(d && d.status === 'done' && d.url){ showVideo(d.url); }
+        else { showButton(); }
+      })
+      .catch(function(){ showButton(); });
   })();
 
   /* ── LECTEUR (logique portée de page-memoire.html) ── */
