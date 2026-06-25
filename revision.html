@@ -432,7 +432,13 @@
           montrer('etat-erreur');
           return;
         }
-      } catch(e){ console.error('Webhook B error:', e); }
+        if(!res.ok || !(data && data.ok)) throw new Error('launch');   // échec du lancement -> pas de fausse page d'attente
+      } catch(e){
+        console.error('lancer-chanson error:', e);
+        alert("La création de la chanson n'a pas pu démarrer. Réessaie dans un instant.");
+        montrer('contenu');   // on re-montre les paroles + le bouton, pour réessayer
+        return;
+      }
       montrer('etat-soumission');
       setTimeout(function(){ window.location.href=URL_ATTENTE+'?id='+encodeURIComponent(token); }, 2500);
     }
