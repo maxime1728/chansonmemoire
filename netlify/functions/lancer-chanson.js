@@ -13,7 +13,7 @@
 // Écritures Airtable par ID DE CHAMP (copiés du blueprint C-gen) -> immunisé aux renommages.
 // Sécurité : POST, UUID v4 strict, formule échappée, secrets en env (SUNO_API_KEY, AIRTABLE_*).
 
-const { accentFor } = require('./_lib/lyrics');
+const { styleFor } = require('./_lib/style');
 
 const BASE_ID  = process.env.AIRTABLE_BASE_ID;
 const AT_TOKEN = process.env.AIRTABLE_TOKEN;
@@ -107,7 +107,7 @@ exports.handler = async (event) => {
     const dernierNo   = num(gen.generation_no, 0);
     const regenCount  = num(p.song_regenerations_count, 0);
     const vocalGender = /Masculin/i.test(p.voice || '') ? 'm' : 'f';
-    const style = [p.music_style, p.mood, accentFor(p.language)].filter(Boolean).join(', ').slice(0, 1000);
+    const style = (await styleFor({ music_style: p.music_style, mood: p.mood, cadeau: p.song_type === 'cadeau', language: p.language })).slice(0, 1000);
     const type  = (mode === 'cover') ? 'cover' : (regenCount >= 1 ? 'song_regeneration' : 'song');
 
     // 4. Suno /generate (NOUVELLE mélodie). JSON.stringify -> échappement auto, zéro bug de body.
