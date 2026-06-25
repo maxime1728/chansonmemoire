@@ -24,12 +24,13 @@ const CREATOMATE_VERSION = process.env.CREATOMATE_API_VERSION || 'v1';
 const CLOUD = process.env.CLOUDINARY_CLOUD_NAME;
 
 const FOLDER = 'paroles-vivantes';
-const PUBLIC_ID = 'exemple_mhdl';                       // public_id FIXE -> idempotence
-const AUDIO_START = Number(process.env.EXEMPLE_AUDIO_START || 0);   // sec ; début du Couplet 2 (0 = chanson complète)
+const PUBLIC_ID = 'exemple_mhdl_instru';                // public_id FIXE -> idempotence (version sur instrumentale)
+const AUDIO_START = Number(process.env.EXEMPLE_AUDIO_START || 0);   // sec ; début du Couplet 2 (0 = piste complète)
 
 const TITRE = 'Mon homme du lac';
 const PRENOM = 'Michel';
-const AUDIO_BASE = 'v1782355169/MON_HOMME_DU_LAC_EMOTIONNELLE_lwwoy1.mp3';
+// Vidéo = paroles animées SUR L'INSTRUMENTALE (sans voix) — décision produit (lyric-video).
+const AUDIO_BASE = 'v1782358834/Instrumental._Mon_homme_du_lac_rjkts5.mp3';
 function audioUrl() {
   const tf = AUDIO_START > 0 ? `so_${AUDIO_START}/` : '';
   return `https://res.cloudinary.com/dcx1tfm47/video/upload/${tf}${AUDIO_BASE}`;

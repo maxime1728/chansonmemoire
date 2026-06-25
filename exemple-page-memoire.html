@@ -145,22 +145,15 @@
     </div>
   </div>
 
-  <!-- 2. VIDÉO PAROLES VIVANTES -->
+  <!-- 2. VIDÉO DES PAROLES (sur l'instrumentale) — paroles vivantes + instrumentale fusionnées -->
   <div class="card" id="video" style="scroll-margin-top:20px;">
     <div class="badge">Option</div>
     <div class="section-title">Sa vidéo des paroles</div>
-    <p class="section-sub">Les paroles qui défilent en musique, prêtes à projeter ou à partager.</p>
+    <p class="section-sub">Les paroles qui défilent, portées par sa version instrumentale. Prête à projeter ou à partager.</p>
     <div class="video-frame" id="videoFrame">
       <div class="video-ph"><i class="fa-solid fa-film"></i>L'aperçu vidéo se charge…</div>
     </div>
-  </div>
-
-  <!-- 2b. VERSION INSTRUMENTALE (add-on, montré avec les paroles vivantes) -->
-  <div class="card">
-    <div class="badge">Option</div>
-    <div class="section-title">Sa version instrumentale</div>
-    <p class="section-sub">La trame musicale seule, sans voix, pour une cérémonie ou un fond sonore.</p>
-    <div id="instruWrap"></div>
+    <div id="instruDl" style="margin-top:16px;"></div>
   </div>
 
   <!-- 3. PDF DES PAROLES -->
@@ -195,7 +188,7 @@
   var AUDIO_START = 0;   /* secondes ; mets ex. 48 pour démarrer au Couplet 2 */
   var VIDEO_URL = '';    /* URL .mp4 de la vidéo paroles vivantes (à remplir après rendu) */
   var PDF_URL   = 'exemple-paroles-mhdl.html';   /* feuille de paroles prête à « Enregistrer en PDF » */
-  var INSTRUMENTAL_URL = '';   /* MP3 instrumental (sans voix) ; vide = « à venir ». Mets l'URL Cloudinary du mix instrumental. */
+  var INSTRUMENTAL_URL = 'https://res.cloudinary.com/dcx1tfm47/video/upload/v1782358834/Instrumental._Mon_homme_du_lac_rjkts5.mp3';   /* trame de la vidéo + téléchargement */
 
   function audioUrl(){
     var tf = AUDIO_START > 0 ? ('so_' + AUDIO_START + '/') : '';
@@ -278,18 +271,16 @@
            a.innerHTML = '<i class="fa-solid fa-file-pdf"></i>&nbsp; PDF des paroles · bientôt'; }
   })();
 
-  /* ── Version instrumentale : lecteur natif si URL fournie, sinon « à venir ». ── */
+  /* ── Instrumentale : sous la vidéo, c'est la trame de la vidéo (écoute + téléchargement). ── */
   (function instru(){
-    var w = document.getElementById('instruWrap');
-    if(INSTRUMENTAL_URL){
-      var a = document.createElement('audio');
-      a.src = INSTRUMENTAL_URL; a.controls = true; a.preload = 'none';
-      a.style.width = '100%';
-      w.appendChild(a);
-    } else {
-      w.innerHTML = '<div class="video-frame" style="aspect-ratio:auto;padding:22px;">'
-        + '<div class="video-ph"><i class="fa-solid fa-music"></i>La version instrumentale s\'ajoute ici.</div></div>';
-    }
+    var w = document.getElementById('instruDl');
+    if(!w || !INSTRUMENTAL_URL) return;
+    var p = document.createElement('p');
+    p.className = 'section-sub'; p.style.margin = '0 0 8px';
+    p.textContent = 'La trame instrumentale seule (sans voix) :';
+    var a = document.createElement('audio');
+    a.src = INSTRUMENTAL_URL; a.controls = true; a.preload = 'none'; a.style.width = '100%';
+    w.appendChild(p); w.appendChild(a);
   })();
 
   /* ── Vidéo paroles vivantes ──────────────────────────────────────────────────
