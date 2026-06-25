@@ -66,7 +66,7 @@ MÉTHODE (raisonne avant de répondre) :
 
 EXEMPLES BIEN FAITS :
 - "Ghislaine" : l'IA dit "Guis-laine" ; le bon son est "Jis-lène" -> réécriture : "Jislaine".
-- "Disquatch" : le bon son est l'anglais "disk-watch" -> réécriture : "diskwatch" (et NON "diskoutch", qui se lirait "diss-kou-tch").
+- "juin" : l'IA chante souvent "joint" ; le bon son est "ju-un" (deux syllabes : "ju" + "un") -> réécriture : "ju-un".
 
 SORTIE — uniquement un objet JSON valide, guillemets droits, rien autour :
 {"phonetique":"<réécriture à insérer dans les paroles>","explication":"<le son visé, syllabe par syllabe, en clair pour l'équipe>"}`;
