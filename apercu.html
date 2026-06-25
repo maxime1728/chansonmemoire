@@ -901,7 +901,7 @@ body {
 .cm-bump small { display:block; font-weight:400; color:var(--cm-text-sub); margin-top:2px; }
 /* ════════ EFFETS (continuité avec l'accueil) ════════ */
 .cm-hero{position:relative;}
-.cm-hero::before{content:"";position:absolute;top:-40px;left:50%;width:640px;max-width:160%;height:380px;transform:translateX(-50%);z-index:-1;pointer-events:none;background:radial-gradient(ellipse at center,rgba(232,201,122,.5),rgba(201,139,176,.18) 42%,transparent 70%);animation:cm-fx-breathe 7s ease-in-out infinite;will-change:transform,opacity;}
+.cm-hero::before{content:"";position:absolute;top:-24px;left:50%;width:560px;max-width:150%;height:320px;transform:translateX(-50%);z-index:-1;pointer-events:none;background:radial-gradient(ellipse at center,rgba(232,201,122,.30),rgba(232,201,122,.06) 48%,transparent 72%);animation:cm-fx-breathe 7s ease-in-out infinite;will-change:transform,opacity;}
 @keyframes cm-fx-breathe{0%,100%{opacity:.55;transform:translateX(-50%) scale(.97);}50%{opacity:1;transform:translateX(-50%) scale(1.06);}}
 #cm-player-root .cm-play-btn{position:relative;}
 #cm-player-root .cm-play-btn::after{content:"";position:absolute;inset:-5px;border-radius:50%;border:2px solid rgba(196,150,58,.45);animation:cm-fx-ring 2.6s ease-out infinite;pointer-events:none;}
@@ -915,6 +915,10 @@ body {
 #cm-loader.cm-hide{opacity:0;pointer-events:none;}
 #cm-loader .cm-spin{width:46px;height:46px;border-radius:50%;border:3px solid rgba(92,45,74,.15);border-top-color:var(--cm-gold);animation:cm-spin .8s linear infinite;}
 @keyframes cm-spin{to{transform:rotate(360deg);}}
+/* Apparition au scroll (bidirectionnelle = "vivant") */
+.cm-fx-reveal{opacity:0;transform:translateY(26px);transition:opacity .7s ease,transform .7s ease;}
+.cm-fx-reveal.cm-fx-in{opacity:1;transform:none;}
+@media (prefers-reduced-motion:reduce){.cm-fx-reveal{opacity:1;transform:none;transition:none;}}
 </style>
 </head>
 <body>
@@ -1575,19 +1579,20 @@ setTimeout(function(){ if (window.cmReady) window.cmReady(); }, 3000);  /* filet
   var VOICES = ['Masculin','Féminin'];
   var C_GEN_WEBHOOK = 'https://hook.us1.make.com/uxpwxw1xqjm3x7mt35qjvdm2t8y9fvv4';
 
-  /* Les 2 boutons, sous le bloc pricing. */
+  /* Bouton « Essayer un autre style » placé SOUS le lecteur audio.
+     NOTE: « Créer une chanson pour quelqu'un d'autre » a été retiré d'ici pour ne pas nuire à
+     la conversion ; il sera déplacé sur la page finale de réception (voir mémoire cm-apercu-boutons). */
   var actions = document.createElement('div');
   actions.className = 'cm-regen-actions';
   var b1 = document.createElement('button');
   b1.type = 'button'; b1.className = 'cm-regen-btn'; b1.textContent = 'Essayer un autre style';
-  var b2 = document.createElement('button');
-  b2.type = 'button'; b2.className = 'cm-regen-btn cm-regen-btn-sec';
-  b2.textContent = "Créer une chanson pour quelqu'un d'autre";
   var note = document.createElement('p');
   note.className = 'cm-regen-note';
   note.textContent = "Ajuste le style, la voix ou l'ambiance, ou bonifie un souvenir.";
-  actions.appendChild(b1); actions.appendChild(b2); actions.appendChild(note);
-  anchor.parentNode.insertBefore(actions, anchor.nextSibling);
+  actions.appendChild(b1); actions.appendChild(note);
+  var player = document.getElementById('cm-player-root');
+  if (player) player.parentNode.insertBefore(actions, player.nextSibling);
+  else anchor.parentNode.insertBefore(actions, anchor.nextSibling);
 
   /* Modal. */
   var overlay  = document.getElementById('cm-style-overlay');
@@ -1623,10 +1628,7 @@ setTimeout(function(){ if (window.cmReady) window.cmReady(); }, 3000);  /* filet
   function closeModal(){ if(!overlay) return; overlay.classList.remove('show'); overlay.setAttribute('aria-hidden','true'); }
 
   b1.addEventListener('click', openModal);
-  b2.addEventListener('click', function(){
-    var ok = window.confirm("Créer une chanson pour une autre personne ? Tu recommenceras un nouveau formulaire. Tes versions actuelles restent accessibles par le lien que tu as reçu.");
-    if (ok) window.location.href = '/souvenirs';
-  });
+  /* (b2 « Créer une chanson pour quelqu'un d'autre » retiré de l'aperçu — ira sur la page finale.) */
 
   var closeBtn  = document.getElementById('cm-style-close');
   var cancelBtn = document.getElementById('cm-style-cancel');
@@ -1713,6 +1715,22 @@ document.querySelectorAll('.cm-faq-btn').forEach(function(btn) {
   }
   window.addEventListener('scroll', toggle, {passive: true});
   toggle();
+})();
+
+/* ── Apparition au scroll (IntersectionObserver, bidirectionnel = "vivant") ── */
+(function(){
+  if (matchMedia('(prefers-reduced-motion:reduce)').matches) return;
+  if (!('IntersectionObserver' in window)) return;
+  var targets = document.querySelectorAll('.cm-story, .cm-faq-item, .cm-step-body, #cm-pricing-root, .cm-cta-bottom');
+  if (!targets.length) return;
+  targets.forEach(function(t){ t.classList.add('cm-fx-reveal'); });
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if (e.isIntersecting) e.target.classList.add('cm-fx-in');
+      else e.target.classList.remove('cm-fx-in');
+    });
+  }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
+  targets.forEach(function(t){ io.observe(t); });
 })();
 </script>
 
