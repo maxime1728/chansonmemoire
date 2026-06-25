@@ -80,4 +80,25 @@ function parseCloudinaryUrl(url) {
   return m ? { cloud: m[1], resourceType: m[2], type: m[3], publicId: decodeURIComponent(m[4]), ext: m[5] || '' } : null;
 }
 
-module.exports = { rehost, rename, parseCloudinaryUrl };
+// Supprime DÉFINITIVEMENT un asset Cloudinary (Loi 25). `type` doit matcher la livraison réelle
+// ('authenticated' pour l'audio CM). invalidate=true purge aussi le CDN. Renvoie true si supprimé
+// (ou déjà absent), false sinon.
+async function destroy(publicId, { resourceType = 'video', type = 'upload', invalidate = true } = {}) {
+  if (!CLOUD || !KEY || !SECRET || !publicId) return false;
+  try {
+    const ts = Math.floor(Date.now() / 1000);
+    const signed = { public_id: publicId, timestamp: ts };
+    if (type && type !== 'upload') signed.type = type;
+    if (invalidate) signed.invalidate = 'true';
+    const signature = signParams(signed);
+    const form = new URLSearchParams();
+    Object.keys(signed).forEach(k => form.append(k, String(signed[k])));
+    form.append('api_key', KEY);
+    form.append('signature', signature);
+    const r = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD}/${resourceType}/destroy`, { method: 'POST', body: form });
+    const d = await r.json();
+    return !!(d && (d.result === 'ok' || d.result === 'not found'));
+  } catch (err) { console.error('[cloudinary destroy]', err && err.message); return false; }
+}
+
+module.exports = { rehost, rename, parseCloudinaryUrl, destroy };

@@ -25,11 +25,11 @@
 [functions."recovery-cron"]
   schedule = "*/5 * * * *"
 
-# Rangement Cloudinary (#3) : déplace les assets des projets achetés dans cm_purchased. DORMANT
-# tant que l'env RANGER_CLOUDINARY_ACTIF n'est pas posée (sécurité : tester d'abord via
-# /api/ranger-achat sur un projet). Toutes les 10 min.
-[functions."ranger-cron"]
-  schedule = "*/10 * * * *"
+# Purge Loi 25 : supprime les fichiers audio des projets NON achetés à 60 j, anonymise leurs PII
+# à 6 mois. Les projets achetés ne sont JAMAIS touchés. DRY-RUN par défaut (journalise sans rien
+# supprimer) ; purge réelle seulement si PURGE_ACTIF=1. Quotidien.
+[functions."purge-cron"]
+  schedule = "@daily"
 
 # Relance cover + refaire/régénérer (dropdown `refaire`) : chaque minute (quasi instantané).
 [functions."cover-cron"]
