@@ -35,7 +35,7 @@ function formulaLiteral(v) {
 
 // ── PDF designé (papier pâle, titre serif mauve, « en mémoire de », filet doré, paroles centrées) ──
 // v1 = polices serif intégrées à pdfkit (Times). Finition : embarquer Cormorant/Fraunces exactes.
-function genererPdf({ titre, paroles, prenom }) {
+function genererPdf({ titre, paroles, prenom, cadeau }) {
   return new Promise((resolve, reject) => {
     const W = 595.28, H = 841.89;   // A4 portrait (points)
     const doc = new PDFDocument({ size: 'A4', autoFirstPage: false,
@@ -64,7 +64,7 @@ function genererPdf({ titre, paroles, prenom }) {
 
     if (prenom) {
       doc.fillColor('#7A6070').font('Times-Roman').fontSize(11)
-        .text('en mémoire de ' + prenom, { align: 'center', characterSpacing: 1.2 });
+        .text((cadeau ? 'pour ' : 'en mémoire de ') + prenom, { align: 'center', characterSpacing: 1.2 });
       doc.moveDown(0.8);
     }
 
@@ -179,9 +179,10 @@ exports.handler = async (event) => {
     const titre   = gen.fields.song_title || '';
     const paroles = stripSectionTags(gen.fields.lyrics || '');   // PDF + courriel : balises Suno masquées
     const prenom  = projet.fields.deceased_name || '';
+    const cadeau  = projet.fields.song_type === 'cadeau';        // cadeau (vivant) -> « pour X », pas « en mémoire de X »
 
     // 1. PDF -> 2. Cloudinary -> 3. Airtable (pdf_url + marqueur pdf_template).
-    const pdfBuffer = await genererPdf({ titre, paroles, prenom });
+    const pdfBuffer = await genererPdf({ titre, paroles, prenom, cadeau });
     const pdfUrl = await uploadCloudinary(pdfBuffer, `paroles_${token}`);
 
     await fetch(`${API}/Projects/${projet.id}`, {

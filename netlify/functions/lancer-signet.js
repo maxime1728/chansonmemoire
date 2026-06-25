@@ -30,7 +30,7 @@ function formulaLiteral(v) {
 }
 
 // ── Signet 2"×7" (144×504 pt) : papier pâle, prénom serif mauve, filet doré, phrase, QR vers la chanson ──
-function genererSignetPdf({ prenom, phrase, qrBuffer }) {
+function genererSignetPdf({ prenom, phrase, qrBuffer, cadeau }) {
   return new Promise((resolve, reject) => {
     const W = 144, H = 504;   // 2 po × 7 po (72 pt/po)
     const doc = new PDFDocument({ size: [W, H], margins: { top: 26, bottom: 22, left: 14, right: 14 } });
@@ -45,7 +45,7 @@ function genererSignetPdf({ prenom, phrase, qrBuffer }) {
       .text('CHANSON MÉMOIRE', 0, 26, { align: 'center', width: W, characterSpacing: 1.5 });
 
     doc.fillColor('#7A6070').font('Times-Roman').fontSize(9)
-      .text('en mémoire de', 0, 64, { align: 'center', width: W, characterSpacing: 1 });
+      .text(cadeau ? 'pour' : 'en mémoire de', 0, 64, { align: 'center', width: W, characterSpacing: 1 });
     doc.fillColor('#5C2D4A').font('Times-Italic').fontSize(19)
       .text(prenom || 'toujours', 8, 78, { align: 'center', width: W - 16 });
 
@@ -119,12 +119,13 @@ exports.handler = async (event) => {
     }
 
     const prenom = projet.fields.deceased_name || '';
-    const phrase = (projet.fields.signet_text || '').toString().trim() || 'Pour toujours dans nos cœurs.';
+    const cadeau = projet.fields.song_type === 'cadeau';   // cadeau (vivant) -> « pour X » + phrase non funéraire
+    const phrase = (projet.fields.signet_text || '').toString().trim() || (cadeau ? 'Avec tout mon cœur.' : 'Pour toujours dans nos cœurs.');
 
     // QR -> page de la chanson (token-routée). Le scan ouvre la page qui joue la chanson.
     const qrBuffer = await QRCode.toBuffer(`${SITE}/page-memoire?id=${token}`, { margin: 1, scale: 6 });
 
-    const pdfBuffer = await genererSignetPdf({ prenom, phrase, qrBuffer });
+    const pdfBuffer = await genererSignetPdf({ prenom, phrase, qrBuffer, cadeau });
     const signetUrl = await uploadCloudinary(pdfBuffer, `signet_${token}`);
 
     await fetch(`${API}/Projects/${projet.id}`, {
