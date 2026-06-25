@@ -130,7 +130,7 @@ exports.handler = async (event) => {
     //    purchased_generation_no n'est basculé qu'en POST-achat ; en pré-achat (cover d'aperçu) la
     //    nouvelle génération devient simplement la plus récente (lire-projet sert la dernière).
     const projPatch = { approval_status: 'published', cover_task_id: null, cover_launched_at: null };
-    if (Number.isInteger(purchasedNo)) projPatch.purchased_generation_no = newNo;
+    if (Number.isInteger(purchasedNo)) { projPatch.purchased_generation_no = newNo; projPatch.purchased_song_title = fields.song_title; }   // #2 : titre acheté à jour
     await fetch(`${API}/Projects/${projet.id}`, {
       method: 'PATCH', headers: { ...headers, 'Content-Type': 'application/json' },
       body: JSON.stringify({ fields: projPatch })
