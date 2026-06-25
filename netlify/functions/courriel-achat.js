@@ -122,6 +122,8 @@ exports.handler = async (event) => {
           titre = (dG.records && dG.records[0] && dG.records[0].fields.song_title) || '';
         }
       } catch (_) { /* titre facultatif */ }
+      // #2 : trace du titre acheté sur le Projet (pour le voir d'un coup d'œil dans Airtable). Best-effort.
+      if (titre) { try { await fetch(`${API}/Projects/${projet.id}`, { method: 'PATCH', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: { purchased_song_title: titre } }) }); } catch (_) {} }
       subject = titre ? `Votre chanson « ${titre} » vous attend` : 'Votre chanson vous attend';
       html = gabarit({
         intro: 'Merci, et bienvenue.',
