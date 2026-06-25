@@ -172,8 +172,8 @@
   <div class="card teaser">
     <div class="badge">À venir</div>
     <div class="section-title">Mémoire vivante</div>
-    <p class="section-sub">La mémoire grandit par la création. Une plateforme pour faire vivre son souvenir, à ton rythme.</p>
-    <p class="feat">
+    <p class="section-sub" id="memoireSub">La mémoire grandit par la création. Une plateforme pour faire vivre son souvenir, à ton rythme.</p>
+    <p class="feat" id="memoireFeat">
       <strong>✦ Déposer</strong> des photos et des vidéos en souvenir.<br>
       <strong>✦ Une nouvelle œuvre</strong> tous les trois mois, à partir de nouveaux souvenirs ou d'une nouvelle formulation, dans le style de ton choix.<br>
       <strong>✦ Une page famille</strong> partagée, pour se souvenir ensemble.
@@ -188,6 +188,13 @@
     <p class="section-sub">Un montage personnalisé à partir de tes photos et vidéos, porté par ta chanson. Le tout accompagné par notre équipe.</p>
     <div style="margin-top:6px;"><button class="btn btn-ghost btn-block" id="btnWaitVideo" type="button">Ça m'intéresse, tiens-moi au courant</button></div>
     <p class="ok-msg" id="videoMsg" style="display:none;"></p>
+  </div>
+
+  <!-- CRÉER POUR QUELQU'UN D'AUTRE (placé ici, post-achat, pour ne pas nuire à la conversion de l'aperçu) -->
+  <div class="card center">
+    <div class="section-title">Une chanson pour quelqu'un d'autre ?</div>
+    <p class="section-sub">Offre la même émotion à une autre personne qui compte pour toi.</p>
+    <a class="btn btn-ghost btn-block" href="/souvenirs">Créer une nouvelle chanson</a>
   </div>
 
   <div class="card">
@@ -218,8 +225,18 @@
   var loading=document.getElementById('loading'); var lastVol=1, isDragging=false;
   function fmt(t){ if(!isFinite(t)) t=0; var m=Math.floor(t/60),s=Math.floor(t%60); return m+':'+(s<10?'0'+s:s); }
 
+  /* Adapte le teaser « Mémoire vivante » pour un cadeau (sinon = textes hommage par défaut). */
+  function adaptMemoireType(type){
+    if(type !== 'cadeau') return;
+    var sub=document.getElementById('memoireSub');
+    if(sub) sub.textContent="Une chanson, c'est un début. Une plateforme pour continuer à créer pour ceux que tu aimes, à ton rythme.";
+    var feat=document.getElementById('memoireFeat');
+    if(feat) feat.innerHTML='<strong>✦ Déposer</strong> des photos et des vidéos.<br><strong>✦ Une nouvelle œuvre</strong> tous les trois mois, à partir de nouveaux souvenirs, dans le style de ton choix.<br><strong>✦ Une page partagée</strong>, pour célébrer ensemble.';
+  }
+
   post('/api/lire-projet',{token:token}).then(function(d){
     if(!d){ loading.textContent='Lien introuvable.'; return; }
+    adaptMemoireType(d.song_type);
     if(d.titre){ document.getElementById('title').textContent=d.titre; document.getElementById('playerTitle').textContent=d.titre; document.title=d.titre+' · Chanson Mémoire'; }
     var bits=[d.style,d.ambiance].filter(Boolean); if(bits.length) document.getElementById('subtitle').textContent=bits.join(' · ');
     if(d.audio_url){ source.src=d.audio_url; audio.load(); } else { loading.textContent='Ta chanson se finalise, réessaie dans un instant.'; }
