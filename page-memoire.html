@@ -185,7 +185,12 @@
   <!-- VIDÉO MÉMOIRE : photos du client + chanson -->
   <div class="card" id="videoMemoireCard" style="display:none;">
     <div class="section-title">Ta vidéo souvenir</div>
-    <p class="section-sub">Un montage tout en douceur de tes photos, porté par ta chanson (10 à 60 photos). <b>Touche une photo</b> pour la sélectionner, puis <b>glisse-la</b> où tu veux (ou les flèches <b>‹ ›</b>). <b>★</b> la met en avant (durée ×1,5), <b>×</b> la retire.</p>
+    <p class="section-sub">Un montage doux de tes photos, porté par ta chanson (10 à 60 photos).</p>
+    <ul class="section-sub" style="margin:8px 0 2px;padding-left:20px;line-height:1.7;">
+      <li><b>Ajoute</b> tes photos.</li>
+      <li><b>Touche</b> une photo pour la choisir : <b>★</b> la met en avant, <b>×</b> la retire.</li>
+      <li><b>Maintiens puis glisse</b> une photo pour changer l'ordre (ou les flèches <b>‹ ›</b>).</li>
+    </ul>
     <input type="file" id="photoInput" accept="image/*" multiple style="display:none;">
     <div style="margin-top:6px;"><button class="btn btn-ghost btn-block" id="btnAddPhotos" type="button"><i class="fa-solid fa-images"></i>&nbsp; Ajouter mes photos</button></div>
     <p class="section-sub" id="photoCount" style="margin-top:10px;display:none;"></p>
