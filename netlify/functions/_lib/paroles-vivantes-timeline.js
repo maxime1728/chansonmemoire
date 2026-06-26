@@ -164,24 +164,25 @@ function buildEdit({ titre, prenom, cadeau, transcriptWords, introLen, lyricsEnd
     family: FONT_TITLE, weight: '700', color: CREAM, size: 22, y: '92%'
   }));
 
-  // Cartes titre (piste 3) : intro (titre + « En mémoire de … ») puis fin. Titre en casse phrase
-  // (majuscule au début), dédicace avec « En mémoire de » / « Pour » + prénom capitalisé.
+  // Cartes titre (pistes 5 & 6, AU-DESSUS des paroles karaoké en piste 4 -> jamais masquées) :
+  // intro (titre + « En mémoire de … ») puis fin. Titre en casse phrase (majuscule au début),
+  // dédicace avec « En mémoire de » / « Pour » + prénom capitalisé.
   const titreAff  = sentenceCase(titre || 'Pour toujours', prenom);
   const prenomAff = capFirst(prenom);
   if (introLen > 0.8) {
     elements.push(textEl({
-      text: titreAff, track: 3, time: 0, duration: introLen,
-      family: FONT_TITLE, weight: '700', color: MAUVE, size: 64, y: '44%', fadeOut: true
+      text: titreAff, track: 5, time: 0, duration: introLen,
+      family: FONT_TITLE, weight: '700', color: MAUVE, size: 64, y: '42%', fadeOut: true
     }));
     if (prenomAff) {
       elements.push(textEl({
-        text: (cadeau ? 'Pour ' : 'En mémoire de ') + prenomAff, track: 3, time: 0, duration: introLen,
-        family: FONT_BODY, weight: '400', color: GOLD, size: 30, y: '58%', fadeOut: true
+        text: (cadeau ? 'Pour ' : 'En mémoire de ') + prenomAff, track: 6, time: 0, duration: introLen,
+        family: FONT_BODY, weight: '400', color: GOLD, size: 30, y: '56%', fadeOut: true
       }));
     }
   }
   elements.push(textEl({
-    text: titreAff, track: 3, time: Math.max(0, lyricsEnd), duration: OUTRO,
+    text: titreAff, track: 5, time: Math.max(0, lyricsEnd), duration: OUTRO,
     family: FONT_TITLE, weight: '700', color: MAUVE, size: 56, y: '50%', fadeOut: true
   }));
 
@@ -301,7 +302,7 @@ function buildEditFromLyrics({ titre, prenom, cadeau, lyrics, alignedWords, audi
   // Mode DÉMO : ne garder que les paroles à partir de clipStart (s), recalées juste après une
   // courte carte-titre. L'audio est trimé d'autant dans buildEdit -> tout reste synchronisé.
   if (clipStart > 0) {
-    const INTRO_DEMO = 2.6;
+    const INTRO_DEMO = 3.4;
     transcriptWords = transcriptWords
       .filter(w => w.time >= clipStart - 0.05)
       .map(w => ({ time: +(w.time - clipStart + INTRO_DEMO).toFixed(3), duration: w.duration, value: w.value }));
