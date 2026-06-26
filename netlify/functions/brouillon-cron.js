@@ -80,7 +80,11 @@ async function construireContexts(projectIds, headers) {
           langue: p.language || 'fr-CA',
           statut_commande: p.commercial_status || 'preview_only',
           etape: p.approval_status || '',
-          lien_page: p.token ? `${SITE}/page-memoire?id=${encodeURIComponent(p.token)}` : ''
+          // Lien PAR PROJET : vendu -> page de livraison complète ; pré-achat -> page aperçu (jamais le lien complet).
+          lien_page: !p.token ? ''
+            : (p.commercial_status === 'purchased'
+                ? (p.page_url || `${SITE}/page-memoire?id=${encodeURIComponent(p.token)}`)
+                : `${SITE}/apercu?id=${encodeURIComponent(p.token)}`)
         });
       }
     } catch (_) {}
