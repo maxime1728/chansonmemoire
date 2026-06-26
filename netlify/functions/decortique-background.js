@@ -155,7 +155,9 @@ ${demande}`;
 C'est bien noté pour votre demande${surNom}. On s'en occupe avec soin.
 
 Dès que votre nouvelle version sera prête, vous pourrez l'écouter ici : [votre page Chanson Mémoire](${lien}).`;
-      try { await patch(CONVOS, convoId, { brouillon_ia: brouillon, confiance_ia: 'basse' }); } catch (_) {}
+      // paroles_corrigees / prompt_style : versions EDITABLES visibles dans la vue Modifications (l'equipe ajuste
+      // puis coche `appliquer` -> appliquer-modification les pousse sur le Projet). Brouillon = reponse client.
+      try { await patch(CONVOS, convoId, { brouillon_ia: brouillon, confiance_ia: 'basse', paroles_corrigees: adjLyrics, prompt_style: adjStyle }); } catch (_) {}
     }
 
     return { statusCode: 200, body: JSON.stringify({ ok: true }) };
