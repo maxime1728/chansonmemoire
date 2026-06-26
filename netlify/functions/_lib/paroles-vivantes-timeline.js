@@ -123,12 +123,19 @@ function textEl({ text, track, time, duration, family, weight, color, size, y, f
 }
 
 // Assemble le RenderScript Creatomate complet à partir des lignes timées.
-function buildEdit({ titre, prenom, cadeau, transcriptWords, introLen, lyricsEnd, songEnd, audioUrl }) {
+function buildEdit({ titre, prenom, cadeau, transcriptWords, introLen, lyricsEnd, songEnd, audioUrl, clipStart = 0 }) {
   const elements = [];
 
-  // Bande-son (piste 1) : la chanson, bornée à la durée vidéo, fondu de sortie.
+  // Bande-son (piste 1) : la chanson, bornée à la durée vidéo, fondu de sortie. En mode DÉMO
+  // (clipStart>0), on démarre l'audio au couplet voulu via trim_start (Creatomate coupe la source,
+  // donc aucune re-signature d'URL Cloudinary) et on l'aligne juste après la courte carte-titre.
   if (audioUrl) {
-    elements.push({ type: 'audio', track: 1, time: 0, duration: songEnd, source: audioUrl, loop: false, audio_fade_out: 2 });
+    const a = { type: 'audio', track: 1,
+                time: clipStart > 0 ? introLen : 0,
+                duration: +(songEnd - (clipStart > 0 ? introLen : 0)).toFixed(3),
+                source: audioUrl, loop: false, audio_fade_out: 2 };
+    if (clipStart > 0) { a.trim_start = clipStart; a.audio_fade_in = 0.8; }
+    elements.push(a);
   }
 
   // Signature permanente (piste 2, bas) — peinte avant les paroles -> jamais par-dessus.
@@ -260,16 +267,28 @@ function buildTranscript(realWords, lines, alignedWords) {
 }
 
 // Façade : paroles brutes + alignement Suno -> RenderScript Creatomate prêt à rendre.
-function buildEditFromLyrics({ titre, prenom, cadeau, lyrics, alignedWords, audioUrl }) {
+function buildEditFromLyrics({ titre, prenom, cadeau, lyrics, alignedWords, audioUrl, clipStart = 0 }) {
   const displayLines = cleanLyrics(lyrics);
   if (displayLines.length === 0) return null;
   const realWords = displayLines.join(' ').split(/\s+/).filter(Boolean);   // VRAIS mots (texte = vérité)
   const t = timeLines(displayLines, alignedWords);
-  return buildEdit({
-    titre, prenom, cadeau, audioUrl,
-    transcriptWords: buildTranscript(realWords, t.lines, alignedWords),
-    introLen: t.introLen, lyricsEnd: t.lyricsEnd, songEnd: t.songEnd
-  });
+  let transcriptWords = buildTranscript(realWords, t.lines, alignedWords);
+  let introLen = t.introLen, lyricsEnd = t.lyricsEnd, songEnd = t.songEnd;
+
+  // Mode DÉMO : ne garder que les paroles à partir de clipStart (s), recalées juste après une
+  // courte carte-titre. L'audio est trimé d'autant dans buildEdit -> tout reste synchronisé.
+  if (clipStart > 0) {
+    const INTRO_DEMO = 2.6;
+    transcriptWords = transcriptWords
+      .filter(w => w.time >= clipStart - 0.05)
+      .map(w => ({ time: +(w.time - clipStart + INTRO_DEMO).toFixed(3), duration: w.duration, value: w.value }));
+    introLen = INTRO_DEMO;
+    const last = transcriptWords[transcriptWords.length - 1];
+    lyricsEnd = +((last ? last.time + last.duration : INTRO_DEMO)).toFixed(3);
+    songEnd = +(lyricsEnd + OUTRO).toFixed(3);
+  }
+
+  return buildEdit({ titre, prenom, cadeau, audioUrl, clipStart, transcriptWords, introLen, lyricsEnd, songEnd });
 }
 
 module.exports = { cleanLyrics, cleanWord, timeLines, alignToRealText, buildTranscript, buildEdit, buildEditFromLyrics, FONT_TITLE, FONT_BODY };

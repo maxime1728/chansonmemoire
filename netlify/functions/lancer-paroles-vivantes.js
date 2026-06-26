@@ -119,12 +119,13 @@ exports.handler = async (event) => {
     let alignedWords = storedTiming(gen);
     if (!alignedWords.length) alignedWords = await alignedWordsLive(gen.fields.suno_task_id, gen.fields.song_id);
 
+    const clipStart = Number(body.clipStart) > 0 ? Number(body.clipStart) : 0;   // démo : démarrer à X s (couplet 2)
     const edit = buildEditFromLyrics({
       titre:  gen.fields.song_title || '',
       prenom: projet.fields.deceased_name || '',
       cadeau: projet.fields.song_type === 'cadeau',
       lyrics: gen.fields.lyrics || '',
-      alignedWords, audioUrl
+      alignedWords, audioUrl, clipStart
     });
     if (!edit) return { statusCode: 409, body: JSON.stringify({ error: 'Paroles vides' }) };
 
@@ -132,8 +133,10 @@ exports.handler = async (event) => {
     // Sert à vérifier l'alignement sur le vrai texte avant de dépenser un rendu.
     if (body.dryRun) {
       const tr = (edit.elements.find(e => Array.isArray(e.transcript_source)) || {}).transcript_source || [];
+      const au = edit.elements.find(e => e.type === 'audio') || {};
       return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
-        ok: true, dryRun: true, count: tr.length,
+        ok: true, dryRun: true, count: tr.length, clipStart,
+        audio_time: au.time || 0, audio_trim_start: au.trim_start || 0,
         text: tr.map(w => w.value).join(' '),
         first: tr.slice(0, 8), last: tr.slice(-8)
       }) };
