@@ -27,7 +27,7 @@ exports.handler = async (event) => {
     // Liste d'images
     const type = q.type || 'upload';                 // upload | authenticated | private
     const prefix = q.prefix || '';
-    const url = `${base}/resources/image?type=${encodeURIComponent(type)}${prefix ? `&prefix=${encodeURIComponent(prefix)}` : ''}&max_results=100`;
+    const url = `${base}/resources/image?type=${encodeURIComponent(type)}${prefix ? `&prefix=${encodeURIComponent(prefix)}` : ''}&max_results=500`;
     const r = await fetch(url, { headers });
     const d = await r.json();
     const urls = (d.resources || []).map(x => x.secure_url);
