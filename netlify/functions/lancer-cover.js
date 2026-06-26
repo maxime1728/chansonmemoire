@@ -78,12 +78,20 @@ exports.handler = async (event) => {
     // 3. Mélodie source à couvrir : version ACHETÉE si connue, sinon DERNIÈRE génération (aperçu pré-achat).
     const projLit = formulaLiteral(p.project);
     if (projLit === null) return { statusCode: 500, body: JSON.stringify({ error: 'Erreur serveur' }) };
+    // Version source : override manuel (cover_source_no, choisi dans le cockpit) > version achetée > dernière génération.
+    const overrideNo  = parseInt(p.cover_source_no, 10);
     const purchasedNo = parseInt(p.purchased_generation_no, 10);
-    const fSrc   = Number.isInteger(purchasedNo) ? `AND({project}=${projLit},{generation_no}=${purchasedNo})` : `{project}=${projLit}`;
-    const triSrc = Number.isInteger(purchasedNo) ? '' : '&sort%5B0%5D%5Bfield%5D=generation_no&sort%5B0%5D%5Bdirection%5D=desc';
-    const rG = await fetch(`${API}/Generations?filterByFormula=${encodeURIComponent(fSrc)}${triSrc}&maxRecords=1`, { headers });
-    const dG = await rG.json();
-    const gen = dG.records && dG.records[0];
+    const sourceNo    = Number.isInteger(overrideNo) ? overrideNo
+                      : (Number.isInteger(purchasedNo) ? purchasedNo : null);
+    async function trouverGen(no) {
+      const fG  = Number.isInteger(no) ? `AND({project}=${projLit},{generation_no}=${no})` : `{project}=${projLit}`;
+      const tri = Number.isInteger(no) ? '' : '&sort%5B0%5D%5Bfield%5D=generation_no&sort%5B0%5D%5Bdirection%5D=desc';
+      const r = await fetch(`${API}/Generations?filterByFormula=${encodeURIComponent(fG)}${tri}&maxRecords=1`, { headers });
+      const d = await r.json();
+      return d.records && d.records[0];
+    }
+    let gen = await trouverGen(sourceNo);
+    if (!gen && Number.isInteger(overrideNo)) gen = await trouverGen(null);   // version demandée introuvable -> dernière génération
     if (!gen) return { statusCode: 409, body: JSON.stringify({ error: 'Version source introuvable' }) };
     const g = gen.fields;
 
