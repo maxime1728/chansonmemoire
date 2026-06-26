@@ -386,7 +386,7 @@
     var infos=document.getElementById('memoireInfos'), frame=document.getElementById('videoMemoireFrame');
     var fN=document.getElementById('memNaissance'), fD=document.getElementById('memDeces'), fC=document.getElementById('memCitation');
     fN.value=naissance||''; fD.value=deces||''; fC.value=citation||'';
-    var dragFrom=null, selectedUrl=null;
+    var dragFrom=null, selectedUrl=null, touchDragUrl=null;
     function move(idx, delta){ var j=idx+delta; if(j<0||j>=list.length) return; var t=list[idx]; list[idx]=list[j]; list[j]=t; refresh(); }
     function ctrlBtn(txt, css){ var b=document.createElement('button'); b.type='button'; b.textContent=txt; b.style.cssText=css; return b; }
 
@@ -402,7 +402,7 @@
         img.style.cssText='width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;display:block;'
           +(pins[url]?'outline:3px solid #C4963A;outline-offset:-3px;':'')
           +(sel?'box-shadow:0 0 0 3px #fff,0 0 0 6px #5c2d4a;':'');
-        d.setAttribute('data-idx', idx);
+        d.setAttribute('data-url', url); if(touchDragUrl===url) d.style.opacity='0.3';
         d.appendChild(img);
         d.addEventListener('click',function(){ selectedUrl=(selectedUrl===url?null:url); refresh(); });
         // ★ rond doré : visible dès qu'une photo est « importante » (indicateur) OU sélectionnée (toggle).
@@ -492,24 +492,39 @@
         });
       },15000);
     }
-    // Drag & drop TACTILE (appui maintenu ~220 ms puis on glisse) — en plus des flèches.
+    // Drag & drop TACTILE avec « fantôme » : appui maintenu ~200 ms -> une copie pâle de la photo
+    // suit le doigt ; on la dépose n'importe où dans la grille.
     (function(){
-      var lp=null, dragging=false, di=null, sx=0, sy=0;
+      var lp=null, ghost=null, sx=0, sy=0;
+      function placeGhost(x,y){ if(ghost){ ghost.style.left=x+'px'; ghost.style.top=y+'px'; } }
+      function endDrag(){ clearTimeout(lp); if(ghost){ ghost.remove(); ghost=null; } if(touchDragUrl){ touchDragUrl=null; refresh(); } }
       grid.addEventListener('touchstart',function(e){
-        var cell=e.target.closest('[data-idx]'); if(!cell) return;
-        var i=+cell.getAttribute('data-idx'); sx=e.touches[0].clientX; sy=e.touches[0].clientY; dragging=false;
-        lp=setTimeout(function(){ dragging=true; di=i; selectedUrl=null; cell.style.opacity='0.5'; if(navigator.vibrate) navigator.vibrate(15); },220);
+        var cell=e.target.closest('[data-url]'); if(!cell) return;
+        var url=cell.getAttribute('data-url'); var t=e.touches[0]; sx=t.clientX; sy=t.clientY;
+        lp=setTimeout(function(){
+          var img=cell.querySelector('img'); if(!img) return;
+          var r=img.getBoundingClientRect();
+          ghost=img.cloneNode(true);
+          ghost.style.cssText='position:fixed;z-index:9999;width:'+r.width+'px;height:'+r.height+'px;object-fit:cover;border-radius:8px;opacity:0.82;pointer-events:none;box-shadow:0 10px 28px rgba(0,0,0,.5);transform:translate(-50%,-50%);';
+          document.body.appendChild(ghost); placeGhost(sx,sy);
+          touchDragUrl=url; selectedUrl=null; refresh();
+          if(navigator.vibrate) navigator.vibrate(15);
+        },200);
       },{passive:true});
       grid.addEventListener('touchmove',function(e){
         var t=e.touches[0];
-        if(!dragging){ if(Math.abs(t.clientX-sx)>10||Math.abs(t.clientY-sy)>10) clearTimeout(lp); return; }
+        if(!ghost){ if(Math.abs(t.clientX-sx)>10||Math.abs(t.clientY-sy)>10) clearTimeout(lp); return; }
         e.preventDefault();
-        var el=document.elementFromPoint(t.clientX,t.clientY), cell=el&&el.closest('[data-idx]'); if(!cell) return;
-        var ti=+cell.getAttribute('data-idx');
-        if(di!==null && ti!==di){ var mv=list.splice(di,1)[0]; list.splice(ti,0,mv); di=ti; refresh(); }
+        placeGhost(t.clientX,t.clientY);
+        var el=document.elementFromPoint(t.clientX,t.clientY), cell=el&&el.closest('[data-url]'); if(!cell) return;
+        var over=cell.getAttribute('data-url');
+        if(over && over!==touchDragUrl){
+          var from=list.indexOf(touchDragUrl), to=list.indexOf(over);
+          if(from>-1 && to>-1){ list.splice(from,1); list.splice(to,0,touchDragUrl); refresh(); }
+        }
       },{passive:false});
-      grid.addEventListener('touchend',function(){ clearTimeout(lp); if(dragging){ dragging=false; di=null; refresh(); } },{passive:true});
-      grid.addEventListener('touchcancel',function(){ clearTimeout(lp); dragging=false; di=null; },{passive:true});
+      grid.addEventListener('touchend',endDrag,{passive:true});
+      grid.addEventListener('touchcancel',endDrag,{passive:true});
     })();
     if(videoUrl){ showVideo(videoUrl); genBtn.textContent='Refaire ma vidéo souvenir'; }
     refresh();
