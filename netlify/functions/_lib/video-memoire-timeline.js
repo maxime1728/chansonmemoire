@@ -17,7 +17,7 @@ const { cleanLyrics, timeLines } = require('./paroles-vivantes-timeline');
 const BG = '#241019', CREAM = '#F5F0EA', GOLD = '#C4963A', MAUVE = '#E7C9D8';
 const FONT_TITLE = 'Playfair Display', FONT_BODY = 'EB Garamond';
 const W = 1280, H = 720, FPS = 25;
-const INTRO = 4.0, OUTRO = 5, FADE = 0.12;     // voile très rapide (quasi clignement) -> photo nette dominante
+const INTRO = 4.0, OUTRO = 5, FADE = 0.8;      // durée du crossfade (fondu doux d'une photo à l'autre, SANS passage par le noir)
 const PHOTO_MIN = 3.6, PHOTO_MAX = 9.0;
 const PIN = 1.5;                                // multiplicateur de durée d'une photo « importante »
 const TRACK_BASE = 10;                          // photos sur des pistes croissantes à partir de 10
@@ -86,22 +86,22 @@ function buildVideoMemoire({ titre, prenom, cadeau, photos, lyrics, alignedWords
   // suivante apparaît en fondu pendant que la précédente s'efface. FADE court = noir bref et discret.
   seq.forEach((s, i) => {
     const framed = style === 'framed' || (style === 'mix' && i % 2 === 1);
-    const fadeAnims = [
-      { time: 0,     duration: FADE, easing: 'quadratic-out', type: 'fade' },
-      { time: 'end', duration: FADE, easing: 'quadratic-in',  type: 'fade', reversed: true }
-    ];
-    const tk = 3 + (i % 2);
+    // 1re photo : fondu d'entrée depuis le fond. Suivantes : TRANSITION (crossfade) avec la précédente
+    // sur la MÊME piste -> on passe directement d'une photo à l'autre, sans repasser par le noir.
+    const enter = (i === 0)
+      ? { time: 0, duration: FADE, easing: 'quadratic-out', type: 'fade' }
+      : { time: 'start', duration: FADE, transition: true, type: 'fade' };
     if (framed) {
       elements.push({ type: 'image', track: 2, time: s.time, duration: s.dur, source: blurredBg(s.url),
-        width: '100%', height: '100%', fit: 'cover', animations: fadeAnims.slice() });
-      elements.push({ type: 'image', track: tk, time: s.time, duration: s.dur, source: s.url,
+        width: '100%', height: '100%', fit: 'cover', animations: [enter] });
+      elements.push({ type: 'image', track: 3, time: s.time, duration: s.dur, source: s.url,
         width: '74%', height: '74%', fit: 'cover', x_alignment: '50%', y_alignment: '47%',
         border_radius: '1.5 vmin', shadow_color: 'rgba(0,0,0,0.55)', shadow_blur: '4 vmin', shadow_y: '1 vmin',
-        animations: [kenBurns(s.dur, i)].concat(fadeAnims) });
+        animations: [kenBurns(s.dur, i), enter] });
     } else {
-      elements.push({ type: 'image', track: tk, time: s.time, duration: s.dur, source: s.url,
+      elements.push({ type: 'image', track: 3, time: s.time, duration: s.dur, source: s.url,
         width: '100%', height: '100%', fit: 'cover', x_alignment: '50%', y_alignment: '50%',
-        animations: [kenBurns(s.dur, i)].concat(fadeAnims) });
+        animations: [kenBurns(s.dur, i), enter] });
     }
   });
 
