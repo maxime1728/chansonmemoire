@@ -388,7 +388,7 @@
     fN.value=naissance||''; fD.value=deces||''; fC.value=citation||'';
     var dragFrom=null, selectedUrl=null, touchDragUrl=null;
     function move(idx, delta){ var j=idx+delta; if(j<0||j>=list.length) return; var t=list[idx]; list[idx]=list[j]; list[j]=t; refresh(); }
-    function ctrlBtn(txt, css){ var b=document.createElement('button'); b.type='button'; b.textContent=txt; b.style.cssText=css; return b; }
+    function ctrlBtn(txt, css){ var b=document.createElement('button'); b.type='button'; b.className='cm-btn'; b.textContent=txt; b.style.cssText=css; return b; }
 
     function showVideo(url){ frame.style.display='block'; frame.innerHTML='<video src="'+url+'" controls playsinline style="width:100%;height:100%;display:block;"></video>'; }
     function thumb(url){ return url.replace('/upload/','/upload/w_200,h_200,c_fill,q_auto,f_auto/'); }
@@ -397,7 +397,7 @@
       grid.innerHTML='';
       list.forEach(function(url, idx){
         var sel=(selectedUrl===url);
-        var d=document.createElement('div'); d.style.cssText='position:relative;cursor:pointer;'; d.draggable=true;
+        var d=document.createElement('div'); d.style.cssText='position:relative;cursor:pointer;';
         var img=document.createElement('img'); img.src=thumb(url); img.loading='lazy'; img.draggable=false;
         img.style.cssText='width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;display:block;'
           +(pins[url]?'outline:3px solid #C4963A;outline-offset:-3px;':'')
@@ -420,10 +420,6 @@
           rt.title='Déplacer à droite'; rt.addEventListener('click',function(e){ e.stopPropagation(); move(idx,1); });
           d.appendChild(x); d.appendChild(lf); d.appendChild(rt);
         }
-        d.addEventListener('dragstart',function(){ dragFrom=idx; d.style.opacity='0.4'; });
-        d.addEventListener('dragend',function(){ d.style.opacity='1'; });
-        d.addEventListener('dragover',function(e){ e.preventDefault(); });
-        d.addEventListener('drop',function(e){ e.preventDefault(); if(dragFrom===null||dragFrom===idx) return; var mv=list.splice(dragFrom,1)[0]; list.splice(idx,0,mv); dragFrom=null; refresh(); });
         grid.appendChild(d);
       });
       countEl.style.display='block';
@@ -431,7 +427,6 @@
       infos.style.display=list.length>0?'block':'none';
       genWrap.style.display=list.length>0?'block':'none';
       genBtn.disabled=list.length<MIN;
-      grid.style.touchAction = (selectedUrl || touchDragUrl) ? 'none' : '';   // photo sélectionnée ou en cours de glisser -> pas de scroll qui coupe
     }
     function removePhoto(url){
       list=list.filter(function(u){return u!==url;}); delete pins[url]; refresh();
@@ -493,44 +488,22 @@
         });
       },15000);
     }
-    // Drag & drop TACTILE : on glisse une photo DÉJÀ sélectionnée. Un « fantôme » (copie) suit le
-    // doigt de façon fluide (haut/bas/diagonale) ; au relâcher, la photo se place là où est le doigt.
+    // Réordonnancement : SortableJS — drag fiable sur ORDINATEUR et MOBILE (appui maintenu ~0,16 s
+    // sur tactile pour ne pas gêner le scroll). Les boutons (.cm-btn) ne déclenchent pas de drag.
     (function(){
-      var ghost=null, armedCell=null, armedUrl=null, dragUrl=null, sx=0, sy=0, lastX=0, lastY=0;
-      function placeGhost(x,y){ if(ghost){ ghost.style.left=x+'px'; ghost.style.top=y+'px'; } }
-      function cleanup(){ if(ghost){ ghost.remove(); ghost=null; } armedCell=null; armedUrl=null; dragUrl=null; }
-      grid.addEventListener('touchstart',function(e){
-        var cell=e.target.closest('[data-url]'); if(!cell) return;
-        var url=cell.getAttribute('data-url'); var t=e.touches[0]; sx=lastX=t.clientX; sy=lastY=t.clientY;
-        // On ne « prend » que la photo déjà sélectionnée (sinon : tap pour sélectionner, ou scroll).
-        if(url===selectedUrl){ armedCell=cell; armedUrl=url; } else { armedCell=null; armedUrl=null; }
-      },{passive:true});
-      grid.addEventListener('touchmove',function(e){
-        var t=e.touches[0]; lastX=t.clientX; lastY=t.clientY;
-        if(!dragUrl){
-          if(!armedCell || (Math.abs(lastX-sx)<8 && Math.abs(lastY-sy)<8)) return;
-          var img=armedCell.querySelector('img'); if(!img){ armedCell=null; return; }
-          var r=img.getBoundingClientRect();
-          ghost=img.cloneNode(true);
-          ghost.style.cssText='position:fixed;z-index:99999;width:'+r.width+'px;height:'+r.height+'px;object-fit:cover;border-radius:10px;opacity:0.85;pointer-events:none;box-shadow:0 12px 30px rgba(0,0,0,.55);transform:translate(-50%,-50%);left:'+sx+'px;top:'+sy+'px;';
-          document.body.appendChild(ghost);
-          dragUrl=armedUrl; touchDragUrl=armedUrl; selectedUrl=null; refresh();
-          if(navigator.vibrate) navigator.vibrate(15);
-        }
-        e.preventDefault();
-        placeGhost(lastX,lastY);
-      },{passive:false});
-      function drop(){
-        if(!dragUrl){ cleanup(); return; }   // simple tap -> on laisse le clic gérer la sélection (PAS de refresh)
-        var el=document.elementFromPoint(lastX,lastY), cell=el&&el.closest('[data-url]');
-        var from=list.indexOf(dragUrl), to;
-        if(cell){ to=list.indexOf(cell.getAttribute('data-url')); }
-        else { var gr=grid.getBoundingClientRect(); to=(lastY<gr.top+gr.height/2)?0:list.length-1; }
-        if(from>-1 && to>-1 && from!==to){ list.splice(from,1); list.splice(to,0,dragUrl); }
-        touchDragUrl=null; cleanup(); refresh();
+      function go(){
+        if(grid._sortable || !window.Sortable) return;
+        grid._sortable = window.Sortable.create(grid, {
+          animation: 150, draggable: '[data-url]', filter: '.cm-btn',
+          delay: 160, delayOnTouchOnly: true, touchStartThreshold: 6, forceFallback: true, fallbackOnBody: true,
+          onEnd: function(evt){
+            if(evt.oldIndex==null || evt.newIndex==null || evt.oldIndex===evt.newIndex) return;
+            var mv=list.splice(evt.oldIndex,1)[0]; list.splice(evt.newIndex,0,mv);
+          }
+        });
       }
-      grid.addEventListener('touchend',drop,{passive:true});
-      grid.addEventListener('touchcancel',function(){ if(dragUrl){ touchDragUrl=null; cleanup(); refresh(); } else cleanup(); },{passive:true});
+      if(window.Sortable) go();
+      else { var s=document.createElement('script'); s.src='https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js'; s.onload=go; document.head.appendChild(s); }
     })();
     if(videoUrl){ showVideo(videoUrl); genBtn.textContent='Refaire ma vidéo souvenir'; }
     refresh();
