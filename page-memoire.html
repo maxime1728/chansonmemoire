@@ -185,7 +185,7 @@
   <!-- VIDÉO MÉMOIRE : photos du client + chanson -->
   <div class="card" id="videoMemoireCard" style="display:none;">
     <div class="section-title">Ta vidéo souvenir</div>
-    <p class="section-sub">Un montage tout en douceur de tes photos, porté par ta chanson (10 à 60 photos). <b>Touche une photo</b> pour la sélectionner, puis <b>‹ ›</b> pour la déplacer, <b>★</b> pour la mettre en avant (durée ×1,5), <b>×</b> pour la retirer.</p>
+    <p class="section-sub">Un montage tout en douceur de tes photos, porté par ta chanson (10 à 60 photos). <b>Touche une photo</b> pour la sélectionner, puis <b>glisse-la</b> où tu veux (ou les flèches <b>‹ ›</b>). <b>★</b> la met en avant (durée ×1,5), <b>×</b> la retire.</p>
     <input type="file" id="photoInput" accept="image/*" multiple style="display:none;">
     <div style="margin-top:6px;"><button class="btn btn-ghost btn-block" id="btnAddPhotos" type="button"><i class="fa-solid fa-images"></i>&nbsp; Ajouter mes photos</button></div>
     <p class="section-sub" id="photoCount" style="margin-top:10px;display:none;"></p>
@@ -492,39 +492,45 @@
         });
       },15000);
     }
-    // Drag & drop TACTILE avec « fantôme » : appui maintenu ~200 ms -> une copie pâle de la photo
-    // suit le doigt ; on la dépose n'importe où dans la grille.
+    // Drag & drop TACTILE : on glisse une photo DÉJÀ sélectionnée. Un « fantôme » (copie) suit le
+    // doigt de façon fluide (haut/bas/diagonale) ; au relâcher, la photo se place là où est le doigt.
     (function(){
-      var lp=null, ghost=null, sx=0, sy=0;
+      var ghost=null, armedCell=null, armedUrl=null, dragUrl=null, sx=0, sy=0, lastX=0, lastY=0;
       function placeGhost(x,y){ if(ghost){ ghost.style.left=x+'px'; ghost.style.top=y+'px'; } }
-      function endDrag(){ clearTimeout(lp); if(ghost){ ghost.remove(); ghost=null; } if(touchDragUrl){ touchDragUrl=null; refresh(); } }
+      function cleanup(){ if(ghost){ ghost.remove(); ghost=null; } armedCell=null; armedUrl=null; dragUrl=null; }
       grid.addEventListener('touchstart',function(e){
         var cell=e.target.closest('[data-url]'); if(!cell) return;
-        var url=cell.getAttribute('data-url'); var t=e.touches[0]; sx=t.clientX; sy=t.clientY;
-        lp=setTimeout(function(){
-          var img=cell.querySelector('img'); if(!img) return;
-          var r=img.getBoundingClientRect();
-          ghost=img.cloneNode(true);
-          ghost.style.cssText='position:fixed;z-index:9999;width:'+r.width+'px;height:'+r.height+'px;object-fit:cover;border-radius:8px;opacity:0.82;pointer-events:none;box-shadow:0 10px 28px rgba(0,0,0,.5);transform:translate(-50%,-50%);';
-          document.body.appendChild(ghost); placeGhost(sx,sy);
-          touchDragUrl=url; selectedUrl=null; refresh();
-          if(navigator.vibrate) navigator.vibrate(15);
-        },200);
+        var url=cell.getAttribute('data-url'); var t=e.touches[0]; sx=lastX=t.clientX; sy=lastY=t.clientY;
+        // On ne « prend » que la photo déjà sélectionnée (sinon : tap pour sélectionner, ou scroll).
+        if(url===selectedUrl){ armedCell=cell; armedUrl=url; } else { armedCell=null; armedUrl=null; }
       },{passive:true});
       grid.addEventListener('touchmove',function(e){
-        var t=e.touches[0];
-        if(!ghost){ if(Math.abs(t.clientX-sx)>10||Math.abs(t.clientY-sy)>10) clearTimeout(lp); return; }
-        e.preventDefault();
-        placeGhost(t.clientX,t.clientY);
-        var el=document.elementFromPoint(t.clientX,t.clientY), cell=el&&el.closest('[data-url]'); if(!cell) return;
-        var over=cell.getAttribute('data-url');
-        if(over && over!==touchDragUrl){
-          var from=list.indexOf(touchDragUrl), to=list.indexOf(over);
-          if(from>-1 && to>-1){ list.splice(from,1); list.splice(to,0,touchDragUrl); refresh(); }
+        var t=e.touches[0]; lastX=t.clientX; lastY=t.clientY;
+        if(!dragUrl){
+          if(!armedCell || (Math.abs(lastX-sx)<8 && Math.abs(lastY-sy)<8)) return;
+          var img=armedCell.querySelector('img'); if(!img){ armedCell=null; return; }
+          var r=img.getBoundingClientRect();
+          ghost=img.cloneNode(true);
+          ghost.style.cssText='position:fixed;z-index:99999;width:'+r.width+'px;height:'+r.height+'px;object-fit:cover;border-radius:10px;opacity:0.85;pointer-events:none;box-shadow:0 12px 30px rgba(0,0,0,.55);transform:translate(-50%,-50%);left:'+sx+'px;top:'+sy+'px;';
+          document.body.appendChild(ghost);
+          dragUrl=armedUrl; touchDragUrl=armedUrl; selectedUrl=null; refresh();
+          if(navigator.vibrate) navigator.vibrate(15);
         }
+        e.preventDefault();
+        placeGhost(lastX,lastY);
       },{passive:false});
-      grid.addEventListener('touchend',endDrag,{passive:true});
-      grid.addEventListener('touchcancel',endDrag,{passive:true});
+      function drop(){
+        if(dragUrl){
+          var el=document.elementFromPoint(lastX,lastY), cell=el&&el.closest('[data-url]');
+          var from=list.indexOf(dragUrl), to;
+          if(cell){ to=list.indexOf(cell.getAttribute('data-url')); }
+          else { var gr=grid.getBoundingClientRect(); to=(lastY<gr.top+gr.height/2)?0:list.length-1; }
+          if(from>-1 && to>-1 && from!==to){ list.splice(from,1); list.splice(to,0,dragUrl); }
+        }
+        touchDragUrl=null; cleanup(); refresh();
+      }
+      grid.addEventListener('touchend',drop,{passive:true});
+      grid.addEventListener('touchcancel',function(){ touchDragUrl=null; cleanup(); refresh(); },{passive:true});
     })();
     if(videoUrl){ showVideo(videoUrl); genBtn.textContent='Refaire ma vidéo souvenir'; }
     refresh();
