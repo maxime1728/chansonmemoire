@@ -119,7 +119,7 @@ function textEl({ text, track, time, duration, family, weight, color, size, y, f
 }
 
 // Assemble le RenderScript Creatomate complet à partir des lignes timées.
-function buildEdit({ titre, prenom, cadeau, lines, introLen, lyricsEnd, songEnd, audioUrl }) {
+function buildEdit({ titre, prenom, cadeau, transcriptWords, introLen, lyricsEnd, songEnd, audioUrl }) {
   const elements = [];
 
   // Bande-son (piste 1) : la chanson, bornée à la durée vidéo, fondu de sortie.
@@ -151,27 +151,51 @@ function buildEdit({ titre, prenom, cadeau, lines, introLen, lyricsEnd, songEnd,
     family: FONT_TITLE, weight: '700', color: MAUVE, size: 56, y: '50%', fadeOut: true
   }));
 
-  // Paroles (piste 4) : une ligne à la fois, centrée. Les MOTS apparaissent un par un en fondu,
-  // au fil du chant (animation par mot, split=word), au lieu d'un bloc d'un coup. La révélation
-  // s'étale sur la durée chantée de la ligne. Peintes en dernier (donc au-dessus).
-  lines.forEach(l => {
-    const reveal = Math.max(l.length * 0.85, 1.0);   // les mots s'étalent sur (presque) toute la durée chantée de la ligne
+  // Paroles KARAOKÉ (piste 4) : TES paroles exactes + le timing Suno (transcript_source), rendues
+  // par le moteur natif de Creatomate -> surlignage DORÉ qui balaie les mots de gauche à droite, au
+  // fil de la voix. Le retour à la ligne et le centrage sont gérés automatiquement par le moteur.
+  if (transcriptWords && transcriptWords.length) {
     elements.push({
-      type: 'text', track: 4, time: l.start, duration: l.length, text: l.text,
-      font_family: FONT_BODY, font_weight: '400', font_size: 46,
-      fill_color: CREAM, line_height: '132%',
-      width: '84%', x_alignment: '50%', y_alignment: '50%',
-      animations: [
-        // Apparition MOT PAR MOT : animation TEXTE (text-slide, type confirmé) + split=word => chaque
-        // mot entre un par un (léger fondu + montée), décalé automatiquement sur la durée de la ligne.
-        { time: 0, duration: reveal, easing: 'quadratic-out', type: 'text-slide', direction: 'up', split: 'word', scope: 'split-clip' },
-        // Sortie en fondu de la ligne entière à la fin.
-        { time: 'end', duration: FADE, easing: 'quadratic-in', type: 'fade', reversed: true }
-      ]
+      type: 'text', track: 4, time: 0, duration: songEnd,
+      transcript_source: transcriptWords,    // [{ time, duration, value }] -> nos mots horodatés (s)
+      transcript_effect: 'karaoke',           // balayage progressif (vs 'highlight' = mot par mot sec)
+      transcript_split: 'word',
+      transcript_color: GOLD,                 // couleur du surlignage (mot en train d'être chanté)
+      transcript_maximum_length: 42,          // ~1 ligne de paroles par segment affiché
+      font_family: FONT_BODY, font_weight: '400', font_size: 48,
+      fill_color: CREAM, line_height: '136%',
+      width: '82%', x_alignment: '50%', y_alignment: '50%'
     });
-  });
+  }
 
   return { output_format: 'mp4', width: W, height: H, frame_rate: FPS, fill_color: BG, elements };
+}
+
+// Transforme l'alignement Suno (ou un repli cadencé) en transcript_source Creatomate :
+// un tableau [{ time, duration, value }] en SECONDES, un objet par mot, dans l'ordre.
+function buildTranscript(lines, alignedWords) {
+  const words = (Array.isArray(alignedWords) ? alignedWords : [])
+    .filter(w => w && Number.isFinite(w.startS) && Number.isFinite(w.endS)
+                 && w.endS >= w.startS && String(w.word || '').trim());
+  if (words.length >= 6) {
+    return words.map(w => ({
+      time: +Number(w.startS).toFixed(3),
+      duration: +Math.max(0.08, w.endS - w.startS).toFixed(3),
+      value: String(w.word).trim()
+    }));
+  }
+  // Repli (pas d'horodatage Suno) : on répartit les mots de chaque ligne sur sa durée chantée.
+  const out = [];
+  lines.forEach(l => {
+    const ws = String(l.text).split(/\s+/).filter(Boolean);
+    const step = l.length / Math.max(1, ws.length);
+    ws.forEach((w, i) => out.push({
+      time: +(l.start + i * step).toFixed(3),
+      duration: +Math.max(0.2, step * 0.9).toFixed(3),
+      value: w
+    }));
+  });
+  return out;
 }
 
 // Façade : paroles brutes + alignement Suno -> RenderScript Creatomate prêt à rendre.
@@ -181,8 +205,9 @@ function buildEditFromLyrics({ titre, prenom, cadeau, lyrics, alignedWords, audi
   const t = timeLines(displayLines, alignedWords);
   return buildEdit({
     titre, prenom, cadeau, audioUrl,
-    lines: t.lines, introLen: t.introLen, lyricsEnd: t.lyricsEnd, songEnd: t.songEnd
+    transcriptWords: buildTranscript(t.lines, alignedWords),
+    introLen: t.introLen, lyricsEnd: t.lyricsEnd, songEnd: t.songEnd
   });
 }
 
-module.exports = { cleanLyrics, timeLines, buildEdit, buildEditFromLyrics, FONT_TITLE, FONT_BODY };
+module.exports = { cleanLyrics, timeLines, buildTranscript, buildEdit, buildEditFromLyrics, FONT_TITLE, FONT_BODY };
