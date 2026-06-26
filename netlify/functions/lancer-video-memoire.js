@@ -135,8 +135,10 @@ exports.handler = async (event) => {
       return { statusCode: 200, body: JSON.stringify({ ok: true, dryRun: true, photos: photos.length, slots: imgs, clipStart }) };
     }
 
-    // 5. Rendu Creatomate (async) -> callback-video-memoire.
-    const extra = { webhook_url: `${SITE}/api/callback-video-memoire${process.env.CALLBACK_SECRET ? '?s=' + encodeURIComponent(process.env.CALLBACK_SECRET) : ''}`, metadata: token };
+    // 5. Rendu Creatomate (async) -> callback-video-memoire. Le webhook doit tomber sur CE déploiement
+    //    (branch deploy en test, prod en prod) via DEPLOY_PRIME_URL -> le callback existe forcément là.
+    const self = process.env.DEPLOY_PRIME_URL || process.env.URL || SITE;
+    const extra = { webhook_url: `${self}/api/callback-video-memoire${process.env.CALLBACK_SECRET ? '?s=' + encodeURIComponent(process.env.CALLBACK_SECRET) : ''}`, metadata: token };
     const payload = (CREATOMATE_VERSION === 'v1') ? Object.assign({ source: edit }, extra) : Object.assign({}, edit, extra);
     const rC = await fetch(`https://api.creatomate.com/${CREATOMATE_VERSION}/renders`, {
       method: 'POST',
