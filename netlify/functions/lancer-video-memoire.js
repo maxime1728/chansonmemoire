@@ -136,7 +136,8 @@ exports.handler = async (event) => {
       naissance:   body.naissance || projet.fields.memoire_naissance || '',
       deces:       body.deces     || projet.fields.memoire_deces     || '',
       citation:    body.citation  || projet.fields.memoire_citation  || '',
-      pinned:      Array.isArray(body.pinned) ? body.pinned : readPinned(projet)
+      pinned:      Array.isArray(body.pinned) ? body.pinned : readPinned(projet),
+      motion:      body.motion !== false
     });
     if (!edit) return { statusCode: 409, body: JSON.stringify({ error: 'Diaporama vide' }) };
 

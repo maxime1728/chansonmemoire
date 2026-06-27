@@ -47,7 +47,7 @@ function kenBurns(dur, i) {
 
 function buildVideoMemoire({ titre, prenom, cadeau, photos, lyrics, alignedWords, audioUrl,
                              clipStart = 0, style = 'fullscreen', maxDuration = 0,
-                             naissance = '', deces = '', citation = '', pinned = [] }) {
+                             naissance = '', deces = '', citation = '', pinned = [], motion = true }) {
   const list = (Array.isArray(photos) ? photos : []).filter(u => typeof u === 'string' && /^https:\/\//.test(u));
   if (!list.length) return null;
   const pinnedSet = new Set((Array.isArray(pinned) ? pinned : []).map(String));
@@ -91,17 +91,18 @@ function buildVideoMemoire({ titre, prenom, cadeau, photos, lyrics, alignedWords
     const enter = (i === 0)
       ? { time: 0, duration: FADE, easing: 'quadratic-out', type: 'fade' }
       : { time: 'start', duration: FADE, transition: true, type: 'fade' };
+    const anims = motion ? [kenBurns(s.dur, i), enter] : [enter];   // motion=false -> photos parfaitement fixes
     if (framed) {
       elements.push({ type: 'image', track: 2, time: s.time, duration: s.dur, source: blurredBg(s.url),
         width: '100%', height: '100%', fit: 'cover', animations: [enter] });
       elements.push({ type: 'image', track: 3, time: s.time, duration: s.dur, source: s.url,
         width: '74%', height: '74%', fit: 'cover', x_alignment: '50%', y_alignment: '47%',
         border_radius: '1.5 vmin', shadow_color: 'rgba(0,0,0,0.55)', shadow_blur: '4 vmin', shadow_y: '1 vmin',
-        animations: [kenBurns(s.dur, i), enter] });
+        animations: anims });
     } else {
       elements.push({ type: 'image', track: 3, time: s.time, duration: s.dur, source: s.url,
         width: '100%', height: '100%', fit: 'cover', x_alignment: '50%', y_alignment: '50%',
-        animations: [kenBurns(s.dur, i), enter] });
+        animations: anims });
     }
   });
 
