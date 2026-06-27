@@ -85,32 +85,33 @@ function buildVideoMemoire({ titre, prenom, cadeau, photos, lyrics, alignedWords
     elements.push(a);
   }
 
-  // Photos en FONDU ENCHAÎNÉ (léger passage par le fond sombre, voulu). Pistes 3 & 4 alternées : la
-  // suivante apparaît en fondu pendant que la précédente s'efface. FADE court = noir bref et discret.
+  // VRAI FONDU ENCHAÎNÉ SANS NOIR : chaque photo est sur une PISTE PLUS HAUTE que la précédente et
+  // apparaît en fondu PAR-DESSUS elle (qui reste 100 % opaque dessous). Aucun fond sombre ne transparaît
+  // pendant le fondu -> plus de « noir ». La photo sortante disparaît pile quand l'entrante atteint 100 %
+  // (les durées se chevauchent de FADE, cf. seq). PAS de `transition:true` (= cross-dissolve qui, lui,
+  // fait passer les deux photos en semi-transparence et laisse voir le fond sombre).
   seq.forEach((s, i) => {
     const framed = style === 'framed' || (style === 'mix' && i % 2 === 1);
-    // 1re photo : fondu d'entrée depuis le fond. Suivantes : TRANSITION (crossfade) avec la précédente
-    // sur la MÊME piste -> on passe directement d'une photo à l'autre, sans repasser par le noir.
-    const enter = (i === 0)
-      ? { time: 0, duration: FADE, easing: 'quadratic-out', type: 'fade' }
-      : { time: 'start', duration: FADE, transition: true, type: 'fade' };
+    const trackBg    = TRACK_BASE + i * 2;       // (framed) fond flou, sous la photo
+    const trackPhoto = trackBg + 1;              // photo nette, toujours au-dessus de la photo précédente
+    const enter = { time: 0, duration: FADE, easing: 'quadratic-out', type: 'fade' };   // fondu d'entrée simple
     const anims = motion ? [kenBurns(s.dur, i), enter] : [enter];   // motion=false -> photos parfaitement fixes
     if (framed) {
-      elements.push({ type: 'image', track: 2, time: s.time, duration: s.dur, source: blurredBg(s.url),
+      elements.push({ type: 'image', track: trackBg, time: s.time, duration: s.dur, source: blurredBg(s.url),
         width: '100%', height: '100%', fit: 'cover', animations: [enter] });
-      elements.push({ type: 'image', track: 3, time: s.time, duration: s.dur, source: sharp(s.url),
+      elements.push({ type: 'image', track: trackPhoto, time: s.time, duration: s.dur, source: sharp(s.url),
         width: '74%', height: '74%', fit: 'cover', x_alignment: '50%', y_alignment: '47%',
         border_radius: '1.5 vmin', shadow_color: 'rgba(0,0,0,0.55)', shadow_blur: '4 vmin', shadow_y: '1 vmin',
         animations: anims });
     } else {
-      elements.push({ type: 'image', track: 3, time: s.time, duration: s.dur, source: sharp(s.url),
+      elements.push({ type: 'image', track: trackPhoto, time: s.time, duration: s.dur, source: sharp(s.url),
         width: '100%', height: '100%', fit: 'cover', x_alignment: '50%', y_alignment: '50%',
         animations: anims });
     }
   });
 
-  // Signature + cartes titre sur des pistes TRÈS hautes -> toujours au-dessus des photos.
-  const TOP = 100;
+  // Signature + cartes titre sur des pistes TRÈS hautes -> toujours au-dessus des photos (qui montent en pistes).
+  const TOP = 5000;
   elements.push(textEl({ text: 'Chanson Mémoire', track: TOP, time: 0, duration: songEnd,
     family: FONT_TITLE, weight: '700', color: CREAM, size: 22, y: '93%' }));
 
