@@ -41,21 +41,37 @@ exports.handler = async (event) => {
     if (!rC.ok) return { statusCode: 404, body: JSON.stringify({ error: 'Conversation introuvable' }) };
     const f = (await rC.json()).fields || {};
 
-    const projetId = Array.isArray(f.Projet) ? f.Projet[0] : null;
+    // Projet ciblé : `projet_a_travailler` (override manuel / multi-projets / mauvais lien) sinon le 1er lié.
+    const projetId = (Array.isArray(f.projet_a_travailler) && f.projet_a_travailler[0])
+                  || (Array.isArray(f.Projet) && f.Projet[0]) || null;
     if (!projetId) return { statusCode: 409, body: JSON.stringify({ error: 'Aucun projet lié à cette conversation' }) };
 
     const paroles = (f.paroles_corrigees || '').toString().trim();
     const style   = (f.prompt_style || '').toString().trim();
+    // Version source : la generation liee (generation_a_travailler) en priorite, sinon le nombre version_a_travailler.
+    let vno = parseInt(f.version_a_travailler, 10);
+    const genLink = (Array.isArray(f.generation_a_travailler) && f.generation_a_travailler[0]) || null;
+    if (genLink) {
+      try {
+        const rGen = await fetch(`${API}/Generations/${genLink}`, { headers });
+        if (rGen.ok) { const gno = parseInt(((await rGen.json()).fields || {}).generation_no, 10); if (Number.isInteger(gno)) vno = gno; }
+      } catch (_) {}
+    }
 
-    // 2. Mode (cover vs régénération) depuis le Projet (mode_correction posé par decortique-background).
+    // 2. Lit le Projet (mode_correction sert de repli si aucune action n'est choisie).
     const rP = await fetch(`${API}/${PROJECTS}/${projetId}`, { headers });
     if (!rP.ok) return { statusCode: 404, body: JSON.stringify({ error: 'Projet introuvable' }) };
     const pf = (await rP.json()).fields || {};
-    const refaire = (pf.mode_correction === 'regeneration') ? 'Régénérer' : 'Refaire le cover';
 
-    // 3. Pousse les versions éditées sur le Projet + arme la relance (cover-cron prend le relais). On n'écrase
-    //    PAS les paroles/style si l'équipe les a laissés vides (demande qui ne touche pas ce volet).
-    const champs = { refaire };
+    // Action : ton choix explicite (action_chanson) l'emporte ; sinon déduit du mode_correction de decortique.
+    let refaire;
+    if (f.action_chanson === 'Nouvelle chanson (nouvelle mélodie)') refaire = 'Régénérer';
+    else if (f.action_chanson === 'Cover (même mélodie)')           refaire = 'Refaire le cover';
+    else refaire = (pf.mode_correction === 'regeneration') ? 'Régénérer' : 'Refaire le cover';
+
+    // 3. Pousse les versions éditées + la version source + arme la relance (cover-cron prend le relais). On
+    //    n'écrase PAS les paroles/style si laissés vides. cover_source_no = version choisie (ou null = défaut).
+    const champs = { refaire, cover_source_no: Number.isInteger(vno) ? vno : null };
     if (paroles) champs.adjusted_lyrics = paroles;
     if (style)   champs.adjusted_style_prompt = style;
     const rPatch = await fetch(`${API}/${PROJECTS}/${projetId}`, {

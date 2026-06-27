@@ -158,14 +158,13 @@
   <!-- 3. PDF DES PAROLES -->
   <div class="card center">
     <div class="section-title" style="margin-bottom:10px;">Les paroles en PDF</div>
-    <p class="section-sub">Une belle version imprimable, à garder ou à offrir.</p>
-    <a class="btn btn-block" id="btnPdf" href="#" target="_blank" rel="noopener"><i class="fa-solid fa-file-pdf"></i>&nbsp; Télécharger les paroles (PDF)</a>
+    <p class="section-sub">Une belle mise en page de ses paroles, à garder ou à offrir.</p>
+    <a class="btn btn-block" id="btnPdf" href="#paroles"><i class="fa-solid fa-eye"></i>&nbsp; Voir un exemple</a>
   </div>
 
   <!-- 4. PAROLES NORMALES — tout en bas -->
   <div class="card" id="paroles" style="scroll-margin-top:24px;">
     <div class="section-title">Ses paroles</div>
-    <p class="section-sub">Écrites à partir de ses souvenirs : son chalet, son bouilli du samedi, ses matins de pêche.</p>
     <div class="lyrics" id="lyrics"></div>
   </div>
 
@@ -185,8 +184,8 @@
   var AUDIO_CLOUD = 'dcx1tfm47';
   var AUDIO_PUBLIC_ID = 'v1782355169/MON_HOMME_DU_LAC_EMOTIONNELLE_lwwoy1.mp3';
   var AUDIO_START = 0;   /* secondes ; mets ex. 48 pour démarrer au Couplet 2 */
-  var VIDEO_URL = 'https://res.cloudinary.com/dcx1tfm47/video/upload/paroles-vivantes/exemple_mhdl_instru.mp4';    /* karaoké doré sur INSTRUMENTALE (sans voix), couplet 2 -> fin */
-  var PDF_URL   = 'exemple-paroles-mhdl.html';   /* feuille de paroles prête à « Enregistrer en PDF » */
+  var VIDEO_URL = 'https://res.cloudinary.com/dcx1tfm47/video/upload/paroles-vivantes/exemple_mhdl_karaoke_c2.mp4';    /* karaoké doré SYNCHRONISÉ (timing réel) sur INSTRUMENTALE, couplet 2 -> fin */
+  var PDF_URL   = '#paroles';   /* scroll vers la section « Ses paroles » en bas de CETTE page (plus de page lyrics-seules séparée) */
 
   function audioUrl(){
     var tf = AUDIO_START > 0 ? ('so_' + AUDIO_START + '/') : '';

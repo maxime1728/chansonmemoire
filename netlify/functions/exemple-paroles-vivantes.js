@@ -23,9 +23,16 @@ const CREATOMATE_API_KEY = process.env.CREATOMATE_API_KEY;
 const CREATOMATE_VERSION = process.env.CREATOMATE_API_VERSION || 'v1';
 const CLOUD = process.env.CLOUDINARY_CLOUD_NAME;
 
+// Source du timing RÉEL + paroles : la Generation « Mon Homme du Lac » #2 (projet Michel). On lit son
+// alignement Suno pour que le surlignage doré suive VRAIMENT la musique (l'exemple n'a pas de timing à lui).
+const BASE_ID  = process.env.AIRTABLE_BASE_ID;
+const AT_TOKEN = process.env.AIRTABLE_TOKEN;
+const SOURCE_GEN_ID = 'reczgLneXHvUHtAn7';
+const CLIP_START = 66.8;                                 // début du Couplet 2 (s) : « Le chalet de Val-des-Bois »
+
 const FOLDER = 'paroles-vivantes';
-const PUBLIC_ID = 'exemple_mhdl_instru';                // public_id FIXE -> idempotence (version sur instrumentale)
-const AUDIO_START = Number(process.env.EXEMPLE_AUDIO_START || 0);   // sec ; début du Couplet 2 (0 = piste complète)
+const PUBLIC_ID = 'exemple_mhdl_karaoke_c2';            // public_id FIXE -> idempotence (karaoké synchro, instrumentale, couplet 2)
+const AUDIO_START = Number(process.env.EXEMPLE_AUDIO_START || 0);   // sec ; 0 = piste complète (le trim au couplet 2 est fait par clipStart)
 
 const TITRE = 'Mon homme du lac';
 const PRENOM = 'Michel';
@@ -36,8 +43,22 @@ function audioUrl() {
   return `https://res.cloudinary.com/dcx1tfm47/video/upload/${tf}${AUDIO_BASE}`;
 }
 
-// Paroles à partir du Couplet 2 (« comme si c'était le début »). cleanLyrics retire les balises [..].
-const LYRICS = [
+// Lit les paroles + l'alignement Suno réel depuis la Generation source (lecture seule, token serveur).
+async function sourceLyricsTiming() {
+  if (!BASE_ID || !AT_TOKEN) return { lyrics: '', timing: [] };
+  try {
+    const r = await fetch(`https://api.airtable.com/v0/${BASE_ID}/Generations/${SOURCE_GEN_ID}`,
+      { headers: { Authorization: `Bearer ${AT_TOKEN}` } });
+    const d = await r.json();
+    const lyrics = (d && d.fields && d.fields.lyrics) || '';
+    let timing = [];
+    try { timing = JSON.parse((d && d.fields && d.fields.lyrics_timing) || '[]'); } catch (_) {}
+    return { lyrics, timing: Array.isArray(timing) ? timing : [] };
+  } catch (_) { return { lyrics: '', timing: [] }; }
+}
+
+// Repli si Airtable indisponible : paroles à partir du Couplet 2, sans timing (cadence douce).
+const LYRICS_FALLBACK = [
   '[Couplet 2]',
   "Le chalet de Val-des-Bois c'était son royaume à lui",
   "Les fins de semaine d'automne avec les enfants, les amis",
@@ -138,7 +159,13 @@ exports.handler = async (event) => {
 
   // 3. Lance un rendu Creatomate (cadence douce : pas d'horodatage Suno pour cet exemple).
   try {
-    const edit = buildEditFromLyrics({ titre: TITRE, prenom: PRENOM, lyrics: LYRICS, alignedWords: [], audioUrl: audioUrl() });
+    // Karaoké synchronisé : vraies paroles + timing Suno réel (source Michel), démarré au Couplet 2.
+    // Si la source est indisponible -> repli cadencé (paroles du Couplet 2, sans synchro fine).
+    const { lyrics: srcLyrics, timing } = await sourceLyricsTiming();
+    const real = srcLyrics && timing.length > 6;
+    const edit = real
+      ? buildEditFromLyrics({ titre: TITRE, prenom: PRENOM, lyrics: srcLyrics, alignedWords: timing, audioUrl: audioUrl(), clipStart: CLIP_START })
+      : buildEditFromLyrics({ titre: TITRE, prenom: PRENOM, lyrics: LYRICS_FALLBACK, alignedWords: [], audioUrl: audioUrl() });
     if (!edit) return json(409, { error: 'Paroles vides' });
     const payload = (CREATOMATE_VERSION === 'v1') ? { source: edit } : edit;
     const rc = await fetch(`https://api.creatomate.com/${CREATOMATE_VERSION}/renders`, {
