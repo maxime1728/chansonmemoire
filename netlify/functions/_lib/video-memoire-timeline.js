@@ -45,7 +45,9 @@ function sharp(url) { return url.replace('/upload/', '/upload/c_fill,w_1920,h_10
 function kenBurns(dur, i) {
   const A = [['28%','32%'], ['72%','34%'], ['32%','70%'], ['68%','66%'], ['50%','25%'], ['46%','74%']];
   const a = A[i % A.length];
-  return { time: 0, duration: dur, easing: 'linear', type: 'scale', start_scale: '102%', end_scale: '110%', x_anchor: a[0], y_anchor: a[1] };
+  // fade:false = PAS de fondu intégré au zoom (sinon Creatomate étale un fondu sur toute la durée du
+  // zoom -> voile sombre au début de chaque photo). Le fondu d'entrée est géré séparément par `enter`.
+  return { time: 0, duration: dur, easing: 'linear', type: 'scale', fade: false, start_scale: '102%', end_scale: '110%', x_anchor: a[0], y_anchor: a[1] };
 }
 
 function buildVideoMemoire({ titre, prenom, cadeau, photos, lyrics, alignedWords, audioUrl,
