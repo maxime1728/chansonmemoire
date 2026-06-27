@@ -135,25 +135,24 @@
   </div>
   <p class="loading" id="loading">La chanson se charge…</p>
 
-  <!-- 1. VIDÉO SOUVENIR (photos + paroles) — à produire ensemble (étape 2) -->
+  <!-- 1. VIDÉO SOUVENIR (diaporama de ses photos porté par la chanson) — add-on optionnel -->
   <div class="card">
-    <div class="badge">En production</div>
+    <div class="badge">En option</div>
     <div class="section-title">Sa vidéo souvenir</div>
     <p class="section-sub">Un montage de ses photos au fil des paroles, porté par sa chanson.</p>
     <div class="video-frame">
-      <div class="video-ph"><i class="fa-solid fa-photo-film"></i>La vidéo souvenir (photos + paroles) s'ajoute ici.</div>
+      <video src="https://res.cloudinary.com/dcx1tfm47/video/upload/v1782528297/video-memoire/memoire_8f42d53a-627e-4370-be0f-2dba1683325b.mp4" controls preload="metadata" playsinline></video>
     </div>
   </div>
 
   <!-- 2. VIDÉO DES PAROLES (sur l'instrumentale) — paroles vivantes + instrumentale fusionnées -->
   <div class="card" id="video" style="scroll-margin-top:20px;">
-    <div class="badge">Option</div>
+    <div class="badge">En option</div>
     <div class="section-title">Sa vidéo des paroles</div>
     <p class="section-sub">Les paroles qui défilent, portées par sa version instrumentale. Prête à projeter ou à partager.</p>
     <div class="video-frame" id="videoFrame">
       <div class="video-ph"><i class="fa-solid fa-film"></i>L'aperçu vidéo se charge…</div>
     </div>
-    <div id="instruDl" style="margin-top:16px;"></div>
   </div>
 
   <!-- 3. PDF DES PAROLES -->
@@ -185,9 +184,8 @@
   var AUDIO_CLOUD = 'dcx1tfm47';
   var AUDIO_PUBLIC_ID = 'v1782355169/MON_HOMME_DU_LAC_EMOTIONNELLE_lwwoy1.mp3';
   var AUDIO_START = 0;   /* secondes ; mets ex. 48 pour démarrer au Couplet 2 */
-  var VIDEO_URL = 'https://res.cloudinary.com/dcx1tfm47/video/upload/v1782488664/paroles-vivantes/video_8ab1ad06-88d9-43c3-af90-59d6b1c3430e.mp4';    /* vidéo paroles vivantes (karaoké doré, titre OK, couplet 2 -> fin) */
+  var VIDEO_URL = 'https://res.cloudinary.com/dcx1tfm47/video/upload/paroles-vivantes/exemple_mhdl_karaoke_c2.mp4';    /* karaoké doré SYNCHRONISÉ (timing réel) sur INSTRUMENTALE, couplet 2 -> fin */
   var PDF_URL   = '#paroles';   /* scroll vers la section « Ses paroles » en bas de CETTE page (plus de page lyrics-seules séparée) */
-  var INSTRUMENTAL_URL = 'https://res.cloudinary.com/dcx1tfm47/video/upload/v1782358834/Instrumental._Mon_homme_du_lac_rjkts5.mp3';   /* trame de la vidéo + téléchargement */
 
   function audioUrl(){
     var tf = AUDIO_START > 0 ? ('so_' + AUDIO_START + '/') : '';
@@ -270,17 +268,7 @@
            a.innerHTML = '<i class="fa-solid fa-file-pdf"></i>&nbsp; PDF des paroles · bientôt'; }
   })();
 
-  /* ── Instrumentale : sous la vidéo, c'est la trame de la vidéo (écoute + téléchargement). ── */
-  (function instru(){
-    var w = document.getElementById('instruDl');
-    if(!w || !INSTRUMENTAL_URL) return;
-    var p = document.createElement('p');
-    p.className = 'section-sub'; p.style.margin = '0 0 8px';
-    p.textContent = 'La trame instrumentale seule (sans voix) :';
-    var a = document.createElement('audio');
-    a.src = INSTRUMENTAL_URL; a.controls = true; a.preload = 'none'; a.style.width = '100%';
-    w.appendChild(p); w.appendChild(a);
-  })();
+  /* (lecteur instrumental retiré — la vidéo des paroles tourne déjà sur l'instrumentale) */
 
   /* ── Vidéo paroles vivantes ──────────────────────────────────────────────────
      Source : la fonction Netlify /api/exemple-paroles-vivantes (rendu Creatomate +
