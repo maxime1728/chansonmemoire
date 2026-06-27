@@ -42,7 +42,7 @@ function blurredBg(url) { return url.replace('/upload/', '/upload/c_fill,w_1280,
 function kenBurns(dur, i) {
   const A = [['28%','32%'], ['72%','34%'], ['32%','70%'], ['68%','66%'], ['50%','25%'], ['46%','74%']];
   const a = A[i % A.length];
-  return { time: 0, duration: dur, easing: 'linear', type: 'scale', start_scale: '104%', end_scale: '120%', x_anchor: a[0], y_anchor: a[1] };
+  return { time: 0, duration: dur, easing: 'linear', type: 'scale', start_scale: '102%', end_scale: '110%', x_anchor: a[0], y_anchor: a[1] };
 }
 
 function buildVideoMemoire({ titre, prenom, cadeau, photos, lyrics, alignedWords, audioUrl,
