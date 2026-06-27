@@ -17,7 +17,7 @@ const { cleanLyrics, timeLines } = require('./paroles-vivantes-timeline');
 const BG = '#241019', CREAM = '#F5F0EA', GOLD = '#C4963A', MAUVE = '#E7C9D8';
 const FONT_TITLE = 'Playfair Display', FONT_BODY = 'EB Garamond';
 const W = 1280, H = 720, FPS = 25;
-const INTRO = 4.0, OUTRO = 5, FADE = 0.3;      // durée du crossfade (fondu d'une photo à l'autre, SANS passage par le noir)
+const INTRO = 4.0, OUTRO = 5, FADE = 0.8;      // durée du crossfade (fondu doux d'une photo à l'autre, SANS noir)
 const PHOTO_MIN = 3.6, PHOTO_MAX = 9.0;
 const PIN = 1.5;                                // multiplicateur de durée d'une photo « importante »
 const TRACK_BASE = 10;                          // photos sur des pistes croissantes à partir de 10
@@ -39,6 +39,9 @@ function textEl({ text, track, time, duration, family, weight, color, size, y, f
   return el;
 }
 function blurredBg(url) { return url.replace('/upload/', '/upload/c_fill,w_1280,h_720,e_blur:2000,e_brightness:-28/'); }
+// Photo NETTE : recadrée 16:9 en HD + accentuée (sharpen) côté Cloudinary -> reste nette même zoomée
+// par le Ken Burns (l'upscale fait par Cloudinary est bien meilleur que celui de Creatomate).
+function sharp(url) { return url.replace('/upload/', '/upload/c_fill,w_1920,h_1080,e_sharpen:80,q_auto:good/'); }
 function kenBurns(dur, i) {
   const A = [['28%','32%'], ['72%','34%'], ['32%','70%'], ['68%','66%'], ['50%','25%'], ['46%','74%']];
   const a = A[i % A.length];
@@ -95,12 +98,12 @@ function buildVideoMemoire({ titre, prenom, cadeau, photos, lyrics, alignedWords
     if (framed) {
       elements.push({ type: 'image', track: 2, time: s.time, duration: s.dur, source: blurredBg(s.url),
         width: '100%', height: '100%', fit: 'cover', animations: [enter] });
-      elements.push({ type: 'image', track: 3, time: s.time, duration: s.dur, source: s.url,
+      elements.push({ type: 'image', track: 3, time: s.time, duration: s.dur, source: sharp(s.url),
         width: '74%', height: '74%', fit: 'cover', x_alignment: '50%', y_alignment: '47%',
         border_radius: '1.5 vmin', shadow_color: 'rgba(0,0,0,0.55)', shadow_blur: '4 vmin', shadow_y: '1 vmin',
         animations: anims });
     } else {
-      elements.push({ type: 'image', track: 3, time: s.time, duration: s.dur, source: s.url,
+      elements.push({ type: 'image', track: 3, time: s.time, duration: s.dur, source: sharp(s.url),
         width: '100%', height: '100%', fit: 'cover', x_alignment: '50%', y_alignment: '50%',
         animations: anims });
     }
