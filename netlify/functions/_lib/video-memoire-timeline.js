@@ -110,8 +110,9 @@ function buildVideoMemoire({ titre, prenom, cadeau, photos, lyrics, alignedWords
     }
   });
 
-  // Signature + cartes titre sur des pistes TRÈS hautes -> toujours au-dessus des photos (qui montent en pistes).
-  const TOP = 5000;
+  // Signature + cartes titre au-dessus des photos (qui montent en pistes). Creatomate limite les pistes
+  // à 1-1000 ; en pratique le diaporama dépasse rarement ~140 pistes (chanson 4 min), donc 990 est sûr.
+  const TOP = 990;
   elements.push(textEl({ text: 'Chanson Mémoire', track: TOP, time: 0, duration: songEnd,
     family: FONT_TITLE, weight: '700', color: CREAM, size: 22, y: '93%' }));
 
