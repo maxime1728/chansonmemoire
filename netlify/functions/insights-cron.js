@@ -23,7 +23,7 @@ const API       = `https://api.airtable.com/v0/${BASE_ID}`;
 // PLACEHOLDERS Meta (a poser en env Netlify) :
 const AD_ACCOUNT = process.env.META_AD_ACCOUNT_ID || '';                 // « act_XXXXXXXXXX »
 const MKT_TOKEN  = process.env.META_MARKETING_TOKEN || process.env.META_CAPI_TOKEN || '';
-// last_3d = aujourd'hui + 2 jours -> chaque run (toutes les 3 h) rafraichit la depense du jour en cours
+// last_3d = aujourd'hui + 2 jours -> chaque run (horaire) rafraichit la depense du jour en cours
 // et rattrape les conversions tardives. Idempotent (upsert par perf_key = ad_id_jour).
 const DATE_PRESET= process.env.INSIGHTS_DATE_PRESET || 'last_3d';
 
