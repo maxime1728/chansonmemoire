@@ -57,7 +57,10 @@ async function traiterDirect(propre, headers) {
 
   // 1. Client (upsert par courriel) — conserve consent_date / first_contact existants.
   let clientId = '';
-  const email = (propre.email || '').trim();
+  // .toLowerCase() : l'email est la cle d'unicite du client. La recherche Airtable {email}=lit est
+  // sensible a la casse, donc Jean@x.com puis jean@x.com creeraient 2 fiches. On normalise en
+  // minuscules a la recherche ET au stockage -> 1 seul client par adresse, quelle que soit la casse saisie.
+  const email = (propre.email || '').trim().toLowerCase();
   if (email) {
     const lit = formulaLiteral(email);
     let existing = null;
