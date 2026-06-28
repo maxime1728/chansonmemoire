@@ -10,6 +10,7 @@ const BASE_ID  = process.env.AIRTABLE_BASE_ID;
 const AT_TOKEN = process.env.AIRTABLE_TOKEN;
 const API      = `https://api.airtable.com/v0/${BASE_ID}`;
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
+const { lierPub } = require('./_lib/pub-join');   // jointure last_pub en code (ex-Make « Jointure Pub »)
 
 const UUID_V4     = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const PRICE_CENTS = 13997;     // 139,97 $ CAD — prix fixé serveur
@@ -81,6 +82,8 @@ exports.handler = async (event) => {
           method: 'PATCH', headers: { ...headers, 'Content-Type': 'application/json' },
           body: JSON.stringify({ fields: lf, typecast: true })
         });
+        // LAST-touch : lie le creatif de conversion (last_pub = Pub dont ad_name = last utm_content).
+        await lierPub(API, headers, projet.id, lt.utm_content, 'fld3BBWOYqlkMYec9');
       }
     } catch (_) { /* l'attribution ne doit jamais casser le checkout */ }
 
