@@ -31,7 +31,7 @@ const P  = { token:'fldqBcPOplqI7pmTh', Client:'fldAGBhUTrR92bj9a', deceased_nam
   Pub:'flds2b9ClA5MZkeTv', last_pub:'fld3BBWOYqlkMYec9' };
 const G  = { project:'fldzXsnRLrkvPbO6p', generation_no:'fldYQz30pRWwQfnYd', type:'fld0ElSpJMdrMkAJy', lyrics:'fld9q1iqsYSx6iGaI', song_title:'fldlcfIdzfDFaG9EG', suggestions:'fldmxQuzUg8iALDGF', generation_status:'fldUnmeYy9Uk4zBDq' };
 const { lierPub } = require('./_lib/pub-join');   // jointure Projet<->Pub en code (ex-Make « Jointure Pub »)
-const { withSentry } = require('./_lib/sentry');  // capture des exceptions non gerees
+const { withSentry, capture } = require('./_lib/sentry');  // capture des exceptions + des echecs generate-lyrics
 function formulaLiteral(v) { const s = String(v); if (!s.includes('"')) return `"${s}"`; if (!s.includes("'")) return `'${s}'`; return null; }
 
 function nettoyer(v) {
@@ -96,7 +96,13 @@ async function traiterDirect(propre, headers) {
     });
     const dl = await rl.json().catch(() => ({}));
     if (rl.ok && dl && dl.lyrics) lyr = dl;
-  } catch (_) {}
+    else {
+      // Echec de generation synchrone : on rend la cause VISIBLE (Sentry) au lieu de la jeter.
+      // dl contient anthropic_status / anthropic_detail (mode create) -> on saura si c'est 429/529/parse.
+      // Pas bloquant pour le client : /revision relance (mode retry) et recovery-cron couvre les ratees.
+      await capture(new Error('generate-lyrics: aucune parole en synchrone'), { http: rl.status, detail: dl, token });
+    }
+  } catch (e) { await capture(e, { where: 'soumettre-survey -> generate-lyrics' }); }
 
   // 4. Nouveau projet -> create Project (toujours) + Generation (si paroles). Sinon -> nouvelle Generation.
   if (!projet) {
