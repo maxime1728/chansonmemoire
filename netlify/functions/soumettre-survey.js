@@ -153,7 +153,8 @@ exports.handler = async (event) => {
       // Lead CAPI serveur (ex-MAKE A) : MAKE A est éteint en mode DIRECT, donc on déclenche nous-mêmes
       // l'event Lead côté serveur (dédup avec le pixel navigateur via event_id = token.lead). IP/UA du
       // vrai client (il appelle ce endpoint directement) -> meilleure qualité de matching Meta. Best-effort.
-      if (res && res.ok) {
+      // data.canari === true -> soumission du cron e2e : on N'ENVOIE PAS le Lead CAPI (pas de pollution Meta).
+      if (res && res.ok && data.canari !== true) {
         try {
           const ip = (event.headers['x-nf-client-connection-ip'] || event.headers['x-forwarded-for'] || '').split(',')[0].trim();
           const ua = event.headers['user-agent'] || '';
