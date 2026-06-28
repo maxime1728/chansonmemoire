@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400;1,9..144,600&family=Mulish:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+<!-- Icones : sprite SVG inline (voir #cm-icons en bas de body). Remplace Font Awesome (allégé + non bloquant). -->
 <!-- Polices de l'ecran d'attente (Cormorant + Inter, charte /revision) : chargees a la demande a la soumission (ensureOverlayFonts), pas au chargement initial de la page. -->
 <!-- Attribution Meta first/last-touch : capter tot, avant tout le reste (donnee first-party). -->
 <!-- Sentry navigateur (erreurs JS), token/PII scrubbes avant envoi (cm-sentry.js). -->
@@ -19,6 +19,8 @@
 :root{--cm-plum-dark:#5C2D4A;--cm-plum-mid:#8B4A6E;--cm-mauve:#C98BB0;--cm-gold:#C4963A;--cm-gold-light:#E8C97A;--cm-white:#FDFAF7;--cm-bg:#F8F4F0;--cm-text:#2E1A28;--cm-text-sub:#7A6070;}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 .cm-sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+.cm-ic{width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;}
+.cm-spin{animation:cm-roue-spin 1s linear infinite;}
 html,body{overflow-x:hidden;}
 html{scroll-behavior:smooth;}
 body{font-family:'Mulish',sans-serif;background:var(--cm-bg);color:var(--cm-text);min-height:100vh;display:flex;flex-direction:column;}
@@ -85,6 +87,16 @@ body{font-family:'Mulish',sans-serif;background:var(--cm-bg);color:var(--cm-text
 </head>
 <body>
 
+<!-- Sprite d'icones SVG inline (remplace Font Awesome) -->
+<svg id="cm-icons" width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="ic-arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></symbol>
+  <symbol id="ic-arrow-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></symbol>
+  <symbol id="ic-lightbulb" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="9" y1="18" x2="15" y2="18"/><line x1="10" y1="22" x2="14" y2="22"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1v.2h6v-.2c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z"/></symbol>
+  <symbol id="ic-heart" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7.5-4.9-10-9.3C.6 9 1.7 5.5 5 4.6c2-.5 3.9.4 5 2 1.1-1.6 3-2.5 5-2 3.3.9 4.4 4.4 3 7.1C19.5 16.1 12 21 12 21z"/></symbol>
+  <symbol id="ic-music" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l10-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></symbol>
+  <symbol id="ic-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.2-8.5"/></symbol>
+</svg>
+
 <!-- Netlify Forms : noms alignés sur Airtable -->
 <form name="chanson-memoire-survey" netlify netlify-honeypot="bot-field" hidden>
   <input type="text" name="deceased_name">
@@ -126,7 +138,7 @@ body{font-family:'Mulish',sans-serif;background:var(--cm-bg);color:var(--cm-text
       <label class="cm-consent-label" style="display:flex;gap:10px;align-items:flex-start;cursor:pointer;"><input type="radio" name="song_type" value="hommage" checked style="margin-top:3px;flex-shrink:0;"><span><strong>Un hommage</strong><br><span style="opacity:.7;">à la mémoire d'une personne qui nous a quittés</span></span></label>
       <label class="cm-consent-label" style="display:flex;gap:10px;align-items:flex-start;cursor:pointer;"><input type="radio" name="song_type" value="cadeau" style="margin-top:3px;flex-shrink:0;"><span><strong>Un cadeau</strong><br><span style="opacity:.7;">pour une personne bien vivante</span></span></label>
     </div>
-    <div class="cm-nav cm-nav-single"><button class="cm-btn-next" id="btn-next-1">Continuer <i class="fa-solid fa-arrow-right"></i></button></div>
+    <div class="cm-nav cm-nav-single"><button class="cm-btn-next" id="btn-next-1">Continuer <svg class="cm-ic" aria-hidden="true"><use href="#ic-arrow-right"></use></svg></button></div>
   </div>
 
   <div class="cm-step-card" data-step="2">
@@ -135,7 +147,7 @@ body{font-family:'Mulish',sans-serif;background:var(--cm-bg);color:var(--cm-text
     <p class="cm-q-sub">Son prénom, son surnom, ou ce qui le représente le mieux.</p>
     <input class="cm-input" type="text" id="input-deceased_name" aria-label="Prénom ou nom de la personne" data-ph-h="Ex : Grand-papa Roger, Maman, Isabelle…" data-ph-c="Ex : Maman, Sophie, mon amoureux…" placeholder="Ex : Grand-papa Roger, Maman, Isabelle…" autocomplete="off" maxlength="80">
     <div class="cm-error" id="err-deceased_name">Entre un prénom ou un nom (au moins quelques lettres).</div>
-    <div class="cm-nav"><button class="cm-btn-prev" data-target="1"><i class="fa-solid fa-arrow-left"></i> Retour</button><button class="cm-btn-next" id="btn-next-2">Continuer <i class="fa-solid fa-arrow-right"></i></button></div>
+    <div class="cm-nav"><button class="cm-btn-prev" data-target="1"><svg class="cm-ic" aria-hidden="true"><use href="#ic-arrow-left"></use></svg> Retour</button><button class="cm-btn-next" id="btn-next-2">Continuer <svg class="cm-ic" aria-hidden="true"><use href="#ic-arrow-right"></use></svg></button></div>
   </div>
 
   <div class="cm-step-card" data-step="3">
@@ -151,7 +163,7 @@ body{font-family:'Mulish',sans-serif;background:var(--cm-bg);color:var(--cm-text
       <button class="cm-choice" data-value="Animal de compagnie"><span class="cm-choice-emoji">🐾</span> Animal de compagnie</button>
       <button class="cm-choice" data-value="Quelqu'un d'autre"><span class="cm-choice-emoji">💛</span> Quelqu'un d'autre</button>
     </div>
-    <div class="cm-nav"><button class="cm-btn-prev" data-target="2"><i class="fa-solid fa-arrow-left"></i> Retour</button></div>
+    <div class="cm-nav"><button class="cm-btn-prev" data-target="2"><svg class="cm-ic" aria-hidden="true"><use href="#ic-arrow-left"></use></svg> Retour</button></div>
   </div>
 
   <div class="cm-step-card" data-step="4">
@@ -173,7 +185,7 @@ body{font-family:'Mulish',sans-serif;background:var(--cm-bg);color:var(--cm-text
       <button class="cm-choice" data-value="Reggae"><span class="cm-choice-emoji">🌴</span> Reggae</button>
       <button class="cm-choice" data-value="Électronique / Dance"><span class="cm-choice-emoji">🎧</span> Électronique / Dance</button>
     </div>
-    <div class="cm-nav"><button class="cm-btn-prev" data-target="3"><i class="fa-solid fa-arrow-left"></i> Retour</button></div>
+    <div class="cm-nav"><button class="cm-btn-prev" data-target="3"><svg class="cm-ic" aria-hidden="true"><use href="#ic-arrow-left"></use></svg> Retour</button></div>
   </div>
 
   <div class="cm-step-card" data-step="5">
@@ -193,8 +205,8 @@ body{font-family:'Mulish',sans-serif;background:var(--cm-bg);color:var(--cm-text
       <option value="es">Español</option>
     </select>
     <div class="cm-nav">
-      <button class="cm-btn-prev" data-target="4"><i class="fa-solid fa-arrow-left"></i> Retour</button>
-      <button class="cm-btn-next" id="btn-next-5">Continuer <i class="fa-solid fa-arrow-right"></i></button>
+      <button class="cm-btn-prev" data-target="4"><svg class="cm-ic" aria-hidden="true"><use href="#ic-arrow-left"></use></svg> Retour</button>
+      <button class="cm-btn-next" id="btn-next-5">Continuer <svg class="cm-ic" aria-hidden="true"><use href="#ic-arrow-right"></use></svg></button>
     </div>
   </div>
 
@@ -212,7 +224,7 @@ body{font-family:'Mulish',sans-serif;background:var(--cm-bg);color:var(--cm-text
       <button class="cm-choice" data-value="Optimiste"><span class="cm-choice-emoji">🌤️</span> Optimiste</button>
       <button class="cm-choice" data-value="Mélancolique"><span class="cm-choice-emoji">🌙</span> Mélancolique</button>
     </div>
-    <div class="cm-nav"><button class="cm-btn-prev" data-target="5"><i class="fa-solid fa-arrow-left"></i> Retour</button></div>
+    <div class="cm-nav"><button class="cm-btn-prev" data-target="5"><svg class="cm-ic" aria-hidden="true"><use href="#ic-arrow-left"></use></svg> Retour</button></div>
   </div>
 
   <div class="cm-step-card" data-step="7">
@@ -222,7 +234,7 @@ body{font-family:'Mulish',sans-serif;background:var(--cm-bg);color:var(--cm-text
     <textarea class="cm-input" id="input-what_made_unique" aria-label="Ce qui rendait la personne unique" rows="4" data-ph-h="Ex : La façon dont il faisait rire tout le monde sans même essayer…" data-ph-c="Ex : La façon dont elle fait rire tout le monde sans même essayer…" placeholder="Ex : La façon dont il faisait rire tout le monde sans même essayer…"></textarea>
     <div class="cm-error" id="err-what_made_unique">Partage au moins quelques mots pour que la chanson lui ressemble vraiment.</div>
     <div class="cm-hint">
-      <div class="cm-hint-title"><i class="fa-solid fa-lightbulb"></i> Des pistes si tu cherches par où commencer</div>
+      <div class="cm-hint-title"><svg class="cm-ic" aria-hidden="true"><use href="#ic-lightbulb"></use></svg> Des pistes si tu cherches par où commencer</div>
       <ul>
         <li data-h="Son expression préférée ou ce qu'il / elle répétait souvent" data-c="Son expression préférée, ce qu'il / elle dit tout le temps">Son expression préférée ou ce qu'il / elle répétait souvent</li>
         <li data-h="Ce que tu remarques maintenant qu'il ou elle n'est plus là" data-c="Ce qui te fait sourire chez lui ou elle">Ce que tu remarques maintenant qu'il ou elle n'est plus là</li>
@@ -231,8 +243,8 @@ body{font-family:'Mulish',sans-serif;background:var(--cm-bg);color:var(--cm-text
       </ul>
     </div>
     <div class="cm-nav">
-      <button class="cm-btn-prev" data-target="6"><i class="fa-solid fa-arrow-left"></i> Retour</button>
-      <button class="cm-btn-next" id="btn-next-7">Continuer <i class="fa-solid fa-arrow-right"></i></button>
+      <button class="cm-btn-prev" data-target="6"><svg class="cm-ic" aria-hidden="true"><use href="#ic-arrow-left"></use></svg> Retour</button>
+      <button class="cm-btn-next" id="btn-next-7">Continuer <svg class="cm-ic" aria-hidden="true"><use href="#ic-arrow-right"></use></svg></button>
     </div>
   </div>
 
@@ -242,7 +254,7 @@ body{font-family:'Mulish',sans-serif;background:var(--cm-bg);color:var(--cm-text
     <span class="cm-optional">Optionnel, passe si tu n'es pas prêt</span>
     <textarea class="cm-input" id="input-memories" aria-label="Un souvenir à inclure dans la chanson" rows="4" data-ph-h="Ex : On passait nos dimanches dans sa cuisine…" data-ph-c="Ex : On passe nos dimanches à rire ensemble…" placeholder="Ex : On passait nos dimanches dans sa cuisine…"></textarea>
     <div class="cm-hint">
-      <div class="cm-hint-title"><i class="fa-solid fa-heart"></i> <span data-h="Des souvenirs qui touchent particulièrement" data-c="Des moments qui touchent particulièrement">Des souvenirs qui touchent particulièrement</span></div>
+      <div class="cm-hint-title"><svg class="cm-ic" aria-hidden="true"><use href="#ic-heart"></use></svg> <span data-h="Des souvenirs qui touchent particulièrement" data-c="Des moments qui touchent particulièrement">Des souvenirs qui touchent particulièrement</span></div>
       <ul>
         <li data-h="Un endroit qui vous appartenait : son fauteuil, votre banc, sa cuisine le matin" data-c="Un endroit qui vous appartient : votre café, votre banc, sa cuisine le matin">Un endroit qui vous appartenait : son fauteuil, votre banc, sa cuisine le matin</li>
         <li data-h="Un rituel ou une habitude : le café du dimanche, sa façon de…" data-c="Un rituel, une tradition : le souper du dimanche, votre fou rire…">Un rituel ou une habitude : le café du dimanche, sa façon de…</li>
@@ -251,8 +263,8 @@ body{font-family:'Mulish',sans-serif;background:var(--cm-bg);color:var(--cm-text
       </ul>
     </div>
     <div class="cm-nav">
-      <button class="cm-btn-prev" data-target="7"><i class="fa-solid fa-arrow-left"></i> Retour</button>
-      <button class="cm-btn-next" id="btn-next-8">Continuer <i class="fa-solid fa-arrow-right"></i></button>
+      <button class="cm-btn-prev" data-target="7"><svg class="cm-ic" aria-hidden="true"><use href="#ic-arrow-left"></use></svg> Retour</button>
+      <button class="cm-btn-next" id="btn-next-8">Continuer <svg class="cm-ic" aria-hidden="true"><use href="#ic-arrow-right"></use></svg></button>
     </div>
   </div>
 
@@ -263,8 +275,8 @@ body{font-family:'Mulish',sans-serif;background:var(--cm-bg);color:var(--cm-text
     <p class="cm-q-sub" data-h="Ce que tu veux que cette chanson capture, préserve, ou transmette à ceux qui l'écouteront après toi." data-c="Ce que tu aimerais lui dire, le message qu'elle gardera de cette chanson.">Ce que tu veux que cette chanson capture, préserve, ou transmette à ceux qui l'écouteront après toi.</p>
     <textarea class="cm-input" id="input-memory_to_keep" aria-label="Ce que la chanson doit garder ou transmettre" rows="4" data-ph-h="Ex : Je veux qu'on se souvienne de son rire…" data-ph-c="Ex : Je veux qu'elle sache à quel point elle compte…" placeholder="Ex : Je veux qu'on se souvienne de son rire…"></textarea>
     <div class="cm-nav">
-      <button class="cm-btn-prev" data-target="8"><i class="fa-solid fa-arrow-left"></i> Retour</button>
-      <button class="cm-btn-next" id="btn-next-9">Continuer <i class="fa-solid fa-arrow-right"></i></button>
+      <button class="cm-btn-prev" data-target="8"><svg class="cm-ic" aria-hidden="true"><use href="#ic-arrow-left"></use></svg> Retour</button>
+      <button class="cm-btn-next" id="btn-next-9">Continuer <svg class="cm-ic" aria-hidden="true"><use href="#ic-arrow-right"></use></svg></button>
     </div>
   </div>
 
@@ -285,9 +297,9 @@ body{font-family:'Mulish',sans-serif;background:var(--cm-bg);color:var(--cm-text
     </div>
     <div class="cm-error" id="err-consent">Accepte les conditions pour continuer.</div>
     <input type="text" name="bot-field" style="display:none" tabindex="-1" autocomplete="off">
-    <div class="cm-submit-wrap"><button class="cm-submit-btn" id="btn-submit">Créer ma chanson <i class="fa-solid fa-music"></i></button></div>
+    <div class="cm-submit-wrap"><button class="cm-submit-btn" id="btn-submit">Créer ma chanson <svg class="cm-ic" aria-hidden="true"><use href="#ic-music"></use></svg></button></div>
     <p class="cm-submit-note">100 % gratuit à essayer · Aperçu prêt en quelques minutes</p>
-    <div class="cm-nav" style="margin-top:16px;"><button class="cm-btn-prev" data-target="9"><i class="fa-solid fa-arrow-left"></i> Retour</button></div>
+    <div class="cm-nav" style="margin-top:16px;"><button class="cm-btn-prev" data-target="9"><svg class="cm-ic" aria-hidden="true"><use href="#ic-arrow-left"></use></svg> Retour</button></div>
   </div>
 
 </div>
@@ -573,7 +585,7 @@ body{font-family:'Mulish',sans-serif;background:var(--cm-bg);color:var(--cm-text
     });
 
     var btn=document.getElementById('btn-submit');
-    btn.disabled=true; btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Envoi en cours…';
+    btn.disabled=true; btn.innerHTML='<svg class="cm-ic cm-spin" aria-hidden="true"><use href="#ic-spinner"></use></svg> Envoi en cours…';
     var ovAttente=document.getElementById('overlay-attente-paroles'); if(ovAttente) ovAttente.style.display='flex';
 
     /* Backup Netlify Forms (fire-and-forget) : filet de securite si /api/soumettre-survey echoue.
