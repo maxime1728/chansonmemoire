@@ -31,7 +31,8 @@ body{font-family:'Mulish',sans-serif;background:var(--cm-bg);color:var(--cm-text
 .cm-q-eyebrow{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--cm-gold);margin-bottom:8px;}
 .cm-q-title{font-family:'Fraunces',serif;font-style:italic;font-size:clamp(20px,5vw,26px);font-weight:400;color:var(--cm-plum-dark);line-height:1.35;margin-bottom:8px;}
 .cm-q-sub{font-size:13px;color:var(--cm-text-sub);line-height:1.6;margin-bottom:24px;}
-.cm-input{width:100%;font-family:'Mulish',sans-serif;font-size:15px;color:var(--cm-text);background:var(--cm-bg);border:1.5px solid rgba(92,45,74,.18);border-radius:12px;padding:14px 16px;outline:none;transition:border-color .2s,box-shadow .2s;resize:none;}
+/* font-size 16px = empeche le zoom automatique d'iOS Safari au focus (sous 16px, iOS zoome et la page deborde / se decentre lateralement). */
+.cm-input{width:100%;font-family:'Mulish',sans-serif;font-size:16px;color:var(--cm-text);background:var(--cm-bg);border:1.5px solid rgba(92,45,74,.18);border-radius:12px;padding:14px 16px;outline:none;transition:border-color .2s,box-shadow .2s;resize:none;}
 .cm-input:focus{border-color:var(--cm-mauve);box-shadow:0 0 0 3px rgba(201,139,176,.15);}
 .cm-input::placeholder{color:rgba(122,96,112,.5);}
 .cm-choices{display:flex;flex-direction:column;gap:10px;}
