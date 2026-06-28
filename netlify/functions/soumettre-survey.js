@@ -61,7 +61,10 @@ async function traiterDirect(propre, headers) {
   if (email) {
     const lit = formulaLiteral(email);
     let existing = null;
-    if (lit) { const r = await fetch(`${API}/${CLIENTS}?filterByFormula=${encodeURIComponent(`{email}=${lit}`)}&maxRecords=1`, { headers }); if (r.ok) existing = (((await r.json()).records) || [])[0] || null; }
+    // returnFieldsByFieldId=true : on relit le client existant avec des clés en ID de champ,
+    // sinon existing.fields[CL.consent_date]/[CL.first_contact] (clés = IDs) ne matchent jamais
+    // (Airtable renvoie par NOM par défaut) -> consent_date/first_contact écrasés à today à chaque resoumission.
+    if (lit) { const r = await fetch(`${API}/${CLIENTS}?filterByFormula=${encodeURIComponent(`{email}=${lit}`)}&maxRecords=1&returnFieldsByFieldId=true`, { headers }); if (r.ok) existing = (((await r.json()).records) || [])[0] || null; }
     const cf = {};
     cf[CL.email] = email; cf[CL.consent_status] = 'received';
     cf[CL.consent_date] = (existing && existing.fields[CL.consent_date]) || today;
