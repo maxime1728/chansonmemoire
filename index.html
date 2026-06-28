@@ -227,6 +227,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Mulish:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <!-- Attribution Meta first/last-touch : capter des l'accueil (page d'entree principale), avant tout. -->
+<!-- Sentry navigateur (erreurs JS), token/PII scrubbes avant envoi (cm-sentry.js). -->
+<script src="/js/cm-sentry.js"></script>
 <script src="/js/cm-attrib.js"></script>
 <style>
 /* ════════ TOKENS ════════ */
@@ -259,9 +261,9 @@ a{color:inherit;}
 
 /* ════════ BOUTONS ════════ */
 .btn{display:inline-flex;align-items:center;justify-content:center;background:var(--plum);color:#fff;text-decoration:none;font-family:var(--ff-sans);font-weight:800;font-size:1.04rem;padding:16px 30px;border-radius:14px;box-shadow:0 6px 18px rgba(60,46,77,.18);transition:transform .15s,background .15s;width:100%;}
-.btn:hover{background:var(--plum-deep);transform:translateY(-2px);}
+@media(hover:hover){.btn:hover{background:var(--plum-deep);transform:translateY(-2px);}}
 .btn--gold{background:var(--candle);box-shadow:0 6px 18px rgba(189,143,73,.26);}
-.btn--gold:hover{background:var(--candle-deep);}
+@media(hover:hover){.btn--gold:hover{background:var(--candle-deep);}}
 @media(min-width:560px){.btn{width:auto;}}
 
 /* ════════ HEADER ════════ */
@@ -281,7 +283,7 @@ a{color:inherit;}
   .hd-logo img{height:34px;}
   .hd-nav{display:flex;gap:26px;align-items:center;}
   .hd-nav a{font-size:.88rem;font-weight:600;color:var(--muted);text-decoration:none;transition:color .15s;}
-  .hd-nav a:hover{color:var(--plum);}
+  @media(hover:hover){.hd-nav a:hover{color:var(--plum);}}
   .hd-burger,.hd-menu{display:none;}
 }
 
@@ -299,7 +301,7 @@ a{color:inherit;}
 .hero-promise strong{color:var(--candle-deep);font-style:normal;font-weight:600;}
 .hero-cta{margin:0 0 14px;}
 .hero-listen{display:inline-flex;align-items:center;gap:7px;font-size:.92rem;font-weight:700;color:var(--plum);text-decoration:none;border-bottom:1.5px solid var(--gold-soft);padding-bottom:2px;transition:color .15s,border-color .15s;}
-.hero-listen:hover{color:var(--candle-deep);border-color:var(--candle);}
+@media(hover:hover){.hero-listen:hover{color:var(--candle-deep);border-color:var(--candle);}}
 .hero-note{font-size:.84rem;color:var(--muted);margin:18px 0 0;}
 
 /* ════════ SECTIONS ════════ */
@@ -337,7 +339,7 @@ a{color:inherit;}
 .uc{display:grid;gap:12px;}
 @media(min-width:600px){.uc{grid-template-columns:1fr 1fr;}}
 .uc-card{display:block;text-decoration:none;background:#fff;border:1px solid var(--line);border-radius:16px;padding:22px 20px;transition:transform .15s,box-shadow .15s;}
-.uc-card:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(60,46,77,.08);}
+@media(hover:hover){.uc-card:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(60,46,77,.08);}}
 .uc-card h3{font-family:var(--ff-serif);font-style:italic;font-weight:500;color:var(--plum);font-size:1.22rem;margin:0 0 6px;}
 .uc-card p{color:var(--muted);font-size:.94rem;line-height:1.5;}
 
@@ -346,7 +348,7 @@ a{color:inherit;}
 .track{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 18px;display:flex;align-items:center;gap:16px;transition:border-color .2s,box-shadow .2s;}
 .track.playing{border-color:var(--mauve);box-shadow:0 6px 20px rgba(122,100,148,.14);}
 .track-play{flex:0 0 48px;width:48px;height:48px;border-radius:50%;border:0;background:var(--plum-deep);color:var(--candle-bright,#e8be73);font-size:.85rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s;}
-.track-play:hover{background:var(--plum);}
+@media(hover:hover){.track-play:hover{background:var(--plum);}}
 .track.playing .track-play{background:var(--mauve);}
 .track-body{flex:1;min-width:0;}
 .track-name{font-family:var(--ff-serif);font-style:italic;font-weight:500;color:var(--plum-deep);font-size:1.05rem;line-height:1.25;margin-bottom:2px;}
@@ -417,7 +419,7 @@ a{color:inherit;}
 .ft .em a{color:var(--candle);font-weight:700;text-decoration:none;}
 .ft nav{display:flex;flex-wrap:wrap;justify-content:center;gap:8px 18px;margin:0 0 20px;}
 .ft nav a{font-size:.8rem;color:rgba(255,255,255,.45);text-decoration:none;font-weight:600;transition:color .15s;}
-.ft nav a:hover{color:var(--candle);}
+@media(hover:hover){.ft nav a:hover{color:var(--candle);}}
 .ft .copy{font-size:.76rem;color:rgba(255,255,255,.28);}
 .ft .manage{margin-top:10px;}
 .ft .manage button{background:none;border:none;font-size:.76rem;color:rgba(255,255,255,.4);cursor:pointer;font-family:var(--ff-sans);text-decoration:underline;padding:0;}
@@ -428,7 +430,7 @@ a{color:inherit;}
 .sticky.show{transform:none;opacity:1;visibility:visible;pointer-events:auto;}
 .sticky a{font-family:var(--ff-sans);display:flex;width:100%;max-width:440px;align-items:center;justify-content:center;background:var(--plum);color:#fff;text-decoration:none;font-weight:800;font-size:1rem;padding:14px 26px;border-radius:12px;box-shadow:0 4px 14px rgba(60,46,77,.22);}
 .sticky.ready a{transition:background .15s,transform .15s;}
-.sticky a:hover{background:var(--plum-deep);transform:translateY(-1px);}
+@media(hover:hover){.sticky a:hover{background:var(--plum-deep);transform:translateY(-1px);}}
 
 /* ════════ CONSENT ════════ */
 .consent{position:fixed;left:12px;right:12px;bottom:12px;z-index:55;max-width:640px;margin:0 auto;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 10px 30px rgba(60,46,77,.18);padding:15px 17px;display:none;transition:bottom .28s ease;}
@@ -439,9 +441,9 @@ a{color:inherit;}
 .consent-row{display:flex;gap:9px;}
 .consent-btn{flex:1;font-family:var(--ff-sans);font-weight:800;font-size:.9rem;padding:11px 16px;border-radius:11px;cursor:pointer;border:1.5px solid var(--plum);transition:background .15s,color .15s;}
 .consent-accept{background:var(--plum);color:#fff;}
-.consent-accept:hover{background:var(--plum-deep);}
+@media(hover:hover){.consent-accept:hover{background:var(--plum-deep);}}
 .consent-refuse{background:transparent;color:var(--plum);}
-.consent-refuse:hover{background:var(--mauve-tint);}
+@media(hover:hover){.consent-refuse:hover{background:var(--mauve-tint);}}
 @media(min-width:520px){.consent-row{justify-content:flex-end;}.consent-btn{flex:0 0 auto;min-width:128px;}}
 
 /* ════════ EFFETS (greffés, design inchangé) ════════ */

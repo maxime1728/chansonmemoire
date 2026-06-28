@@ -1,0 +1,28 @@
+name: CI
+
+# Tourne sur chaque PR (et push de branche) AVANT le merge -> bloque un changement qui casse
+# la syntaxe d'une fonction ou un test. Premier filet de securite « avant la prod ».
+on:
+  pull_request:
+  push:
+    branches-ignore: [main]
+
+jobs:
+  verifier:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Syntaxe de toutes les Netlify Functions (node --check)
+        run: |
+          set -e
+          for f in netlify/functions/*.js netlify/functions/_lib/*.js; do
+            echo "check $f"
+            node --check "$f"
+          done
+
+      - name: Tests unitaires (node:test)
+        run: node --test tests/*.test.js
