@@ -43,8 +43,12 @@ exports.handler = withSentry(async () => {
     const now = new Date().toISOString();
     const payload = {
       token, canari: true, email: 'canari-e2e@chansonmemoire.ca', deceased_name: 'CANARI E2E (auto, supprime)',
-      relationship: 'test', music_style: 'folk', voice: 'féminine', mood: 'doux', language: 'fr-CA', song_type: 'hommage',
-      what_made_unique: 'Verification automatique du parcours, a supprimer.', memories: 'Test canari e2e.', memory_to_keep: 'Test.',
+      relationship: 'grand-mère', music_style: 'folk', voice: 'féminine', mood: 'doux', language: 'fr-CA', song_type: 'hommage',
+      // Contenu RICHE volontairement : generate-lyrics refuse les entrees trop minces (invalid_input) -> sans
+      // ca, le canari ne creerait pas de Generation et alerterait a tort a chaque run.
+      what_made_unique: 'Son rire communicatif, ses tartes aux pommes du dimanche et sa generosite sans limite envers toute la famille.',
+      memories: 'On passait nos etes dans son jardin a cueillir des fraises, puis elle nous racontait ses histoires sur la galerie jusqu au coucher du soleil.',
+      memory_to_keep: 'Je veux qu on se souvienne de sa chaleur, de sa force tranquille et de son amour inconditionnel.',
       consentement: true, utm_source: 'canari', utm_content: 'CANARI_first', last_utm_content: 'CANARI_last',
       first_touch_at: now, last_touch_at: now, landing_page: '/canari'
     };
