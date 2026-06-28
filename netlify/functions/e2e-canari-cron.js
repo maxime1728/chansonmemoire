@@ -70,7 +70,9 @@ exports.handler = withSentry(async () => {
       if (f[F.utm_content] !== 'CANARI_first')      echecs.push('first-touch utm_content incorrect: ' + JSON.stringify(f[F.utm_content]));
       if (f[F.last_utm_content] !== 'CANARI_last')  echecs.push('last-touch utm_content incorrect: ' + JSON.stringify(f[F.last_utm_content]));
       if (!clientId)      echecs.push('Projet sans Client lie');
-      if (!genIds.length) echecs.push('Aucune Generation creee (paroles non generees ?)');
+      // Generation = signal SOUPLE, pas un echec : generate-lyrics (Anthropic) ne repond pas toujours
+      // dans le delai de la fonction, et /revision relance/poll les paroles (les ratees sont couvertes
+      // par recovery-cron). On verifie donc le pipeline DETERMINISTE (Projet + attribution + Client).
     }
   } catch (e) { echecs.push('exception: ' + (e && e.message)); }
 
