@@ -7,6 +7,11 @@
 <title>Chanson personnalisée en mémoire d'un être cher | Chanson Mémoire</title>
 <meta name="description" content="Crée une chanson personnalisée en mémoire d'un être cher. Paroles et mélodie composées sur mesure à partir de tes souvenirs. Aperçu gratuit : tu ne paies que si elle te touche le cœur.">
 
+<!-- ═══ FAVICON ═══ -->
+<link rel="icon" type="image/png" sizes="48x48" href="https://res.cloudinary.com/dcx1tfm47/image/upload/c_fill,w_48,h_48/v1782682803/Favicon_Chanson_M%C3%A9moire_pftcgs.png">
+<link rel="icon" type="image/png" sizes="96x96" href="https://res.cloudinary.com/dcx1tfm47/image/upload/c_fill,w_96,h_96/v1782682803/Favicon_Chanson_M%C3%A9moire_pftcgs.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://res.cloudinary.com/dcx1tfm47/image/upload/c_fill,w_180,h_180/v1782682803/Favicon_Chanson_M%C3%A9moire_pftcgs.png">
+
 <!-- ═══ INDEXATION & CANONICAL ═══ -->
 <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
 <link rel="canonical" href="https://chansonmemoire.ca/">
@@ -43,7 +48,7 @@
   "@context": "https://schema.org",
   "@graph": [
     {
-      "@type": "LocalBusiness",
+      "@type": "Organization",
       "@id": "https://chansonmemoire.ca/#business",
       "name": "Chanson Mémoire",
       "description": "Service québécois de création de chansons personnalisées en mémoire d'un être cher. Paroles et mélodie composées sur mesure à partir de tes souvenirs.",
@@ -58,14 +63,8 @@
         "@type": "Country",
         "name": "Canada"
       },
-      "address": {
-        "@type": "PostalAddress",
-        "addressRegion": "QC",
-        "addressCountry": "CA"
-      },
-      "priceRange": "$$",
       "knowsLanguage": "fr-CA",
-      "sameAs": []
+      "sameAs": ["https://www.facebook.com/profile.php?id=61589227536478"]
     },
     {
       "@type": "Product",
@@ -80,6 +79,7 @@
         "@type": "Offer",
         "priceCurrency": "CAD",
         "price": "139.97",
+        "priceValidUntil": "2026-12-31",
         "availability": "https://schema.org/InStock",
         "url": "https://chansonmemoire.ca/",
         "seller": {
@@ -215,7 +215,7 @@
 <!-- Attribution Meta first/last-touch : capter des l'accueil (page d'entree principale), avant tout. -->
 <!-- Sentry navigateur (erreurs JS), token/PII scrubbes avant envoi (cm-sentry.js). -->
 <script src="/js/cm-sentry.js"></script>
-<script src="/js/cm-attrib.js"></script>
+<script src="/js/cm-attrib.js" defer></script>
 <style>
 /* ════════ TOKENS ════════ */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
