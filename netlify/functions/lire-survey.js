@@ -59,8 +59,11 @@ exports.handler = async (event) => {
         voix:            f.voice            || '',
         unicite:         f.what_made_unique  || '',
         souvenirs:       f.memories         || '',
-        souvenir_garder: f.memory_to_keep   || ''
+        souvenir_garder: f.memory_to_keep   || '',
+        song_type:       f.song_type        || '',
+        langue:          f.language         || ''
         // JAMAIS email, stripe_*, utm_*/fb*, consentement. Volontaire (Loi 25).
+        // song_type/langue = contenu du survey (pas du marketing), OK pour le pré-remplissage.
       })
     };
 
