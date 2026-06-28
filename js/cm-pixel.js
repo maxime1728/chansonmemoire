@@ -56,7 +56,7 @@
     var css = '#cm-consent-banner{position:fixed;left:16px;right:16px;bottom:16px;z-index:99999;background:#2E1A28;color:#F5F0EA;border-radius:12px;padding:16px 18px;box-shadow:0 8px 30px rgba(0,0,0,.25);font-family:Georgia,serif;font-size:14px;line-height:1.55;max-width:680px;margin:0 auto;}#cm-consent-banner a{color:#E8C9DC;}#cm-consent-banner .cm-c-row{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;}#cm-consent-banner button{border:0;border-radius:8px;padding:9px 16px;font:inherit;cursor:pointer;}#cm-consent-banner .cm-c-yes{background:#5C2D4A;color:#F5F0EA;}#cm-consent-banner .cm-c-no{background:transparent;color:#F5F0EA;border:1px solid rgba(245,240,234,.4);}';
     var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
     var d = document.createElement('div');
-    d.id = 'cm-consent-banner'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-label', 'Consentement aux témoins');
+    d.id = 'cm-consent-banner'; d.setAttribute('role', 'region'); d.setAttribute('aria-label', 'Consentement aux témoins');
     d.innerHTML = '<p style="margin:0;">Nous utilisons des témoins (cookies) et des outils de mesure pour améliorer le site et nos publicités. Tu peux accepter ou refuser. Détails dans notre <a href="https://chansonmemoire.ca/politique-de-confidentialite">politique de confidentialité</a>.</p><div class="cm-c-row"><button type="button" class="cm-c-yes">Accepter</button><button type="button" class="cm-c-no">Refuser</button></div>';
     document.body.appendChild(d);
     d.querySelector('.cm-c-yes').addEventListener('click', function () { try { localStorage.setItem('cm_consent', 'yes'); } catch (e) {} d.remove(); loadPixel(); });
