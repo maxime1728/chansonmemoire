@@ -8,7 +8,7 @@
 <title>Partage tes souvenirs · Chanson Mémoire</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400;1,9..144,600&family=Mulish:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Mulish:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <!-- Icones : sprite SVG inline (voir #cm-icons en bas de body). Remplace Font Awesome (allégé + non bloquant). -->
 <!-- Polices de l'ecran d'attente (Cormorant + Inter, charte /revision) : chargees a la demande a la soumission (ensureOverlayFonts), pas au chargement initial de la page. -->
 <!-- Attribution Meta first/last-touch : capter tot, avant tout le reste (donnee first-party). -->
@@ -16,7 +16,7 @@
 <script src="/js/cm-sentry.js"></script>
 <script src="/js/cm-attrib.js"></script>
 <style>
-:root{--cm-plum-dark:#5C2D4A;--cm-plum-mid:#8B4A6E;--cm-mauve:#C98BB0;--cm-gold:#C4963A;--cm-gold-light:#E8C97A;--cm-white:#FDFAF7;--cm-bg:#F8F4F0;--cm-text:#2E1A28;--cm-text-sub:#7A6070;}
+:root{--cm-plum-dark:#5C2D4A;--cm-plum-mid:#8B4A6E;--cm-mauve:#C98BB0;--cm-gold:#C4963A;--cm-gold-light:#E8C97A;--cm-white:#fff;--cm-bg:#F8F4F0;--cm-text:#2E1A28;--cm-text-sub:#7A6070;}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 .cm-sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
 .cm-ic{width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;}
@@ -37,7 +37,7 @@ body{font-family:'Mulish',sans-serif;background:var(--cm-bg);color:var(--cm-text
 .cm-step-card.active{display:block;}
 @keyframes cm-fadein{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
 .cm-q-eyebrow{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--cm-gold);margin-bottom:8px;}
-.cm-q-title{font-family:'Fraunces',serif;font-style:italic;font-size:clamp(20px,5vw,26px);font-weight:400;color:var(--cm-plum-dark);line-height:1.35;margin-bottom:8px;}
+.cm-q-title{font-family:'Newsreader',Georgia,serif;font-style:italic;font-size:clamp(20px,5vw,26px);font-weight:400;color:var(--cm-plum-dark);line-height:1.35;margin-bottom:8px;}
 .cm-q-sub{font-size:13px;color:var(--cm-text-sub);line-height:1.6;margin-bottom:24px;}
 /* font-size 16px = empeche le zoom automatique d'iOS Safari au focus (sous 16px, iOS zoome et la page deborde / se decentre lateralement). */
 .cm-input{width:100%;font-family:'Mulish',sans-serif;font-size:16px;color:var(--cm-text);background:var(--cm-bg);border:1.5px solid rgba(92,45,74,.18);border-radius:12px;padding:14px 16px;outline:none;transition:border-color .2s,box-shadow .2s;resize:none;}
