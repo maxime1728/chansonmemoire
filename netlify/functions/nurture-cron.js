@@ -23,6 +23,7 @@ const SITE     = 'https://chansonmemoire.ca';
 const MG_KEY    = process.env.MAILGUN_API_KEY;
 const MG_DOMAIN = process.env.MAILGUN_DOMAIN_MARKETING;
 const MG_FROM   = process.env.MAILGUN_FROM_MARKETING || 'Chanson Mémoire <info@chansonmemoire.ca>';
+const { envoyerCourriel: mgEnvoyer } = require('./_lib/courriel');
 const POSTAL    = process.env.CM_POSTAL_ADDRESS || '';
 
 const MAX_PER_RUN = 40;
@@ -54,22 +55,14 @@ async function emailOf(projet) {
   } catch (_) { return ''; }
 }
 
-// Envoi Mailgun marketing + en-têtes de désabonnement (livrabilité + 1-clic Gmail/Outlook).
-async function envoyer(to, subject, html, unsub) {
-  if (!MG_KEY || !MG_DOMAIN || !to || !to.includes('@')) return false;
-  const form = new FormData();
-  form.append('from', MG_FROM);
-  form.append('to', to);
-  form.append('subject', subject);
-  form.append('html', html);
-  form.append('h:List-Unsubscribe', `<${unsub}>`);
-  form.append('h:List-Unsubscribe-Post', 'List-Unsubscribe=One-Click');
-  const auth = 'Basic ' + Buffer.from('api:' + MG_KEY).toString('base64');
-  try {
-    const r = await fetch(`https://api.mailgun.net/v3/${MG_DOMAIN}/messages`, { method: 'POST', headers: { Authorization: auth }, body: form });
-    if (!r.ok) console.error('[nurture-cron] Mailgun:', r.status, (await r.text()).slice(0, 200));
-    return r.ok;
-  } catch (e) { console.error('[nurture-cron] envoi:', e && e.message); return false; }
+// Envoi Mailgun marketing via le wrapper central (_lib/courriel) : POST + journalisation Courriels
+// (type 'nurture') + en-têtes de désabonnement (livrabilité + 1-clic Gmail/Outlook).
+async function envoyer(to, subject, html, unsub, projetId) {
+  const { ok } = await mgEnvoyer({
+    to, subject, html, from: MG_FROM, domain: MG_DOMAIN, type: 'nurture', projetId,
+    headers: { 'List-Unsubscribe': `<${unsub}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' }
+  });
+  return ok;
 }
 
 exports.handler = async () => {
@@ -110,7 +103,7 @@ exports.handler = async () => {
       const lien  = `${SITE}/apercu?id=${encodeURIComponent(token)}`;
       const { subject, html } = build(n, { prenom: p.fields.deceased_name, lien, unsub, postal: POSTAL });
 
-      const ok = await envoyer(to, subject, html, unsub);
+      const ok = await envoyer(to, subject, html, unsub, p.id);
       if (!ok) continue;   // Mailgun pas prêt -> on n'avance pas, on réessaiera au prochain passage
       sent++;
 

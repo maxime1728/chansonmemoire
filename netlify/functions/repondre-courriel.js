@@ -24,6 +24,7 @@ const SECRET   = process.env.MAKE_WEBHOOK_SECRET;
 const MG_KEY    = process.env.MAILGUN_API_KEY;
 const MG_DOMAIN = process.env.MAILGUN_DOMAIN_SUPPORT || 'support.chansonmemoire.ca';  // sous-domaine d'ENVOI (protège la racine)
 const MG_FROM   = process.env.MAILGUN_FROM_SUPPORT || 'Chanson Mémoire <nathalie@chansonmemoire.ca>';
+const { logCourriel } = require('./_lib/courriel');
 
 const CONVOS = 'tbl3KBgXthCPromxF';
 const REC_ID = /^rec[A-Za-z0-9]{14}$/;
@@ -115,6 +116,15 @@ exports.handler = async (event) => {
       console.error('[repondre-courriel] Mailgun', rM.status, detail);
       return { statusCode: 502, body: JSON.stringify({ error: 'Envoi échoué', mailgun_status: rM.status, detail }) };
     }
+
+    // Journalisation Courriels (type 'support') — best-effort, sur le Message-Id renvoyé par Mailgun.
+    try {
+      let mid = '';
+      try { mid = ((await rM.json()).id || '').replace(/^<|>$/g, ''); } catch (_) {}
+      const pid = (Array.isArray(f.projet_a_travailler) && f.projet_a_travailler[0])
+               || (Array.isArray(f.Projet) && f.Projet[0]) || '';
+      await logCourriel({ type: 'support', to, subject, projetId: pid, messageId: mid });
+    } catch (_) {}
 
     // 5. Marque la conversation comme répondue (et garde le texte envoyé).
     await fetch(`${API}/${CONVOS}/${id}`, {

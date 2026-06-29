@@ -25,6 +25,7 @@ const CLD_SECRET = process.env.CLOUDINARY_API_SECRET;
 const MG_KEY    = process.env.MAILGUN_API_KEY;       // no-op si absent (Mailgun en cours de config)
 const MG_DOMAIN = process.env.MAILGUN_DOMAIN_ACHAT || process.env.MAILGUN_DOMAIN;
 const MG_FROM   = process.env.MAILGUN_FROM || 'Chanson Mémoire <cadeau@chansonmemoire.ca>';
+const { envoyerCourriel: mgEnvoyer } = require('./_lib/courriel');
 
 function formulaLiteral(v) {
   const s = String(v);
@@ -113,8 +114,9 @@ async function emailOf(projet, headers) {
 }
 
 // ── Courriel Mailgun : paroles complètes (corps) + PDF en pièce jointe. No-op si Mailgun absent. ──
-async function envoyerCourriel(to, titre, paroles, pdfBuffer) {
-  if (!MG_KEY || !MG_DOMAIN || !to || !to.includes('@')) return false;
+// Envoi via le wrapper central (_lib/courriel) : POST Mailgun + journalisation Courriels (type 'cadeau').
+// La feuille de paroles PDF reste une pièce jointe (passée au wrapper).
+async function envoyerCourriel(to, titre, paroles, pdfBuffer, projetId) {
   const parolesHtml = String(paroles || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/\n/g, '<br>');
   const html =
     `<div style="font-family:Georgia,serif;color:#2E1A28;line-height:1.7;max-width:560px;">` +
@@ -123,18 +125,12 @@ async function envoyerCourriel(to, titre, paroles, pdfBuffer) {
     `<div style="white-space:normal;color:#3a2a34;">${parolesHtml}</div>` +
     `<p style="margin-top:22px;color:#7A6070;">Elle vous appartient — gardez-la précieusement.<br>— L'équipe Chanson Mémoire</p></div>`;
 
-  const form = new FormData();
-  form.append('from', MG_FROM);
-  form.append('to', to);
-  form.append('subject', 'Les paroles de ' + (titre || 'votre chanson'));
-  form.append('html', html);
-  form.append('attachment', new Blob([pdfBuffer], { type: 'application/pdf' }), 'paroles.pdf');
-
-  const auth = 'Basic ' + Buffer.from('api:' + MG_KEY).toString('base64');
-  const r = await fetch(`https://api.mailgun.net/v3/${MG_DOMAIN}/messages`, {
-    method: 'POST', headers: { Authorization: auth }, body: form
+  const { ok } = await mgEnvoyer({
+    to, subject: 'Les paroles de ' + (titre || 'votre chanson'), html,
+    from: MG_FROM, domain: MG_DOMAIN, type: 'cadeau', projetId,
+    attachment: { buffer: pdfBuffer, filename: 'paroles.pdf', contentType: 'application/pdf' }
   });
-  return r.ok;
+  return ok;
 }
 
 exports.handler = async (event) => {
@@ -193,7 +189,7 @@ exports.handler = async (event) => {
     // 4. Courriel (paroles + PDF) — best-effort, ne bloque pas la réponse si Mailgun pas prêt.
     try {
       const to = await emailOf(projet, headers);
-      await envoyerCourriel(to, titre, paroles, pdfBuffer);
+      await envoyerCourriel(to, titre, paroles, pdfBuffer, projet && projet.id);
     } catch (_) { /* le courriel ne casse jamais la livraison */ }
 
     return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ok: true, pdf_url: pdfUrl }) };

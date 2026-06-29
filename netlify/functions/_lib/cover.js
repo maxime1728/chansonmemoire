@@ -15,6 +15,7 @@ const CLD_SECRET  = process.env.CLOUDINARY_API_SECRET;
 const MG_KEY    = process.env.MAILGUN_API_KEY;
 const MG_DOMAIN = process.env.MAILGUN_DOMAIN_ACHAT || process.env.MAILGUN_DOMAIN;
 const MG_FROM   = process.env.MAILGUN_FROM_ACHAT || process.env.MAILGUN_FROM || 'Chanson Mémoire <info@chansonmemoire.ca>';
+const { envoyerCourriel: mgEnvoyer } = require('./courriel');
 const SITE      = process.env.SITE_URL || 'https://chansonmemoire.ca';
 
 function formulaLiteral(v) {
@@ -41,14 +42,10 @@ function fullAudioUrl(stored) {
   return `https://res.cloudinary.com/${p.cloud}/video/upload/${p.publicId}${p.ext}`;
 }
 
-async function envoyerCourriel(to, subject, html) {
-  if (!MG_KEY || !MG_DOMAIN || !to || !to.includes('@')) return false;
-  const form = new FormData();
-  form.append('from', MG_FROM); form.append('to', to);
-  form.append('subject', subject); form.append('html', html);
-  const auth = 'Basic ' + Buffer.from('api:' + MG_KEY).toString('base64');
-  try { const r = await fetch(`https://api.mailgun.net/v3/${MG_DOMAIN}/messages`, { method: 'POST', headers: { Authorization: auth }, body: form }); return r.ok; }
-  catch (_) { return false; }
+// Envoi via le wrapper central (_lib/courriel) : POST Mailgun + journalisation Courriels (type 'cover').
+async function envoyerCourriel(to, subject, html, projetId) {
+  const { ok } = await mgEnvoyer({ to, subject, html, from: MG_FROM, domain: MG_DOMAIN, type: 'cover', projetId });
+  return ok;
 }
 async function emailClient(api, headers, projet) {
   try {
@@ -124,7 +121,7 @@ async function livrerCover({ api, headers, projet, coverGen, audioUrl, songId })
       `<p style="margin:22px 0;"><a href="${p.page_url || (SITE + '/page-memoire?id=' + encodeURIComponent(p.token))}" style="background:#5C2D4A;color:#F5F0EA;text-decoration:none;padding:12px 22px;border-radius:8px;display:inline-block;">Écouter ma nouvelle version</a></p>` +
       `<p style="color:#7A6070;">Pensez à vérifier vos courriels indésirables si vous ne le voyez pas.</p>` +
       `<p style="color:#7A6070;">— L'équipe Chanson Mémoire</p></div>`;
-    await envoyerCourriel(to, 'Votre nouvelle version est prête', html);
+    await envoyerCourriel(to, 'Votre nouvelle version est prête', html, projet.id);
   } catch (_) { /* le courriel ne bloque pas la livraison */ }
 
   return { ok: true, generation_no: newNo };
