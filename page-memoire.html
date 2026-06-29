@@ -9,8 +9,10 @@
 <!-- Page MÉMOIRE (livraison finale, post-acceptation). SEULE page où le téléchargement est offert.
      Lecteur de l'aperçu + download chanson + cadeau v1 = paroles en PDF (signet à venir),
      teaser Mémoire vivante + upsell vidéo (waitlists). Domaine .ca / chemins relatifs. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400;1,9..144,600&family=Mulish:wght@400;500;600;700;800&family=Sora:wght@400;600&display=swap" rel="stylesheet">
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+<!-- Icones : sprite SVG inline (#cm-icons en bas de body). Remplace Font Awesome (allégé + non bloquant). -->
 <style>
   :root{
     --cm-plum-dark:#5C2D4A; --cm-plum-mid:#8B4A6E; --cm-mauve:#C98BB0;
@@ -18,6 +20,7 @@
     --cm-bg:#F8F4F0; --cm-text:#2E1A28; --cm-text-sub:#7A6070; --cm-border-w:2.5px; --line:#e7dde4;
   }
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  .cm-ic{width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;}
   html,body{overflow-x:hidden;}
   body{background:var(--cm-bg);color:var(--cm-text);font:400 16px/1.6 Mulish,system-ui,sans-serif;padding-bottom:60px;}
   .wrap{max-width:560px;margin:0 auto;padding:36px 20px;}
@@ -40,7 +43,7 @@
   textarea{width:100%;padding:12px 14px;border:1.5px solid var(--cm-mauve);border-radius:12px;font:inherit;color:var(--cm-text);resize:vertical;}
   textarea:focus{outline:none;border-color:var(--cm-plum-mid);}
   .btn{font-family:'Mulish',sans-serif;background:var(--cm-plum-dark);color:#fff;border:none;border-radius:999px;padding:14px 28px;font-size:16px;font-weight:700;cursor:pointer;}
-  .btn:hover{background:var(--cm-plum-mid);}
+  @media(hover:hover){.btn:hover{background:var(--cm-plum-mid);}}
   .btn[disabled]{opacity:.6;cursor:default;}
   .btn-ghost{background:none;border:1.5px solid var(--cm-plum-dark);color:var(--cm-plum-dark);}
   .btn-block{display:block;width:100%;}
@@ -82,7 +85,7 @@
   #cm-player-root .cm-equalizer span:nth-child(9){animation-delay:0.50s;animation-duration:0.95s;}
   @keyframes cm-wave { 0%,100%{height:8px;} 50%{height:26px;} }
   #cm-player-root .cm-play-btn { width:64px; height:64px; border-radius:50%; border:none; background:linear-gradient(135deg,var(--cm-plum-mid),var(--cm-plum-dark)); color:#fff; font-size:18px; cursor:pointer; margin:12px 0; transition:transform 0.25s,box-shadow 0.25s; box-shadow:0 4px 16px rgba(92,45,74,0.28); }
-  #cm-player-root .cm-play-btn:hover { transform:scale(1.08); }
+  @media(hover:hover){ #cm-player-root .cm-play-btn:hover { transform:scale(1.08); } }
   #cm-player-root .cm-play-btn[disabled] { opacity:.5; cursor:default; }
   #cm-player-root .cm-time { display:flex; justify-content:space-between; font-size:11px; color:var(--cm-text-sub); margin:10px 0; }
   #cm-player-root .cm-progress-wrap { position:relative; width:100%; height:5px; background:rgba(92,45,74,0.10); border-radius:10px; }
@@ -103,6 +106,17 @@
   <link rel="apple-touch-icon" sizes="180x180" href="https://res.cloudinary.com/dcx1tfm47/image/upload/c_fill,w_180,h_180/v1782682803/Favicon_Chanson_M%C3%A9moire_pftcgs.png">
 </head>
 <body>
+<!-- Sprite d'icones SVG inline (remplace Font Awesome) -->
+<svg id="cm-icons" width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="ic-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></symbol>
+  <symbol id="ic-pause" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></symbol>
+  <symbol id="ic-volume-high" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></symbol>
+  <symbol id="ic-volume-low" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></symbol>
+  <symbol id="ic-volume-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></symbol>
+  <symbol id="ic-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></symbol>
+  <symbol id="ic-images" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></symbol>
+  <symbol id="ic-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></symbol>
+</svg>
 <div class="wrap">
   <img src="https://res.cloudinary.com/dcx1tfm47/image/upload/v1781659915/Logo_Chanson_M%C3%A9moire_jiq5ce.png" alt="Chanson Mémoire" style="height:42px;width:auto;display:block;margin:0 auto 28px;">
   <div class="eyebrow">Ta chanson, pour toujours</div>
@@ -117,11 +131,11 @@
           <div class="cm-title" id="playerTitle">Ta chanson</div>
           <div class="cm-equalizer cm-eq"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
           <audio class="cm-audio"><source src="" type="audio/mpeg"></audio>
-          <button class="cm-play-btn" type="button" disabled><i class="fa-solid fa-play"></i></button>
+          <button class="cm-play-btn" type="button" aria-label="Lire la chanson" disabled><svg class="cm-ic" aria-hidden="true"><use href="#ic-play"></use></svg></button>
           <div class="cm-time"><span class="cm-current">0:00</span><span class="cm-total">0:00</span></div>
           <div class="cm-progress-wrap"><div class="cm-progress-bar"></div><input class="cm-progress" type="range" min="0" max="100" step="0.01" value="0"></div>
           <div class="cm-volume-wrap">
-            <button class="cm-mute-btn" type="button"><i class="fa-solid fa-volume-high"></i></button>
+            <button class="cm-mute-btn" type="button" aria-label="Couper / activer le son"><svg class="cm-ic" aria-hidden="true"><use href="#ic-volume-high"></use></svg></button>
             <div class="cm-volume-slider-wrap"><div class="cm-volume-bar"></div><input class="cm-volume" type="range" min="0" max="1" step="0.01" value="1"></div>
           </div>
         </div>
@@ -133,7 +147,7 @@
 
   <!-- TÉLÉCHARGEMENT -->
   <div class="card center">
-    <button class="btn btn-block" id="btnDownload" type="button"><i class="fa-solid fa-download"></i>&nbsp; Télécharger ma chanson</button>
+    <button class="btn btn-block" id="btnDownload" type="button"><svg class="cm-ic" aria-hidden="true"><use href="#ic-download"></use></svg>&nbsp; Télécharger ma chanson</button>
     <p class="note">Elle t'appartient, garde-la pour toujours.</p>
   </div>
 
@@ -198,7 +212,7 @@
       <li><b>Maintiens puis glisse</b> une photo pour changer l'ordre (ou les flèches <b>‹ ›</b>).</li>
     </ul>
     <input type="file" id="photoInput" accept="image/*" multiple style="display:none;">
-    <div style="margin-top:6px;"><button class="btn btn-ghost btn-block" id="btnAddPhotos" type="button"><i class="fa-solid fa-images"></i>&nbsp; Ajouter mes photos</button></div>
+    <div style="margin-top:6px;"><button class="btn btn-ghost btn-block" id="btnAddPhotos" type="button"><svg class="cm-ic" aria-hidden="true"><use href="#ic-images"></use></svg>&nbsp; Ajouter mes photos</button></div>
     <p class="section-sub" id="photoCount" style="margin-top:10px;display:none;"></p>
     <div id="photoGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(82px,1fr));gap:10px;margin-top:12px;"></div>
     <div id="memoireInfos" style="display:none;margin-top:18px;">
@@ -234,6 +248,17 @@
 <script>
 (function(){
   'use strict';
+  /* Icone SVG inline (remplace Font Awesome). */
+  function cmIcon(n){ return '<svg class="cm-ic" aria-hidden="true"><use href="#ic-'+n+'"></use></svg>'; }
+  /* Notification accessible non bloquante (remplace cmToast()). */
+  function cmToast(msg){
+    var t=document.getElementById('cm-toast');
+    if(!t){ t=document.createElement('div'); t.id='cm-toast'; t.setAttribute('role','alert'); t.setAttribute('aria-live','assertive');
+      t.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#2E1A28;color:#fff;padding:13px 20px;border-radius:12px;font:600 14px/1.4 Mulish,system-ui,sans-serif;max-width:90%;box-shadow:0 8px 30px rgba(0,0,0,.3);z-index:9999;text-align:center;';
+      document.body.appendChild(t); }
+    t.textContent=msg; t.style.display='block';
+    clearTimeout(t._h); t._h=setTimeout(function(){ t.style.display='none'; }, 5000);
+  }
   var UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   var token = new URLSearchParams(window.location.search).get('id') || '';
   if(!UUID_V4.test(token)){ document.getElementById('title').textContent='Lien invalide'; document.querySelector('.wrap').innerHTML='<img src="https://res.cloudinary.com/dcx1tfm47/image/upload/v1781659915/Logo_Chanson_M%C3%A9moire_jiq5ce.png" alt="Chanson Mémoire" style="height:42px;width:auto;display:block;margin:0 auto 28px;"><h1 id="title">Lien invalide</h1>'; return; }
@@ -295,27 +320,31 @@
   function showCadeauxReady(pdfUrl){
     var ch=document.getElementById('cadeauxChooser'); if(ch) ch.style.display='none';
     var s=document.getElementById('cadeauxSub'); if(s) s.textContent='Tes paroles en PDF sont prêtes, télécharge-les ci-dessous.';
-    var r=document.getElementById('cadeauxReady'); var html='';
-    if(pdfUrl){ html+='<a class="btn btn-block" href="'+pdfUrl+'"><i class="fa-solid fa-file-pdf"></i>&nbsp; Télécharger les paroles (PDF)</a>'; }
-    r.innerHTML=html; r.style.display='block';
+    var r=document.getElementById('cadeauxReady'); r.innerHTML='';
+    if(pdfUrl){
+      var a=document.createElement('a'); a.className='btn btn-block'; a.href=pdfUrl;   /* href via setter -> pas d'injection HTML */
+      a.innerHTML=cmIcon('file')+'&nbsp; Télécharger les paroles (PDF)';
+      r.appendChild(a);
+    }
+    r.style.display='block';
   }
 
   audio.addEventListener('loadedmetadata',function(){ progress.max=audio.duration||100; totEl.textContent=fmt(audio.duration); loading.style.display='none'; playBtn.disabled=false; });
   audio.addEventListener('error',function(){ loading.textContent='Lecture indisponible pour le moment.'; });
-  playBtn.addEventListener('click',function(){ if(playBtn.disabled||!source.src) return; if(audio.paused){ audio.play().then(function(){ playBtn.innerHTML='<i class="fa-solid fa-pause"></i>'; eq.classList.add('active'); }).catch(function(){}); } else { audio.pause(); playBtn.innerHTML='<i class="fa-solid fa-play"></i>'; eq.classList.remove('active'); } });
+  playBtn.addEventListener('click',function(){ if(playBtn.disabled||!source.src) return; if(audio.paused){ audio.play().then(function(){ playBtn.innerHTML=cmIcon('pause'); eq.classList.add('active'); }).catch(function(){}); } else { audio.pause(); playBtn.innerHTML=cmIcon('play'); eq.classList.remove('active'); } });
   audio.addEventListener('timeupdate',function(){ if(isDragging) return; var dur=audio.duration||1; progress.value=audio.currentTime; bar.style.width=((audio.currentTime/dur)*100)+'%'; curEl.textContent=fmt(audio.currentTime); });
-  audio.addEventListener('ended',function(){ audio.currentTime=0; playBtn.innerHTML='<i class="fa-solid fa-play"></i>'; eq.classList.remove('active'); bar.style.width='0%'; });
+  audio.addEventListener('ended',function(){ audio.currentTime=0; playBtn.innerHTML=cmIcon('play'); eq.classList.remove('active'); bar.style.width='0%'; });
   progress.addEventListener('mousedown',function(){isDragging=true;}); progress.addEventListener('touchstart',function(){isDragging=true;});
   progress.addEventListener('mouseup',function(){isDragging=false;}); progress.addEventListener('touchend',function(){isDragging=false;});
   progress.addEventListener('input',function(){ var dur=audio.duration||1,val=parseFloat(progress.value); audio.currentTime=val; bar.style.width=((val/dur)*100)+'%'; curEl.textContent=fmt(val); });
-  function setVolIcon(v){ muteBtn.innerHTML = v==0 ? '<i class="fa-solid fa-volume-xmark"></i>' : v<0.5 ? '<i class="fa-solid fa-volume-low"></i>' : '<i class="fa-solid fa-volume-high"></i>'; }
+  function setVolIcon(v){ muteBtn.innerHTML = v==0 ? cmIcon('volume-x') : v<0.5 ? cmIcon('volume-low') : cmIcon('volume-high'); }
   volInput.addEventListener('input',function(){ var v=parseFloat(volInput.value); audio.volume=v; volBar.style.width=(v*100)+'%'; setVolIcon(v); });
   muteBtn.addEventListener('click',function(){ if(audio.volume>0){ lastVol=audio.volume; audio.volume=0; volInput.value=0; volBar.style.width='0%'; setVolIcon(0);} else { audio.volume=lastVol||1; volInput.value=audio.volume; volBar.style.width=(audio.volume*100)+'%'; setVolIcon(audio.volume);} });
 
   /* ── Téléchargement (fl_attachment -> vrai download) ── */
   document.getElementById('btnDownload').addEventListener('click',function(){
     var b=this; b.disabled=true;
-    post('/api/telecharger',{token:token}).then(function(res){ b.disabled=false; if(res && res.audio_url){ window.location.href=res.audio_url; } else { alert("Téléchargement indisponible pour le moment."); } }).catch(function(){ b.disabled=false; });
+    post('/api/telecharger',{token:token}).then(function(res){ b.disabled=false; if(res && res.audio_url){ window.location.href=res.audio_url; } else { cmToast("Téléchargement indisponible pour le moment."); } }).catch(function(){ b.disabled=false; });
   });
 
   /* ── Préparer mon cadeau (paroles en PDF) ── */
@@ -324,19 +353,19 @@
     /* PDF des paroles = upsell payant : creer-upsell -> Stripe Checkout. Make D appelle lancer-cadeau après paiement. */
     post('/api/creer-upsell',{token:token, upsell_type:'pdf_paroles'}).then(function(res){
       if(res && res.url){ window.location.href=res.url; return; }   /* -> Stripe Checkout */
-      b.disabled=false; b.textContent='Obtenir le PDF · 7,99 $'; alert("Paiement indisponible pour le moment. Réessaie.");
-    }).catch(function(){ b.disabled=false; b.textContent='Obtenir le PDF · 7,99 $'; alert("Une erreur est survenue."); });
+      b.disabled=false; b.textContent='Obtenir le PDF · 7,99 $'; cmToast("Paiement indisponible pour le moment. Réessaie.");
+    }).catch(function(){ b.disabled=false; b.textContent='Obtenir le PDF · 7,99 $'; cmToast("Une erreur est survenue."); });
   });
 
   /* ── Demande de modification (decortique : Claude analyse + prépare l'approbation) ── */
   document.getElementById('btnCorrection').addEventListener('click',function(){
     var ta=document.getElementById('correctionText'); var txt=(ta.value||'').trim();
-    if(txt.length < 4){ alert("Décrivez en quelques mots la modification souhaitée."); return; }
+    if(txt.length < 4){ cmToast("Décrivez en quelques mots la modification souhaitée."); return; }
     var b=this; b.disabled=true; b.textContent='Un instant…';
     post('/api/decortique',{token:token,demande:txt}).then(function(res){
       if(res && res.ok){ var m=document.getElementById('correctionMsg'); m.textContent='Demande reçue ✓ Notre équipe la prépare et te revient sous peu.'; m.style.display='block'; ta.style.display='none'; b.style.display='none'; }
-      else { b.disabled=false; b.textContent='Envoyer ma demande'; alert("Une erreur est survenue. Réessayez."); }
-    }).catch(function(){ b.disabled=false; b.textContent='Envoyer ma demande'; alert("Une erreur est survenue. Réessayez."); });
+      else { b.disabled=false; b.textContent='Envoyer ma demande'; cmToast("Une erreur est survenue. Réessayez."); }
+    }).catch(function(){ b.disabled=false; b.textContent='Envoyer ma demande'; cmToast("Une erreur est survenue. Réessayez."); });
   });
 
   /* ── Waitlists (mémoire vivante / vidéo) ── */
@@ -345,7 +374,7 @@
       var b=this; b.disabled=true;
       post('/api/choix-memoire',Object.assign({token:token},payload)).then(function(res){
         if(res && res.ok){ var m=document.getElementById(msgId); m.textContent=doneTxt; m.style.display='block'; b.style.display='none'; }
-        else { b.disabled=false; alert("Une erreur est survenue. Réessayez."); }
+        else { b.disabled=false; cmToast("Une erreur est survenue. Réessayez."); }
       }).catch(function(){ b.disabled=false; });
     });
   }
@@ -373,8 +402,8 @@
         btn.disabled=true; var old=btn.textContent; btn.textContent='Un instant…';
         post('/api/creer-upsell',{token:token, upsell_type:btn.getAttribute('data-upsell')}).then(function(res){
           if(res && res.url){ window.location.href=res.url; return; }   /* → Stripe Checkout */
-          btn.disabled=false; btn.textContent=old; alert("Paiement indisponible pour le moment. Réessayez.");
-        }).catch(function(){ btn.disabled=false; btn.textContent=old; alert("Une erreur est survenue."); });
+          btn.disabled=false; btn.textContent=old; cmToast("Paiement indisponible pour le moment. Réessayez.");
+        }).catch(function(){ btn.disabled=false; btn.textContent=old; cmToast("Une erreur est survenue."); });
       });
     });
     /* Retour d'un paiement réussi -> petit mot de remerciement. */
@@ -401,7 +430,7 @@
     function move(idx, delta){ var j=idx+delta; if(j<0||j>=list.length) return; var t=list[idx]; list[idx]=list[j]; list[j]=t; refresh(); }
     function ctrlBtn(txt, css){ var b=document.createElement('button'); b.type='button'; b.className='cm-btn'; b.textContent=txt; b.style.cssText=css; return b; }
 
-    function showVideo(url){ frame.style.display='block'; frame.innerHTML='<video src="'+url+'" controls playsinline style="width:100%;height:100%;display:block;"></video>'; }
+    function showVideo(url){ frame.style.display='block'; frame.innerHTML=''; var v=document.createElement('video'); v.src=url; v.controls=true; v.setAttribute('playsinline',''); v.style.cssText='width:100%;height:100%;display:block;'; frame.appendChild(v); }
     function thumb(url){ return url.replace('/upload/','/upload/w_200,h_200,c_fill,q_auto,f_auto/'); }
     function pinList(){ return list.filter(function(u){return pins[u];}); }
     function refresh(){
@@ -463,7 +492,7 @@
       if(!files.length) return;
       addBtn.disabled=true; var old=addBtn.innerHTML; var i=0;
       (function next(){
-        if(i>=files.length || list.length>=MAX){ addBtn.disabled=false; addBtn.innerHTML=old; if(list.length>=MAX) alert('Maximum '+MAX+' photos.'); return; }
+        if(i>=files.length || list.length>=MAX){ addBtn.disabled=false; addBtn.innerHTML=old; if(list.length>=MAX) cmToast('Maximum '+MAX+' photos.'); return; }
         addBtn.textContent='Envoi '+(i+1)+'/'+files.length+'…';
         uploadOne(files[i]).catch(function(){}).then(function(){ i++; next(); });
       })();
@@ -475,11 +504,11 @@
         b.disabled=false; b.textContent="Enregistrer l'ordre et les infos";
         var m=document.getElementById('memSaveMsg');
         if(res && res.ok){ m.textContent='Enregistré ✓'; m.style.display='block'; setTimeout(function(){m.style.display='none';},2500); }
-        else alert('Enregistrement indisponible.');
+        else cmToast('Enregistrement indisponible.');
       }).catch(function(){ b.disabled=false; b.textContent="Enregistrer l'ordre et les infos"; });
     });
     genBtn.addEventListener('click',function(){
-      if(list.length<MIN){ alert('Ajoute au moins '+MIN+' photos.'); return; }
+      if(list.length<MIN){ cmToast('Ajoute au moins '+MIN+' photos.'); return; }
       genBtn.disabled=true; genBtn.textContent='Création en cours…';
       saveMemoire().then(function(){ return post('/api/lancer-video-memoire',{token:token,regenerate:true}); }).then(function(res){
         var m=document.getElementById('videoMemoireMsg');
@@ -487,7 +516,7 @@
           if(res.video_memoire_url){ showVideo(res.video_memoire_url); }
           m.textContent='Ta vidéo souvenir est en création ✓ Elle apparaîtra ici dans quelques minutes (et par courriel).';
           m.style.display='block'; pollVideo();
-        } else { genBtn.disabled=false; genBtn.textContent='Générer ma vidéo souvenir'; alert('Création indisponible pour le moment.'); }
+        } else { genBtn.disabled=false; genBtn.textContent='Générer ma vidéo souvenir'; cmToast('Création indisponible pour le moment.'); }
       }).catch(function(){ genBtn.disabled=false; genBtn.textContent='Générer ma vidéo souvenir'; });
     });
     var pollT=null;
