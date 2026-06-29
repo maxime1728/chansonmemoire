@@ -85,7 +85,26 @@ const SUNO_ECHEC     = ['GENERATE_AUDIO_FAILED', 'CREATE_TASK_FAILED', 'CALLBACK
 
 exports.handler = async () => {
   const now = new Date().toISOString();
-  let rescued = 0, relaunched = 0, alerted = 0, waiting = 0;
+  let rescued = 0, relaunched = 0, alerted = 0, waiting = 0, releve = 0;
+
+  // ════ MANUEL : relance forcée depuis Airtable (case `relancer` cochée) ════
+  // On RÉINITIALISE les compteurs + marqueurs d'incident de la Generation, puis on décoche. La sentinelle
+  // (chanson) et les sections add-ons ci-dessous reprennent alors les relances (état remis à neuf).
+  try {
+    const recs = await atList(`{relancer}`);
+    for (const rec of recs) {
+      try {
+        await atPatch(rec.id, {
+          relancer: false,
+          sentinelle_retries: 0, incident_status: null,
+          instrumental_retries: 0, instrumental_incident_at: null,
+          video_memoire_retries: 0, video_memoire_incident_at: null,
+          video_incident_at: null
+        });
+        releve++;
+      } catch (_) {}
+    }
+  } catch (_) { console.error('[watchdog] relancer'); }
 
   // ════ A. INSTRUMENTALE (Suno vocal-removal) — CRITIQUE : retry plafonné ════
   try {
@@ -160,7 +179,7 @@ exports.handler = async () => {
     }
   } catch (e) { console.error('[watchdog] paroles-vivantes', e && e.message); }
 
-  return { statusCode: 200, body: JSON.stringify({ ok: true, rescued, relaunched, alerted, waiting }) };
+  return { statusCode: 200, body: JSON.stringify({ ok: true, rescued, relaunched, alerted, waiting, releve }) };
 };
 
 // Observabilite : heartbeat Healthchecks (dead man's switch) + capture Sentry. Voir _lib/cron.js.
