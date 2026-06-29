@@ -68,15 +68,12 @@ exports.handler = async (event) => {
     // v1 = paroles seulement (le signet s'ajoutera plus tard ; il restera optionnel ici).
     // On ne fait que SIGNALER le token à Make, qui relit le Project, génère le cadeau et pose
     // pdf_url (puis signet_url). N'écrit AUCUN nouveau champ ici et ne bloque jamais la réponse.
-    if (fields.pdf_template && process.env.MAKE_CADEAUX_WEBHOOK_URL) {
-      try {
-        await fetch(process.env.MAKE_CADEAUX_WEBHOOK_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token })
-        });
-      } catch (_) { /* le déclenchement ne doit jamais bloquer l'enregistrement */ }
-    }
+    // FULFILLMENT EN CODE (remplace MAKE_CADEAUX_WEBHOOK_URL) : déclenche la génération du PDF des
+    // paroles (+ signet si choisi). lancer-cadeau/lancer-signet sont gatés 'purchased', idempotents,
+    // et écrivent pdf_url/signet_url (lus par lire-projet). Best-effort, ne bloque jamais la réponse.
+    const SITE = 'https://chansonmemoire.ca';
+    if (fields.pdf_template)    { try { await fetch(`${SITE}/api/lancer-cadeau`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token }) }); } catch (_) {} }
+    if (fields.signet_template) { try { await fetch(`${SITE}/api/lancer-signet`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token }) }); } catch (_) {} }
 
     return {
       statusCode: 200,
