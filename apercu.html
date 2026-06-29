@@ -32,12 +32,9 @@
 /* ── SUIVI FUNNEL (best-effort, ne casse jamais l'UX) ──
    Envoie un événement de parcours à /api/suivi-funnel. sendBeacon survit à la navigation
    (utile pour checkout_started juste avant la redirection Stripe). */
-/* Pixel Meta (consentement requis) — eventID = sha256(token.evt) pour dédup avec le CAPI serveur. */
-window._cmPixel = function(eventName, evtKey, tok, custom){
-  try{ if(localStorage.getItem('cm_consent')!=='yes' || !tok) return; }catch(e){ return; }
-  (function ld(){ if(window._px)return; window._px=true; !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','909919758755200');fbq('track','PageView'); })();
-  crypto.subtle.digest('SHA-256', new TextEncoder().encode((tok+'.'+evtKey).trim().toLowerCase())).then(function(buf){ var id=Array.prototype.map.call(new Uint8Array(buf),function(x){return x.toString(16).padStart(2,'0');}).join(''); var o=id?{eventID:id}:{}; try{ if(eventName==='PreviewPlayed'){fbq('trackCustom',eventName,custom||{},o);}else{fbq('track',eventName,custom||{},o);} }catch(e){} }).catch(function(){ try{ if(eventName==='PreviewPlayed'){fbq('trackCustom',eventName,custom||{});}else{fbq('track',eventName,custom||{});} }catch(e){} });
-};
+/* Pixel Meta + events : gérés par cm-pixel.js (partagé, chargé en defer en bas de page).
+   On passe par window.cmTrack(event, evtKey, token) -> plus de pixel inline ici (évite le doublon
+   de loader fbq et le PageView sans eventID qui court-circuitait le CAPI). */
 
 window._cmFunnel = function(evt) {
   try {
@@ -49,9 +46,9 @@ window._cmFunnel = function(evt) {
     } else {
       fetch('/api/suivi-funnel', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload, keepalive: true }).catch(function(){});
     }
-    if (window._cmPixel) {
-      if (evt === 'preview_played') window._cmPixel('PreviewPlayed', 'preview_played', t);
-      else if (evt === 'checkout_started') window._cmPixel('InitiateCheckout', 'checkout_started', t);
+    if (window.cmTrack) {
+      if (evt === 'preview_played') window.cmTrack('PreviewPlayed', 'preview_played', t);
+      else if (evt === 'checkout_started') window.cmTrack('InitiateCheckout', 'checkout_started', t);
     }
   } catch (e) {}
 };
@@ -278,7 +275,7 @@ body {
   transition: transform 0.25s, box-shadow 0.25s;
   box-shadow: 0 4px 16px rgba(92,45,74,0.28);
 }
-#cm-player-root .cm-play-btn:hover { transform: scale(1.08); box-shadow: 0 6px 24px rgba(92,45,74,0.40); }
+@media(hover:hover){ #cm-player-root .cm-play-btn:hover { transform: scale(1.08); box-shadow: 0 6px 24px rgba(92,45,74,0.40); } }
 #cm-player-root .cm-time {
   display: flex; justify-content: space-between;
   font-size: 11px; color: var(--cm-text-sub); margin: 10px 0;
@@ -307,7 +304,7 @@ body {
   display: flex; align-items: center; justify-content: center;
   width: 24px; height: 24px;
 }
-#cm-player-root .cm-mute-btn:hover { opacity: 0.7; transform: scale(1.1); }
+@media(hover:hover){ #cm-player-root .cm-mute-btn:hover { opacity: 0.7; transform: scale(1.1); } }
 #cm-player-root .cm-volume-slider-wrap {
   position: relative; width: 90px; height: 4px;
   background: rgba(92,45,74,0.12); border-radius: 10px;
@@ -435,7 +432,7 @@ body {
   padding: 18px 42px; font-size: 17px; font-weight: 700;
   cursor: pointer; transition: all 0.25s ease; width: 100%; display: block;
 }
-#cm-pricing-root .stripe-btn:hover { background: var(--cm-plum-mid); }
+@media(hover:hover){ #cm-pricing-root .stripe-btn:hover { background: var(--cm-plum-mid); } }
 #cm-pricing-root .stripe-btn:active { transform: scale(0.98); }
 
 /* (Sélecteur de version retiré — remplacé par le popup de confirmation #cm-buy-overlay au clic acheter.) */
@@ -447,7 +444,7 @@ body {
   font-family: 'Mulish', sans-serif; font-size: 14px; line-height: 1.4; color: var(--cm-text);
   padding: 12px 14px; border: 1.5px solid rgba(92,45,74,0.18); border-radius: 12px; background: var(--cm-white);
 }
-#cm-pricing-root .cm-bump:hover { border-color: var(--cm-mauve); }
+@media(hover:hover){ #cm-pricing-root .cm-bump:hover { border-color: var(--cm-mauve); } }
 #cm-pricing-root .cm-bump input { margin-top: 1px; width: 18px; height: 18px; accent-color: var(--cm-plum-dark); flex-shrink: 0; cursor: pointer; }
 #cm-pricing-root .cm-bump-price { color: var(--cm-plum-dark); font-weight: 700; white-space: nowrap; }
 #cm-pricing-root .cm-bump-desc { display: block; font-size: 12px; color: var(--cm-text-sub); margin-top: 3px; }
@@ -605,8 +602,7 @@ body {
 }
 
 /* ════════════════════════════════════════════
-   SECTION — TÉMOIGNAGES
-   ⚠️ À remplacer par vrais témoignages validés
+   SECTION — TÉMOIGNAGES (clients réels)
 ════════════════════════════════════════════ */
 .cm-testimonials {
   max-width: 540px;
@@ -775,7 +771,7 @@ body {
   padding: 18px 42px; font-size: 17px; font-weight: 700;
   cursor: pointer; transition: all 0.25s ease; width: 100%; display: block;
 }
-.stripe-btn-2:hover { background: var(--cm-plum-mid); }
+@media(hover:hover){ .stripe-btn-2:hover { background: var(--cm-plum-mid); } }
 .stripe-btn-2:active { transform: scale(0.98); }
 
 .cm-cta-legal {
@@ -809,7 +805,7 @@ body {
   border-radius: 999px; box-shadow: 0 4px 14px rgba(46,34,56,.18);
   transition: background .15s, transform .15s; cursor: pointer; border: none;
 }
-.cm-sticky-btn:hover { background: var(--plum-deep); transform: translateY(-1px); }
+@media(hover:hover){ .cm-sticky-btn:hover { background: var(--plum-deep); transform: translateY(-1px); } }
 
 /* ════════════════════════════════════════════
    FOOTER
@@ -843,9 +839,9 @@ body {
   border: 1.5px solid var(--cm-plum-dark); background: none; color: var(--cm-plum-dark);
   transition: background .15s, color .15s;
 }
-.cm-regen-btn:hover { background: var(--cm-plum-dark); color: #fff; }
+@media(hover:hover){ .cm-regen-btn:hover { background: var(--cm-plum-dark); color: #fff; } }
 .cm-regen-btn-sec { border-color: var(--cm-mauve); color: var(--cm-plum-mid); }
-.cm-regen-btn-sec:hover { background: var(--cm-plum-mid); color: #fff; }
+@media(hover:hover){ .cm-regen-btn-sec:hover { background: var(--cm-plum-mid); color: #fff; } }
 .cm-regen-note { font-size: 13px; color: var(--cm-text-sub); margin-top: 2px; }
 
 .cm-modal-overlay {
@@ -1214,7 +1210,7 @@ body {
 <!-- ══ FOOTER ═══════════════════════════════════════════ -->
 <footer class="cm-footer">
   <p>
-    © 2025 Chanson Mémoire, une marque de LabMarketing inc.<br>
+    © <span id="cm-year">2026</span> Chanson Mémoire, une marque de LabMarketing inc.<br>
     <a href="/condition-de-vente">Conditions de vente</a> ·
     <a href="/politique-de-remboursement">Politique de remboursement</a> ·
     <a href="/politique-de-confidentialite">Politique de confidentialité</a>
@@ -1316,6 +1312,37 @@ body {
      SCRIPTS
 ═══════════════════════════════════════════════════════ -->
 <script>
+/* ── MODALES : focus piégé + Échap + focus restauré (a11y, partagé par les 3 popups) ── */
+window.cmModal = (function(){
+  var lastFocus = null, onKey = null;
+  function focusables(ov){
+    return [].filter.call(ov.querySelectorAll('button,select,input,textarea,a[href],[tabindex]'),
+      function(el){ return !el.disabled && el.offsetParent !== null; });
+  }
+  return {
+    open: function(ov, closeFn){
+      if (!ov) return;
+      lastFocus = document.activeElement;
+      var f = focusables(ov); if (f.length) f[0].focus();
+      onKey = function(e){
+        if (e.key === 'Escape') { if (closeFn) closeFn(); return; }
+        if (e.key === 'Tab') {
+          var ff = focusables(ov); if (!ff.length) return;
+          var first = ff[0], last = ff[ff.length - 1];
+          if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+          else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+        }
+      };
+      document.addEventListener('keydown', onKey);
+    },
+    close: function(){
+      if (onKey) { document.removeEventListener('keydown', onKey); onKey = null; }
+      if (lastFocus && lastFocus.focus) { try { lastFocus.focus(); } catch(e){} }
+      lastFocus = null;
+    }
+  };
+})();
+
 /* ── PLAYER ─────────────────────────────────────────── */
 (function() {
   'use strict';
@@ -1452,7 +1479,9 @@ body {
 window.cmPersonnaliser = function() {
   var nom    = (window._CM && window._CM.nom) ? window._CM.nom : '';
   var cadeau = (window._CM && window._CM.type) === 'cadeau';
-  var strong = nom ? '<strong>' + nom + '</strong>' : '';
+  /* Securite : le nom vient de l'URL (?name=) -> on l'echappe avant toute injection innerHTML (anti-XSS). */
+  var esc = function(s){ return String(s||'').replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); };
+  var strong = nom ? '<strong>' + esc(nom) + '</strong>' : '';
   function setH(id, html){ var el = document.getElementById(id); if (el) el.innerHTML = html; }
   function setT(id, txt){ var el = document.getElementById(id); if (el) el.textContent = txt; }
 
@@ -1517,8 +1546,14 @@ setTimeout(function(){ if (window.cmReady) window.cmReady(); }, 3000);  /* filet
   /* Lance la session Stripe pour une version précise. */
   function cmReadLast(){ try{ return JSON.parse(localStorage.getItem('cm_last_touch') || '{}') || {}; }catch(e){ return {}; } }
   function cmCookie(n){ var m=document.cookie.match('(^|;)\\s*'+n+'\\s*=\\s*([^;]+)'); return m?m.pop():''; }
+  /* Erreur de paiement : message inline dans le popup (#cm-buy-status), plus de alert() bloquant. */
+  function buyErr(msg){
+    busy = false;
+    var st = document.getElementById('cm-buy-status'); if (st) st.textContent = msg;
+    var bp = document.getElementById('cm-buy-proceed'); if (bp) bp.disabled = false;
+  }
   function startCheckout(genNo, bumps) {
-    if (!genNo) { busy = false; alert("Le paiement n'a pas pu démarrer. Réessayez dans un instant."); return; }
+    if (!genNo) { buyErr("Le paiement n'a pas pu démarrer. Réessaie dans un instant."); return; }
     /* last-touch courant : le creatif qui a (re)amene le client jusqu'a l'achat -> creer-checkout
        met a jour last_utm_* + fbclid/fbc du Projet avant Stripe. Attribution de la CONVERSION
        (clic le plus recent) -> la CAPI Purchase porte le bon clic meme pour les achats tardifs. */
@@ -1534,9 +1569,9 @@ setTimeout(function(){ if (window.cmReady) window.cmReady(); }, 3000);  /* filet
     .then(function(r){ return r.ok ? r.json() : null; })
     .then(function(d){
       if (d && d.url) { window.location.href = d.url; return; }   /* → Stripe Checkout */
-      busy = false; alert("Le paiement n'a pas pu démarrer. Réessayez dans un instant.");
+      buyErr("Le paiement n'a pas pu démarrer. Réessaie dans un instant.");
     })
-    .catch(function(){ busy = false; alert("Le paiement n'a pas pu démarrer. Réessayez dans un instant."); });
+    .catch(function(){ buyErr("Le paiement n'a pas pu démarrer. Réessaie dans un instant."); });
   }
 
   /* Popup de confirmation : version (si >1) + order bumps optionnels → 1 seul checkout. */
@@ -1553,7 +1588,7 @@ setTimeout(function(){ if (window.cmReady) window.cmReady(); }, 3000);  /* filet
     { key:'paroles_vivantes', label:'Paroles vivantes en vidéo', price:'13,99 $', desc:'Les paroles animées, à partager.' }
   ];
 
-  function closeBuy(){ if (buyOverlay) { buyOverlay.classList.remove('show'); buyOverlay.setAttribute('aria-hidden','true'); } busy = false; }
+  function closeBuy(){ if (buyOverlay) { buyOverlay.classList.remove('show'); buyOverlay.setAttribute('aria-hidden','true'); } window.cmModal.close(); busy = false; }
   if (buyClose)   buyClose.addEventListener('click', closeBuy);
   if (buyOverlay) buyOverlay.addEventListener('click', function(e){ if (e.target === buyOverlay) closeBuy(); });
 
@@ -1594,11 +1629,15 @@ setTimeout(function(){ if (window.cmReady) window.cmReady(); }, 3000);  /* filet
     });
 
     buyOverlay.classList.add('show'); buyOverlay.setAttribute('aria-hidden','false');
+    window.cmModal.open(buyOverlay, closeBuy);
   }
 
   if (buyProceed) buyProceed.addEventListener('click', function(){
     var bumps = [].map.call(buyBumps.querySelectorAll('input:checked'), function(cb){ return cb.value; });
-    buyOverlay.classList.remove('show'); buyOverlay.setAttribute('aria-hidden','true');
+    /* On garde le popup ouvert avec un statut le temps de creer la session Stripe ; en cas d'echec
+       l'erreur s'affiche dans #cm-buy-status. En cas de succes, startCheckout redirige vers Stripe. */
+    var st = document.getElementById('cm-buy-status'); if (st) st.textContent = 'Redirection vers le paiement sécurisé…';
+    buyProceed.disabled = true;
     startCheckout(selectedGen, bumps);
   });
 
@@ -1607,7 +1646,12 @@ setTimeout(function(){ if (window.cmReady) window.cmReady(); }, 3000);  /* filet
     busy = true;
     if (window._cmFunnel) window._cmFunnel('checkout_started');   /* intention d'achat */
     loadVersions().then(function(versions){
-      if (!versions || !versions.length) { busy = false; alert("Le paiement n'a pas pu démarrer. Réessayez dans un instant."); return; }
+      if (!versions || !versions.length) {
+        busy = false;
+        if (buyOverlay) { buyOverlay.classList.add('show'); buyOverlay.setAttribute('aria-hidden','false'); }
+        var st = document.getElementById('cm-buy-status'); if (st) st.textContent = "Le paiement n'a pas pu démarrer. Réessaie dans un instant.";
+        return;
+      }
       openBuy(versions);   /* toujours : confirmation version + bumps → 1 seul checkout */
     });
   }
@@ -1623,7 +1667,7 @@ setTimeout(function(){ if (window.cmReady) window.cmReady(); }, 3000);  /* filet
        MÊME personne / même projet. Sans nouveau souvenir : nouvelle chanson directe (mêmes
        paroles, nouvelle musique). Avec souvenir : on réécrit d'abord les paroles → /revision.
    (2) « Créer une chanson pour quelqu'un d'autre » → nouveau survey, NOUVEAU projet/token.
-   Plafond enforced SERVEUR (MAKE C-gen) ; ici, UX seulement. */
+   Plafond appliqué côté SERVEUR (fonction Netlify) ; ici, UX seulement. */
 (function() {
   var token = (window._CM && window._CM.id) || '';
   if (!token) return;                 /* aperçu legacy → on n'affiche rien */
@@ -1634,7 +1678,7 @@ setTimeout(function(){ if (window.cmReady) window.cmReady(); }, 3000);  /* filet
   var STYLES = ['Pop','Country','R&B','Rock','Jazz','Acoustique','Douce Mélodie','Orchestre Gospel','Hip-Hop','Cinématographique','Latin / Salsa','Reggae','Électronique / Dance'];
   var MOODS  = ['Émotionnelle','Tendre','Paisible','Inspirante','Reconnaissante','Festive','Optimiste','Mélancolique'];
   var VOICES = ['Masculin','Féminin'];
-  var C_GEN_WEBHOOK = '/api/lancer-chanson';   // Netlify (robuste, JSON.stringify) -> remplace le webhook MAKE C-gen
+  var LANCER_CHANSON = '/api/lancer-chanson';   // fonction Netlify (robuste, JSON.stringify côté serveur)
 
   /* Bouton « Essayer un autre style » placé SOUS le lecteur audio.
      NOTE: « Créer une chanson pour quelqu'un d'autre » a été retiré d'ici pour ne pas nuire à
@@ -1674,6 +1718,7 @@ setTimeout(function(){ if (window.cmReady) window.cmReady(); }, 3000);  /* filet
     var _f=document.getElementById('cm-style-form'); if(_f) _f.style.display='';
     var _c=document.getElementById('cm-cap-help'); if(_c) _c.style.display='none';
     overlay.classList.add('show'); overlay.setAttribute('aria-hidden','false');
+    window.cmModal.open(overlay, closeModal);
     /* Pré-sélectionne les valeurs actuelles (lire-survey, lecture seule minimisée). */
     fetch('/api/lire-survey', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ token: token }) })
       .then(function(r){ return r.ok ? r.json() : null; })
@@ -1684,7 +1729,7 @@ setTimeout(function(){ if (window.cmReady) window.cmReady(); }, 3000);  /* filet
       })
       .catch(function(){});
   }
-  function closeModal(){ if(!overlay) return; overlay.classList.remove('show'); overlay.setAttribute('aria-hidden','true'); }
+  function closeModal(){ if(!overlay) return; overlay.classList.remove('show'); overlay.setAttribute('aria-hidden','true'); window.cmModal.close(); }
 
   b1.addEventListener('click', openModal);
   /* (b2 « Créer une chanson pour quelqu'un d'autre » retiré de l'aperçu — ira sur la page finale.) */
@@ -1697,8 +1742,9 @@ setTimeout(function(){ if (window.cmReady) window.cmReady(); }, 3000);  /* filet
     if (f) f.style.display=''; if (d) d.style.display='none'; if (s) s.textContent='';
     var snd=document.getElementById('cm-pron-send'); if (snd) snd.disabled=false;
     pOv.classList.add('show'); pOv.setAttribute('aria-hidden','false');
+    window.cmModal.open(pOv, pClose);
   }
-  function pClose(){ if (!pOv) return; pOv.classList.remove('show'); pOv.setAttribute('aria-hidden','true'); }
+  function pClose(){ if (!pOv) return; pOv.classList.remove('show'); pOv.setAttribute('aria-hidden','true'); window.cmModal.close(); }
   bPron.addEventListener('click', pOpen);
   var pCloseBtn=document.getElementById('cm-pron-close'), pCancel=document.getElementById('cm-pron-cancel'), pOk=document.getElementById('cm-pron-ok');
   if (pCloseBtn) pCloseBtn.addEventListener('click', pClose);
@@ -1752,7 +1798,7 @@ setTimeout(function(){ if (window.cmReady) window.cmReady(); }, 3000);  /* filet
         }); });
       }
       /* 2b. Sans nouveau souvenir → nouvelle chanson directe (mêmes paroles, nouvelle musique). */
-      return fetch(C_GEN_WEBHOOK, {
+      return fetch(LANCER_CHANSON, {
         method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({ token: token, mode:'song', post_purchase:false })
       }).then(function(rG){ return rG.json().catch(function(){ return {}; }).then(function(dG){
@@ -1787,6 +1833,9 @@ setTimeout(function(){ if (window.cmReady) window.cmReady(); }, 3000);  /* filet
       .catch(function(){ capSend.disabled=false; if(capStatus) capStatus.textContent='Un souci est survenu. Réessayez.'; });
   });
 })();
+
+/* ── Annee dynamique du footer (defaut 2026 si JS off) ── */
+(function(){ var y=document.getElementById('cm-year'); if(y) y.textContent=new Date().getFullYear(); })();
 
 /* ── FAQ accordion ──────────────────────────────────── */
 document.querySelectorAll('.cm-faq-btn').forEach(function(btn) {
