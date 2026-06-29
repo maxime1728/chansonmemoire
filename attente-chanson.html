@@ -237,6 +237,7 @@ a.r-card:hover{border-color:var(--candle);box-shadow:0 8px 24px rgba(92,45,74,.1
 </style>
 <!-- Sentry navigateur (erreurs JS), token/PII scrubbes avant envoi (cm-sentry.js). -->
 <script src="/js/cm-sentry.js"></script>
+<script src="/js/cm-name.js"></script>
   <!-- Favicon -->
   <link rel="icon" type="image/png" sizes="48x48" href="https://res.cloudinary.com/dcx1tfm47/image/upload/c_fill,w_48,h_48/v1782682803/Favicon_Chanson_M%C3%A9moire_pftcgs.png">
   <link rel="icon" type="image/png" sizes="96x96" href="https://res.cloudinary.com/dcx1tfm47/image/upload/c_fill,w_96,h_96/v1782682803/Favicon_Chanson_M%C3%A9moire_pftcgs.png">
@@ -500,10 +501,11 @@ a.r-card:hover{border-color:var(--candle);box-shadow:0 8px 24px rgba(92,45,74,.1
   try{
     var name = new URLSearchParams(window.location.search).get("name");
     if(name){
+      var dn = window.cmName ? cmName(name) : name;
       var el = document.getElementById("defuntName");
-      if(el) el.textContent = name;
+      if(el) el.textContent = dn;
       var cb = document.getElementById("cmCompoName");
-      if(cb) cb.textContent = "la chanson de " + name;
+      if(cb) cb.textContent = "la chanson de " + dn;
     }
   }catch(e){}
 })();
@@ -686,7 +688,7 @@ setTimeout(checkReady, 20000); /* premier check après 20 secondes */
       lede.textContent = avant;
       var span = document.createElement('span');
       span.className = 'defunt-name serif';
-      span.textContent = name || (cadeau ? 'cette personne' : 'ta personne aimée');
+      span.textContent = (window.cmName ? cmName(name) : name) || (cadeau ? 'cette personne' : 'ta personne aimée');
       lede.appendChild(span);
       lede.appendChild(document.createTextNode('.'));
     }

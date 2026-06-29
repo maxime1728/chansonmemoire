@@ -15,6 +15,7 @@
 <!-- Sentry navigateur (erreurs JS), token/PII scrubbes avant envoi (cm-sentry.js). -->
 <script src="/js/cm-sentry.js"></script>
 <script src="/js/cm-attrib.js"></script>
+<script src="/js/cm-name.js"></script>
 <style>
 :root{--cm-plum-dark:#5C2D4A;--cm-plum-mid:#8B4A6E;--cm-mauve:#C98BB0;--cm-gold:#C4963A;--cm-gold-light:#E8C97A;--cm-white:#fff;--cm-bg:#F8F4F0;--cm-text:#2E1A28;--cm-text-sub:#7A6070;}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -430,7 +431,7 @@ body{font-family:'Mulish',sans-serif;background:var(--cm-bg);color:var(--cm-text
     var sel=document.querySelector('input[name="song_type"]:checked');
     data.song_type=(sel&&sel.value)||'hommage';
     var c = data.song_type==='cadeau';
-    var n = data.deceased_name || 'cette personne';
+    var n = (window.cmName ? cmName(data.deceased_name) : data.deceased_name) || 'cette personne';
     document.querySelectorAll('[data-h]').forEach(function(el){
       var t = (c ? el.getAttribute('data-c') : el.getAttribute('data-h')) || '';
       el.textContent = t.replace('{n}', n);
