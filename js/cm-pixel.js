@@ -50,6 +50,14 @@
 
   window.cmReopenConsent = function () { var b = document.getElementById('cm-consent-banner'); if (b) b.style.display = 'block'; };
 
+  // Permet aux pages avec leur PROPRE bannière (ex. index #consent) de fixer le consentement
+  // et de déclencher le pixel via ce module partagé (au lieu d'un loader inline dupliqué).
+  window.cmConsentSet = function (ok) {
+    try { localStorage.setItem('cm_consent', ok ? 'yes' : 'no'); } catch (e) {}
+    var injected = document.getElementById('cm-consent-banner'); if (injected) injected.remove();
+    if (ok) loadPixel();
+  };
+
   function injectBanner() {
     // Ne pas injecter si une bannière existe déjà (index a #consent / .consent) ou si déjà injectée.
     if (document.querySelector('#consent, .consent, #cm-consent-banner')) return;
