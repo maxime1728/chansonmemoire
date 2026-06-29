@@ -6,12 +6,13 @@
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
 <title>Ton aperçu · Chanson Mémoire</title>
+<script src="/js/cm-name.js"></script>
 <script>
 /* ── PARAMÈTRES URL — exécuté en premier ── */
 (function() {
   var p = new URLSearchParams(window.location.search);
   window._CM = {
-    nom:    p.get('name')    || '',
+    nom:    (window.cmName ? cmName(p.get('name')) : p.get('name')) || '',
     taskid: p.get('taskid')  || '',
     id:     p.get('id')      || '',   /* token UUID — clé de régénération */
     mp3:    p.get('preview1')|| ''
