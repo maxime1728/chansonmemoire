@@ -1247,6 +1247,38 @@ body {
 </div>
 
 <!-- ══ MODAL : ESSAYER UN AUTRE STYLE ════════════════════ -->
+<!-- ══ MODALE : Quelque chose à ajuster ? (point d'entrée unique) ══════════ -->
+<div class="cm-modal-overlay" id="cm-modif-overlay" aria-hidden="true">
+  <div class="cm-modal" role="dialog" aria-modal="true" aria-labelledby="cm-modif-title">
+    <button type="button" class="cm-modal-close" id="cm-modif-close" aria-label="Fermer">&times;</button>
+    <div class="cm-modal-title" id="cm-modif-title">Quelque chose à ajuster&nbsp;?</div>
+    <p class="cm-modal-sub">Dis-nous ce que tu veux changer, on s'en occupe.</p>
+
+    <div id="cm-modif-chips" style="display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 4px;">
+      <button type="button" class="cm-modif-chip" data-k="pron"     style="font:600 13px/1 'Mulish',sans-serif;padding:8px 13px;border-radius:999px;border:1.5px solid var(--cm-mauve);background:var(--cm-white);color:var(--cm-plum-mid);cursor:pointer;">Un mot mal prononcé</button>
+      <button type="button" class="cm-modif-chip" data-k="style"    style="font:600 13px/1 'Mulish',sans-serif;padding:8px 13px;border-radius:999px;border:1.5px solid var(--cm-mauve);background:var(--cm-white);color:var(--cm-plum-mid);cursor:pointer;">Le style ou la voix</button>
+      <button type="button" class="cm-modif-chip" data-k="souvenir" style="font:600 13px/1 'Mulish',sans-serif;padding:8px 13px;border-radius:999px;border:1.5px solid var(--cm-mauve);background:var(--cm-white);color:var(--cm-plum-mid);cursor:pointer;">Ajouter un souvenir</button>
+      <button type="button" class="cm-modif-chip" data-k="paroles"  style="font:600 13px/1 'Mulish',sans-serif;padding:8px 13px;border-radius:999px;border:1.5px solid var(--cm-mauve);background:var(--cm-white);color:var(--cm-plum-mid);cursor:pointer;">Un détail dans les paroles</button>
+    </div>
+
+    <div id="cm-modif-form">
+      <textarea class="cm-modal-textarea" id="cm-modif-texte" rows="3" placeholder="Décris ce que tu aimerais changer…"></textarea>
+      <p class="cm-modal-hint" id="cm-modif-hint">Choisis une option ci-dessus, ou écris-nous directement.</p>
+      <div class="cm-modal-actions">
+        <button type="button" class="cm-modal-cancel" id="cm-modif-cancel">Annuler</button>
+        <button type="button" class="cm-modal-confirm" id="cm-modif-send">Envoyer ma demande</button>
+      </div>
+    </div>
+
+    <div id="cm-modif-done" style="display:none;">
+      <p class="cm-modal-hint" style="font-size:14px;">Demande reçue ✓ On corrige et on te revient avec ta version d'ici <strong>24 à 48 h</strong>.<br><br>Surveille tes courriels indésirables au cas où.</p>
+      <div class="cm-modal-actions"><button type="button" class="cm-modal-confirm" id="cm-modif-ok">Parfait</button></div>
+    </div>
+
+    <p class="cm-modal-note" id="cm-modif-status" role="status" aria-live="polite"></p>
+  </div>
+</div>
+
 <div class="cm-modal-overlay" id="cm-style-overlay" aria-hidden="true">
   <div class="cm-modal" role="dialog" aria-modal="true" aria-labelledby="cm-style-modal-title">
     <button type="button" class="cm-modal-close" id="cm-style-close" aria-label="Fermer">&times;</button>
@@ -1845,6 +1877,111 @@ setTimeout(function(){ if (window.cmReady) window.cmReady(); }, 3000);  /* filet
         else { capSend.disabled=false; if(capStatus) capStatus.textContent='Un souci est survenu. Réessayez.'; }
       })
       .catch(function(){ capSend.disabled=false; if(capStatus) capStatus.textContent='Un souci est survenu. Réessayez.'; });
+  });
+})();
+
+/* ── POINT D'ENTRÉE UNIQUE des modifications (modale unifiée) ───────────
+   Additif : ne touche PAS aux modales existantes (style / prononciation).
+   Masque les 2 anciens boutons, pose un bouton unique, et route :
+   - puce « style/voix »        -> clique le bouton style existant (menus déroulants)
+   - texte libre -> /api/demander-modif-client (analyse + règle de priorité) :
+       route 'cover'        -> /revision?mode=cover (validation des paroles)
+       route 'regen'        -> ouvre les menus de style
+       route 'prononciation'-> /api/prononciation (l'équipe te revient) */
+(function(){
+  var token = (window._CM && window._CM.id) || '';
+  if (!token) return;
+  var oldActions = document.querySelector('.cm-regen-actions');
+  if (!oldActions) return;
+  var bStyle = oldActions.querySelector('.cm-regen-btn:not(.cm-regen-btn-sec)');   // « Essayer un autre style »
+  var bPron  = oldActions.querySelector('.cm-regen-btn-sec');                       // « Erreur de prononciation »
+
+  /* Masque les 2 anciens boutons, insère le bouton unique au même endroit. */
+  oldActions.style.display = 'none';
+  var actions = document.createElement('div');
+  actions.className = 'cm-regen-actions';
+  var bOpen = document.createElement('button');
+  bOpen.type = 'button'; bOpen.className = 'cm-regen-btn'; bOpen.textContent = 'Quelque chose à ajuster ?';
+  var note = document.createElement('p');
+  note.className = 'cm-regen-note';
+  note.textContent = "Une correction, un autre style, un souvenir à ajouter… on s'en occupe.";
+  actions.appendChild(bOpen); actions.appendChild(note);
+  oldActions.parentNode.insertBefore(actions, oldActions);
+
+  var ov = document.getElementById('cm-modif-overlay');
+  var ta = document.getElementById('cm-modif-texte');
+  var hint = document.getElementById('cm-modif-hint');
+  var statusEl = document.getElementById('cm-modif-status');
+  var send = document.getElementById('cm-modif-send');
+  var chips = ov ? ov.querySelectorAll('.cm-modif-chip') : [];
+
+  var CFG = {
+    pron:     { ph:"Quel mot, et comment ça devrait sonner ? Ex. : « Ghislaine » se dit « Jislaine ».", hint:"On vérifie la prononciation et on te revient." },
+    souvenir: { ph:"Raconte le souvenir à ajouter. Ex. : ses étés au chalet avec les petits-enfants.", hint:"On réécrit les paroles, tu les valides, puis on régénère." },
+    paroles:  { ph:"Quel détail corriger ? Ex. : elle est née en 1948, pas 1949.", hint:"On te montre les paroles corrigées à valider, puis on régénère." }
+  };
+
+  function styleChip(c, on){
+    c.style.background  = on ? 'var(--cm-plum-dark)' : 'var(--cm-white)';
+    c.style.color       = on ? '#fff' : 'var(--cm-plum-mid)';
+    c.style.borderColor = on ? 'var(--cm-plum-dark)' : 'var(--cm-mauve)';
+  }
+  function setActive(k){
+    chips.forEach(function(c){ styleChip(c, c.dataset.k === k); });
+    var cfg = CFG[k] || {};
+    if (ta)   ta.setAttribute('placeholder', cfg.ph || 'Décris ce que tu aimerais changer…');
+    if (hint && cfg.hint) hint.textContent = cfg.hint;
+  }
+
+  function openModal(){
+    if (!ov) return;
+    var f = document.getElementById('cm-modif-form'), d = document.getElementById('cm-modif-done');
+    if (f) f.style.display = ''; if (d) d.style.display = 'none';
+    if (statusEl) statusEl.textContent = ''; if (send) send.disabled = false;
+    ov.classList.add('show'); ov.setAttribute('aria-hidden','false');
+    if (window.cmModal) window.cmModal.open(ov, closeModal);
+  }
+  function closeModal(){ if (!ov) return; ov.classList.remove('show'); ov.setAttribute('aria-hidden','true'); if (window.cmModal) window.cmModal.close(); }
+  bOpen.addEventListener('click', openModal);
+
+  chips.forEach(function(c){ styleChip(c, false); c.addEventListener('click', function(){
+    if (c.dataset.k === 'style'){ closeModal(); if (bStyle) bStyle.click(); return; }   // style = menus existants
+    setActive(c.dataset.k);
+    if (ta) ta.focus();
+  }); });
+
+  var cl = document.getElementById('cm-modif-close'), ca = document.getElementById('cm-modif-cancel'), ok = document.getElementById('cm-modif-ok');
+  if (cl) cl.addEventListener('click', closeModal);
+  if (ca) ca.addEventListener('click', closeModal);
+  if (ok) ok.addEventListener('click', closeModal);
+  if (ov) ov.addEventListener('click', function(e){ if (e.target === ov) closeModal(); });
+
+  if (send) send.addEventListener('click', function(){
+    var texte = (ta && ta.value || '').trim();
+    if (!texte){ if (statusEl) statusEl.textContent = 'Décris en quelques mots ce que tu veux ajuster.'; if (ta) ta.focus(); return; }
+    send.disabled = true; if (statusEl) statusEl.textContent = 'Un instant, on prépare ta demande…';
+    fetch('/api/demander-modif-client', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ token: token, action: 'analyser', texte: texte }) })
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(res){
+        if (!res || !res.ok) throw new Error('ko');
+        if (res.route === 'busy'){
+          if (statusEl) statusEl.textContent = 'Ta version précédente se prépare encore, laisse-lui un petit instant puis réessaie.';
+          send.disabled = false; return;
+        }
+        if (res.route === 'cover'){
+          try { sessionStorage.setItem('cm_cover_' + token, JSON.stringify({ lyrics: res.lyrics || '', titre: res.titre || '' })); } catch (_) {}
+          window.location.href = '/revision?id=' + encodeURIComponent(token) + '&mode=cover';
+          return;
+        }
+        if (res.route === 'regen'){
+          if (statusEl) statusEl.textContent = 'Pour changer le style, choisis-le dans la liste.';
+          closeModal(); if (bStyle) bStyle.click(); return;
+        }
+        /* prononciation : enregistre la demande (texte) pour l'équipe, message « on te revient ». */
+        return fetch('/api/prononciation', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ token: token, mot:'', indication:'', autre: texte }) })
+          .then(function(){ var f=document.getElementById('cm-modif-form'), d=document.getElementById('cm-modif-done'); if (f) f.style.display='none'; if (d) d.style.display='block'; if (statusEl) statusEl.textContent=''; });
+      })
+      .catch(function(){ send.disabled = false; if (statusEl) statusEl.textContent = 'Un souci est survenu. Réessaie dans un instant.'; });
   });
 })();
 

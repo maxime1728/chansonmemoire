@@ -15,6 +15,8 @@
 const { rehost } = require('./_lib/cloudinary-rehost');
 const { styleFor } = require('./_lib/style');
 const { recomputerProjet } = require('./_lib/comptage');
+const { livrerCover } = require('./_lib/cover');
+const { alerte } = require('./_lib/alerte');
 
 const BASE_ID  = process.env.AIRTABLE_BASE_ID;
 const AT_TOKEN = process.env.AIRTABLE_TOKEN;
@@ -24,7 +26,7 @@ const SUNO_API_KEY = process.env.SUNO_API_KEY;
 const CALLBACK_SECRET = process.env.CALLBACK_SECRET || '';
 const CCB_BASE     = process.env.CALLBACK_CHANSON;          // callback des régénérations (Netlify callback-chanson, ou webhook Make)
 const CCB_HOOK     = CCB_BASE ? CCB_BASE + (CALLBACK_SECRET ? (CCB_BASE.includes('?') ? '&' : '?') + 's=' + encodeURIComponent(CALLBACK_SECRET) : '') : '';
-const CAP          = parseInt(process.env.SENTINELLE_MAX_RETRIES, 10) || 5;
+const CAP          = parseInt(process.env.SENTINELLE_MAX_RETRIES, 10) || 20;   // chansons ET covers (~20 x 30 min = ~10h, aligné sur l'alerte 10h)
 const MODEL        = 'V5_5';
 const MAX_PER_RUN  = 20;
 
@@ -73,6 +75,42 @@ exports.handler = async () => {
       const track  = (data.response && Array.isArray(data.response.sunoData) && data.response.sunoData[0]) || {};
       const audioUrl = track.audioUrl || '';
 
+      // ── COVER (mélodie préservée) : même filet que les chansons, mais RELANCE en upload-cover via
+      //    cover-cron (qui réutilise cette Generation), et livraison/alerte par le code partagé. ──
+      if (g.type === 'cover') {
+        const pid = Array.isArray(g.project) ? g.project[0] : null;
+        // a. Audio prêt (callback perdu) -> livrer (0 crédit).
+        if (audioUrl && pid) {
+          try {
+            const rp = await fetch(`${API}/Projects/${pid}`, { headers: { Authorization: `Bearer ${AT_TOKEN}` } });
+            if (rp.ok) { const projet = { id: pid, fields: (await rp.json()).fields || {} }; await livrerCover({ api: API, headers: { Authorization: `Bearer ${AT_TOKEN}` }, projet, coverGen: rec, audioUrl, songId: track.id || '' }); rescued++; }
+          } catch (_) {}
+          continue;
+        }
+        // b. En cours -> on attend.
+        if (IN_PROGRESS.includes(status)) { waiting++; continue; }
+        // c. Mot sensible -> alerte IMMÉDIATE, pas de retry (mêmes paroles = même échec).
+        if (status === 'SENSITIVE_WORD_ERROR') {
+          try { await atPatch(rec.id, { incident_status: 'échec_permanent', incident_detail: 'Cover : Suno SENSITIVE_WORD_ERROR (mêmes paroles).', incident_at: now }); } catch (_) {}
+          try { await alerte('cover', 'Cover bloqué : mot sensible Suno — intervention manuelle requise.', { generation: rec.id, titre: g.song_title }); } catch (_) {}
+          escalated++; continue;
+        }
+        // d. Vrai échec -> relance via cover-cron (réutilise la Generation), plafonnée à CAP.
+        const cRetries = Number(g.sentinelle_retries) || 0;
+        if (cRetries >= CAP || !pid) {
+          try { await atPatch(rec.id, { incident_status: 'échec_permanent', incident_detail: `Cover : échec Suno x${cRetries} (${status || 'inconnu'}).`, incident_at: now }); } catch (_) {}
+          escalated++; continue;
+        }
+        try {
+          // Réarme le Projet : cover-cron rappellera lancer-cover (réutilise cette Generation audio_pending,
+          // nouveau task upload-cover). On incrémente le compteur ici.
+          await fetch(`${API}/Projects/${pid}`, { method: 'PATCH', headers: { Authorization: `Bearer ${AT_TOKEN}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: { cover_task_id: '', cover_launched_at: null } }) });
+          await atPatch(rec.id, { sentinelle_retries: cRetries + 1, incident_status: 'surveillance', incident_at: now });
+          regenerated++;
+        } catch (_) {}
+        continue;
+      }
+
       // 1. AUDIO PRÊT (souvent un callback perdu) -> on récupère, 0 crédit.
       if (audioUrl) {
         const hosted = await rehost(audioUrl, { folder: 'songs', publicId: `song_${taskId}`, resourceType: 'video' }) || audioUrl;
@@ -103,6 +141,7 @@ exports.handler = async () => {
       // 3. MOTS SENSIBLES -> régénérer ne sert à rien -> escalade.
       if (status === 'SENSITIVE_WORD_ERROR') {
         try { await atPatch(rec.id, { incident_status: 'échec_permanent', incident_detail: 'Suno SENSITIVE_WORD_ERROR — régénération inutile (mêmes paroles).', incident_at: now }); escalated++; } catch (_) {}
+        try { await alerte('sentinelle', 'Chanson bloquée : mot sensible Suno — intervention manuelle requise.', { generation: rec.id, titre: g.song_title }); } catch (_) {}
         continue;
       }
 

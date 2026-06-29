@@ -241,6 +241,7 @@
     const LANCER_CHANSON  = '/api/lancer-chanson';
 
     const token = new URLSearchParams(location.search).get('id');
+    const IS_COVER = new URLSearchParams(location.search).get('mode') === 'cover';   /* correction de paroles depuis l'aperçu (mélodie gardée) */
 
     /* ── Polling + auto-relance (chargement initial) ──
        Fenêtre de 2 min. Voie normale : la génération de paroles en arrière-plan écrit les paroles
@@ -391,6 +392,7 @@
 
     /* ── RÉGÉNÉRATION : boucle sur place ── */
     async function regenerer(){
+      if (IS_COVER) return regenererCover();
       var modifs=(el('modifications').value||'').trim();
       if(!modifs){
         el('modifications').focus();
@@ -454,6 +456,7 @@
 
     /* ── CONFIRMER → lancer-chanson (fonction Netlify → Suno) ── */
     async function confirmerProd(){
+      if (IS_COVER) return confirmerCover();
       /* Le lancement (fetch lancer-chanson) prend quelques secondes : on garde la popup ouverte
          avec un état « chargement » sur le bouton, plutôt qu'un écran figé sans feedback. */
       var oui = document.querySelector('.popup-oui');
@@ -492,10 +495,67 @@
     window.regenerer=regenerer; window.ouvrirPopup=ouvrirPopup; window.fermerPopup=fermerPopup; window.confirmerProd=confirmerProd;
     window.ajustementRapide=ajustementRapide; window.reessayer=reessayer;
 
+    /* ── MODE COVER (correction de paroles depuis l'aperçu) ──
+       Les paroles proposées arrivent via sessionStorage (posées par l'aperçu). On les affiche pour
+       validation ; « J'accepte » lance le cover (mélodie gardée) puis on attend une version PLUS
+       RÉCENTE (sinon on retomberait sur l'ancienne) avant de rediriger vers l'aperçu. */
+    var coverBaseline = 0;
+    function stripTags(s){ return String(s||'').replace(/^\s*\[[^\]]*\]\s*$/gm,'').replace(/\n{3,}/g,'\n\n').trim(); }
+    async function compteVersions(){
+      try { var r=await fetch('/api/lire-versions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:token})}); var d=await r.json(); return (d&&d.versions&&d.versions.length)||0; }
+      catch(e){ return 0; }
+    }
+    async function initCover(){
+      var data=null; try{ data=JSON.parse(sessionStorage.getItem('cm_cover_'+token)||'null'); }catch(e){}
+      if(!data || !data.lyrics){ window.location.href='/apercu?id='+encodeURIComponent(token); return; }   /* accès direct sans proposition -> retour aperçu */
+      coverBaseline = await compteVersions();
+      var avis=document.querySelector('.avis-important');
+      if(avis) avis.innerHTML="<strong>Voici tes paroles corrigées.</strong> Relis-les : à « J'accepte », on régénère ta chanson en gardant la même mélodie. Tu peux encore ajuster avant.";
+      afficher({ titre:data.titre||'ta chanson', paroles:stripTags(data.lyrics), suggestions:'[]' });
+    }
+    async function regenererCover(){
+      var modifs=(el('modifications').value||'').trim();
+      if(!modifs){ el('modifications').focus(); el('modifications').style.borderColor='#c0392b'; setTimeout(function(){ el('modifications').style.borderColor=''; },1500); return; }
+      var btn=el('btn-regen'); btn.disabled=true;
+      btn.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" stroke-opacity="0.25"/><path d="M22 12a10 10 0 0 1-10 10"><animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="0.8s" repeatCount="indefinite"/></path></svg> Réécriture en cours…';
+      try{
+        var res=await fetch('/api/demander-modif-client',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:token,action:'reproposer',texte:modifs})});
+        var d=await res.json();
+        if(res.ok && d && d.route==='cover' && d.lyrics){ setErreurInline('regen-erreur',''); afficher({titre:d.titre||'ta chanson',paroles:stripTags(d.lyrics),suggestions:'[]'}); el('modifications').value=''; window.scrollTo({top:0,behavior:'smooth'}); }
+        else setErreurInline('regen-erreur',"La réécriture n'a pas pu aboutir. Reformule ta demande et réessaie.");
+      }catch(e){ setErreurInline('regen-erreur',"Une erreur est survenue. Réessaie dans un instant."); }
+      btn.disabled=false; btn.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg> Régénérer mes paroles';
+    }
+    async function confirmerCover(){
+      var oui=document.querySelector('.popup-oui');
+      if(oui && !oui.dataset.label){ oui.dataset.label=oui.textContent; }
+      function restaurerOui(){ if(oui){ oui.disabled=false; oui.textContent=oui.dataset.label||'Oui, créer ma chanson'; } }
+      if(oui){ oui.disabled=true; oui.textContent='Un instant…'; }
+      try{
+        var res=await fetch('/api/demander-modif-client',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:token,action:'lancer'})});
+        var dL={}; try{ dL=await res.json(); }catch(_){}
+        if(!res.ok) throw new Error('lancer');
+        if(dL && dL.route==='busy'){ restaurerOui(); fermerPopup(); montrer('contenu'); setErreurInline('confirm-erreur',"Ta version précédente se prépare encore, laisse-lui un petit instant puis réessaie."); return; }
+      }catch(e){ restaurerOui(); fermerPopup(); montrer('contenu'); setErreurInline('confirm-erreur',"La régénération n'a pas pu démarrer. Réessaie dans un instant."); return; }
+      try{ sessionStorage.removeItem('cm_cover_'+token); }catch(_){}
+      fermerPopup(); montrer('etat-soumission');
+      var st=document.querySelector('.soumission-titre'); if(st) st.textContent='Parfait. On régénère ta chanson.';
+      var ss=document.querySelector('.soumission-sous'); if(ss) ss.textContent="On garde la mélodie et on applique tes paroles. On t'amène à ta nouvelle version dès qu'elle est prête.";
+      var tries=0;
+      var iv=setInterval(async function(){
+        tries++;
+        var n=await compteVersions();
+        if(n>coverBaseline){ clearInterval(iv); window.location.href='/apercu?id='+encodeURIComponent(token); return; }
+        if(tries>30){ clearInterval(iv); if(ss) ss.textContent="Ta nouvelle version arrive par courriel d'ici peu (pense à vérifier tes indésirables)."; }   /* ~5 min -> le courriel prend le relais */
+      }, 10000);
+    }
+
     /* ── INIT ── */
     if(!token){
       setTexte('erreur-detail', "Lien invalide ou expiré. Recommence depuis le début.");
       montrer('etat-erreur');
+    } else if (IS_COVER) {
+      initCover();
     } else {
       montrer('etat-chargement');
       debut = Date.now();

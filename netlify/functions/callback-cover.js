@@ -11,7 +11,7 @@
 //
 // Payload : { code, data: { callbackType, task_id, data:[{ id, audio_url, title, duration, ... }] } }
 
-const { rehost } = require('./_lib/cloudinary-rehost');
+const { livrerCover, prochainNo } = require('./_lib/cover');
 
 const BASE_ID  = process.env.AIRTABLE_BASE_ID;
 const AT_TOKEN = process.env.AIRTABLE_TOKEN;
@@ -72,83 +72,52 @@ exports.handler = async (event) => {
 
   const headers = { Authorization: `Bearer ${AT_TOKEN}` };
   try {
-    // Idempotence : déjà enregistrée pour ce task_id ?
     const lit = formulaLiteral(taskId);
     if (lit === null) return { statusCode: 200, body: '{}' };
+
+    // Generation portant ce task (créée en audio_pending par lancer-cover — modèle Generation-level).
     const rEx = await fetch(`${API}/Generations?filterByFormula=${encodeURIComponent(`{suno_task_id}=${lit}`)}&maxRecords=1`, { headers });
-    const dEx = await rEx.json();
-    if (dEx.records && dEx.records.length) return { statusCode: 200, body: JSON.stringify({ ok: true, already: true }) };
+    let coverGen = (((await rEx.json()).records) || [])[0] || null;
+    // Déjà livrée (idempotence) ?
+    if (coverGen && (coverGen.fields || {}).generation_status === 'audio_generated') return { statusCode: 200, body: JSON.stringify({ ok: true, already: true }) };
 
     // Project par cover_task_id.
     const rP = await fetch(`${API}/Projects?filterByFormula=${encodeURIComponent(`{cover_task_id}=${lit}`)}&maxRecords=1`, { headers });
-    const dP = await rP.json();
-    const projet = dP.records && dP.records[0];
+    const projet = (((await rP.json()).records) || [])[0] || null;
     if (!projet) return { statusCode: 200, body: '{}' };   // rien à matcher
     const p = projet.fields;
     const projLit = formulaLiteral(p.project);
     if (projLit === null) return { statusCode: 200, body: '{}' };
 
-    // Version source (achetée) : titre + paroles/style de repli + numéro max.
-    const purchasedNo = parseInt(p.purchased_generation_no, 10);
-    let src = {};
-    if (Number.isInteger(purchasedNo)) {
-      const rS = await fetch(`${API}/Generations?filterByFormula=${encodeURIComponent(`AND({project}=${projLit},{generation_no}=${purchasedNo})`)}&maxRecords=1`, { headers });
-      const dSg = await rS.json();
-      src = (dSg.records && dSg.records[0] && dSg.records[0].fields) || {};
+    // Pas de Generation pré-créée (regenerate=true / legacy) -> on en crée une (audio_pending) avec les
+    // infos de la version source, puis on la livre par le même chemin partagé.
+    if (!coverGen) {
+      const purchasedNo = parseInt(p.purchased_generation_no, 10);
+      let src = {};
+      if (Number.isInteger(purchasedNo)) {
+        const rS = await fetch(`${API}/Generations?filterByFormula=${encodeURIComponent(`AND({project}=${projLit},{generation_no}=${purchasedNo})`)}&maxRecords=1`, { headers });
+        src = ((((await rS.json()).records) || [])[0] || {}).fields || {};
+      }
+      const newNo = await prochainNo(API, headers, p.project);
+      const fields = {
+        project: [projet.id], generation_no: newNo, type: 'cover', generation_status: 'audio_pending',
+        post_purchase: true, suno_task_id: taskId,
+        lyrics: (p.adjusted_lyrics && p.adjusted_lyrics.trim()) || src.lyrics || '',
+        song_title: src.song_title || track.title || 'Pour toujours'
+      };
+      if (src.gen_music_style) fields.gen_music_style = src.gen_music_style;
+      if (src.gen_mood)        fields.gen_mood        = src.gen_mood;
+      if (src.gen_voice)       fields.gen_voice       = src.gen_voice;
+      if (p.pending_cover_style && p.pending_cover_style.trim()) fields.gen_style_prompt = p.pending_cover_style.trim();
+      const rC = await fetch(`${API}/Generations`, { method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify({ fields }) });
+      coverGen = await rC.json();
+      if (!coverGen.fields) coverGen.fields = fields;
     }
-    // Nouveau generation_no = max + 1.
-    const rMax = await fetch(`${API}/Generations?filterByFormula=${encodeURIComponent(`{project}=${projLit}`)}&sort%5B0%5D%5Bfield%5D=generation_no&sort%5B0%5D%5Bdirection%5D=desc&maxRecords=1`, { headers });
-    const dMax = await rMax.json();
-    const maxNo = (dMax.records && dMax.records[0] && Number(dMax.records[0].fields.generation_no)) || 0;
-    const newNo = maxNo + 1;
 
-    // 1. Ré-héberge l'audio (permanent). Repli sur l'URL Suno si Cloudinary échoue.
-    const hosted = await rehost(audioUrl, { folder: 'covers', publicId: `cover_${p.token}_${newNo}`, resourceType: 'video' }) || audioUrl;
-
-    // 2. Crée la nouvelle Generation (cover).
-    const fields = {
-      project: [projet.id],
-      generation_no: newNo,
-      type: 'cover',
-      lyrics: (p.adjusted_lyrics && p.adjusted_lyrics.trim()) || src.lyrics || '',
-      song_title: src.song_title || track.title || 'Pour toujours',
-      cloudinary_audio_url: hosted,
-      song_id: track.id || '',
-      suno_task_id: taskId,
-      post_purchase: true,
-      generation_status: 'audio_generated'
-    };
-    if (src.gen_music_style) fields.gen_music_style = src.gen_music_style;
-    if (src.gen_mood)        fields.gen_mood        = src.gen_mood;
-    if (src.gen_voice)       fields.gen_voice       = src.gen_voice;
-    if (p.pending_cover_style && p.pending_cover_style.trim()) fields.gen_style_prompt = p.pending_cover_style.trim();   // prompt de style exact de cette version (historique)
-    await fetch(`${API}/Generations`, {
-      method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fields })
-    });
-
-    // 3. Livre cette version + ferme la boucle (prêt pour un éventuel tour suivant).
-    //    purchased_generation_no n'est basculé qu'en POST-achat ; en pré-achat (cover d'aperçu) la
-    //    nouvelle génération devient simplement la plus récente (lire-projet sert la dernière).
-    const projPatch = { approval_status: 'published', cover_task_id: null, cover_launched_at: null, pending_cover_style: null };
-    if (Number.isInteger(purchasedNo)) { projPatch.purchased_generation_no = newNo; projPatch.purchased_song_title = fields.song_title; }   // #2 : titre acheté à jour
-    await fetch(`${API}/Projects/${projet.id}`, {
-      method: 'PATCH', headers: { ...headers, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fields: projPatch })
-    });
-
-    // 4. Courriel « nouvelle version prête » (best-effort, voix de marque).
-    try {
-      const to = await emailClient(projet, headers);
-      const html = `<div style="font-family:Georgia,serif;color:#2E1A28;line-height:1.7;max-width:560px;">` +
-        `<p style="font-size:18px;color:#5C2D4A;">Votre nouvelle version est prête.</p>` +
-        `<p>On a appliqué votre demande de modification. Écoutez et téléchargez la version mise à jour sur votre page :</p>` +
-        `<p style="margin:22px 0;"><a href="${p.page_url || (SITE + '/page-memoire?id=' + encodeURIComponent(p.token))}" style="background:#5C2D4A;color:#F5F0EA;text-decoration:none;padding:12px 22px;border-radius:8px;display:inline-block;">Écouter ma nouvelle version</a></p>` +
-        `<p style="color:#7A6070;">— L'équipe Chanson Mémoire</p></div>`;
-      await envoyerCourriel(to, 'Votre nouvelle version est prête', html);
-    } catch (_) { /* le courriel ne bloque pas la livraison */ }
-
-    return { statusCode: 200, body: JSON.stringify({ ok: true, generation_no: newNo }) };
+    // Livraison PARTAGÉE (_lib/cover) : audio ré-hébergé, Generation -> audio_generated, version basculée si
+    // post-achat, champs cover du Projet vidés, courriel client. Idempotent.
+    const res = await livrerCover({ api: API, headers, projet, coverGen, audioUrl, songId: track.id || '' });
+    return { statusCode: 200, body: JSON.stringify({ ok: true, generation_no: res.generation_no }) };
   } catch (err) {
     console.error('[callback-cover]', err && err.message);
     return { statusCode: 200, body: '{}' };   // un callback ne renvoie jamais d'erreur à Suno

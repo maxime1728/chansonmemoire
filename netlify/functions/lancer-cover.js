@@ -12,6 +12,7 @@
 
 const crypto = require('crypto');
 const { styleFor } = require('./_lib/style');
+const { coverGenEnAttente, prochainNo } = require('./_lib/cover');
 
 const BASE_ID  = process.env.AIRTABLE_BASE_ID;
 const AT_TOKEN = process.env.AIRTABLE_TOKEN;
@@ -140,6 +141,37 @@ exports.handler = async (event) => {
       headers: { ...headers, 'Content-Type': 'application/json' },
       body: JSON.stringify({ fields: { cover_task_id: String(taskId), cover_launched_at: new Date().toISOString(), pending_cover_style: style } })
     });
+
+    // 5b. MODÈLE GENERATION-LEVEL (cover « mélodie préservée » seulement) : crée la Generation cover en
+    //     audio_pending DÈS le lancement, pour qu'elle soit suivie/relancée/alertée comme une chanson
+    //     (sentinelle + alerte-cron 10h). Sur un RETRY (sentinelle), on réutilise la même Generation
+    //     (nouveau task) au lieu d'en créer une autre. regenerate=true (nouvelle mélodie) reste créé au
+    //     succès par callback-cover. Best-effort : le suivi ne bloque pas le lancement.
+    if (!regenerate) try {
+      const existant = await coverGenEnAttente(API, headers, p.project);
+      if (existant) {
+        await fetch(`${API}/Generations/${existant.id}`, {
+          method: 'PATCH', headers: { ...headers, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fields: { suno_task_id: String(taskId), incident_status: 'surveillance' } })
+        });
+      } else {
+        const newNo = await prochainNo(API, headers, p.project);
+        const fields = {
+          project: [projet.id], generation_no: newNo, type: 'cover', generation_status: 'audio_pending',
+          post_purchase: true, suno_task_id: String(taskId),
+          lyrics: ((p.adjusted_lyrics && p.adjusted_lyrics.trim()) || g.lyrics || '').slice(0, 6000),
+          song_title: (g.song_title || 'Pour toujours'),
+          gen_style_prompt: style
+        };
+        const ms = g.gen_music_style || p.music_style; if (ms) fields.gen_music_style = ms;
+        const md = g.gen_mood        || p.mood;        if (md) fields.gen_mood        = md;
+        const vx = g.gen_voice       || p.voice;       if (vx) fields.gen_voice       = vx;
+        await fetch(`${API}/Generations`, {
+          method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fields })
+        });
+      }
+    } catch (_) { /* le suivi Generation ne bloque jamais le lancement */ }
 
     return { statusCode: 200, body: JSON.stringify({ ok: true, pending: true }) };
   } catch (err) {
