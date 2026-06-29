@@ -10,8 +10,7 @@
      avec une vraie chanson de démonstration (« Mon homme du lac »). Aucune donnée réelle,
      aucun token, aucun appel API : tout est en dur. Branchée depuis attente-chanson.html.
      Démarre au Couplet 2 « comme si c'était le début ». Domaine .ca / chemins relatifs. -->
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400;1,9..144,600&family=Mulish:wght@400;500;600;700;800&family=Sora:wght@400;600&display=swap" rel="stylesheet">
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Mulish:wght@400;500;600;700;800&family=Sora:wght@400;600&display=swap" rel="stylesheet">
 <style>
   :root{
     --cm-plum-dark:#5C2D4A; --cm-plum-mid:#8B4A6E; --cm-mauve:#C98BB0;
@@ -27,14 +26,22 @@
   /* Bandeau « exemple » — honnête : ce n'est pas la page d'un vrai client. */
   .demo-banner{max-width:560px;margin:0 auto;background:var(--cm-off-white);border-bottom:1px solid var(--line);
     color:var(--cm-plum-dark);font-size:12.5px;font-weight:700;letter-spacing:0.04em;text-align:center;padding:10px 16px;}
-  .demo-banner i{color:var(--cm-gold);margin-right:6px;}
+  .demo-banner .cm-ic{color:var(--cm-gold);margin-right:6px;}
+  .cm-ic{width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;}
+
+  /* ── Bandeau fixe : composition en cours (affiché seulement avec un token) ── */
+  .cm-compo-bar{position:sticky;top:0;z-index:60;background:#fff;border-bottom:1px solid var(--line);color:var(--cm-plum-dark);font-size:12.5px;font-weight:700;line-height:1.4;text-align:center;padding:9px 16px;display:none;align-items:center;justify-content:center;gap:8px;}
+  .cm-compo-bar.show{display:flex;}
+  .cm-compo-bar .compo-dot{flex:0 0 auto;width:8px;height:8px;border-radius:50%;background:var(--cm-gold);animation:compoPulse 2.6s ease-in-out infinite;}
+  @keyframes compoPulse{0%,100%{opacity:.5;transform:scale(.85);}50%{opacity:1;transform:scale(1);}}
+  @media(prefers-reduced-motion:reduce){.cm-compo-bar .compo-dot{animation:none;}}
 
   .eyebrow{font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--cm-gold);text-align:center;margin-bottom:12px;}
-  h1#title{font-family:'Fraunces',Georgia,serif;font-style:italic;font-size:clamp(26px,6vw,34px);font-weight:400;color:var(--cm-plum-dark);text-align:center;margin:0 0 10px;line-height:1.25;}
+  h1#title{font-family:'Newsreader',Georgia,serif;font-style:italic;font-size:clamp(26px,6vw,34px);font-weight:400;color:var(--cm-plum-dark);text-align:center;margin:0 0 10px;line-height:1.25;}
   .subtitle{color:var(--cm-text-sub);font-size:13px;text-align:center;margin:0 0 26px;text-transform:uppercase;letter-spacing:0.10em;font-weight:700;min-height:1em;}
   .loading{color:var(--cm-text-sub);font-size:14px;text-align:center;margin:16px 0 0;}
   .card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:24px 22px;margin:22px 0;}
-  .section-title{font-family:'Fraunces',serif;font-style:italic;font-size:21px;color:var(--cm-plum-dark);margin:0 0 6px;}
+  .section-title{font-family:'Newsreader',serif;font-style:italic;font-size:21px;color:var(--cm-plum-dark);margin:0 0 6px;}
   .section-sub{font-size:14px;color:var(--cm-text-sub);margin:0 0 16px;line-height:1.5;}
   .btn{font-family:'Mulish',sans-serif;background:var(--cm-plum-dark);color:#fff;border:none;border-radius:999px;padding:14px 28px;font-size:16px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-block;}
   .btn:hover{background:var(--cm-plum-mid);}
@@ -44,7 +51,7 @@
   .badge{display:inline-block;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--cm-plum-dark);background:var(--cm-gold-light);border-radius:999px;padding:4px 10px;margin-bottom:10px;}
 
   /* ── PAROLES affichées (showcase de l'écriture) ── */
-  .lyrics{font-family:'Fraunces',Georgia,serif;font-size:16.5px;line-height:1.85;color:var(--cm-text);text-align:center;}
+  .lyrics{font-family:'Newsreader',Georgia,serif;font-size:16.5px;line-height:1.85;color:var(--cm-text);text-align:center;}
   .lyrics .stanza{margin:0 0 20px;}
   .lyrics .stanza:last-child{margin-bottom:0;}
   .lyrics .refrain{color:var(--cm-plum-dark);font-style:italic;}
@@ -53,7 +60,7 @@
   .video-frame{border-radius:14px;overflow:hidden;background:#241019;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;}
   .video-frame video{width:100%;height:100%;display:block;object-fit:cover;}
   .video-ph{color:var(--cm-off-white);text-align:center;padding:24px 20px;font-size:14px;line-height:1.6;}
-  .video-ph i{font-size:26px;color:var(--cm-gold-light);display:block;margin-bottom:10px;}
+  .video-ph .cm-ic{font-size:26px;color:var(--cm-gold-light);display:block;margin:0 auto 10px;}
   .gen-btn{margin-top:14px;background:var(--cm-gold);color:#3a2410;border:0;border-radius:999px;padding:11px 22px;font-weight:800;font-size:14px;cursor:pointer;font-family:'Mulish',sans-serif;}
   .gen-btn:hover{background:var(--cm-gold-light);}
   .gen-btn[disabled]{opacity:.65;cursor:default;}
@@ -112,7 +119,27 @@
 </head>
 <body>
 
-<div class="demo-banner"><i class="fa-solid fa-circle-info"></i>Exemple · voici à quoi ressemble la page que tu reçois</div>
+<!-- Sprite d'icones SVG inline (remplace Font Awesome) -->
+<svg id="cm-icons" width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="ic-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></symbol>
+  <symbol id="ic-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></symbol>
+  <symbol id="ic-pause" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></symbol>
+  <symbol id="ic-volume-high" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></symbol>
+  <symbol id="ic-volume-low" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></symbol>
+  <symbol id="ic-volume-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></symbol>
+  <symbol id="ic-film" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/></symbol>
+  <symbol id="ic-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="ic-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></symbol>
+  <symbol id="ic-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+  <symbol id="ic-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
+</svg>
+
+<div class="cm-compo-bar" id="cmCompoBar" role="status">
+  <span class="compo-dot" aria-hidden="true"></span>
+  <span>On compose sa chanson en ce moment. On t'amène à sa page dès qu'elle est prête.</span>
+</div>
+
+<div class="demo-banner"><svg class="cm-ic" aria-hidden="true"><use href="#ic-info"></use></svg>Exemple · voici à quoi ressemble la page que tu reçois</div>
 
 <div class="wrap">
   <img src="https://res.cloudinary.com/dcx1tfm47/image/upload/v1781659915/Logo_Chanson_M%C3%A9moire_jiq5ce.png" alt="Chanson Mémoire" style="height:42px;width:auto;display:block;margin:0 auto 28px;">
@@ -128,11 +155,11 @@
           <div class="cm-title" id="playerTitle">Mon homme du lac</div>
           <div class="cm-equalizer cm-eq"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
           <audio class="cm-audio" preload="metadata"><source src="" type="audio/mpeg"></audio>
-          <button class="cm-play-btn" type="button" disabled><i class="fa-solid fa-play"></i></button>
+          <button class="cm-play-btn" type="button" disabled><svg class="cm-ic" aria-hidden="true"><use href="#ic-play"></use></svg></button>
           <div class="cm-time"><span class="cm-current">0:00</span><span class="cm-total">0:00</span></div>
           <div class="cm-progress-wrap"><div class="cm-progress-bar"></div><input class="cm-progress" type="range" min="0" max="100" step="0.01" value="0"></div>
           <div class="cm-volume-wrap">
-            <button class="cm-mute-btn" type="button"><i class="fa-solid fa-volume-high"></i></button>
+            <button class="cm-mute-btn" type="button"><svg class="cm-ic" aria-hidden="true"><use href="#ic-volume-high"></use></svg></button>
             <div class="cm-volume-slider-wrap"><div class="cm-volume-bar"></div><input class="cm-volume" type="range" min="0" max="1" step="0.01" value="1"></div>
           </div>
         </div>
@@ -157,7 +184,7 @@
     <div class="section-title">Sa vidéo des paroles</div>
     <p class="section-sub">Les paroles qui défilent, portées par sa version instrumentale. Prête à projeter ou à partager.</p>
     <div class="video-frame" id="videoFrame">
-      <div class="video-ph"><i class="fa-solid fa-film"></i>L'aperçu vidéo se charge…</div>
+      <div class="video-ph"><svg class="cm-ic" aria-hidden="true"><use href="#ic-film"></use></svg>L'aperçu vidéo se charge…</div>
     </div>
   </div>
 
@@ -165,7 +192,7 @@
   <div class="card center">
     <div class="section-title" style="margin-bottom:10px;">Les paroles en PDF</div>
     <p class="section-sub">Une belle mise en page de ses paroles, à garder ou à offrir.</p>
-    <a class="btn btn-block" id="btnPdf" href="#paroles"><i class="fa-solid fa-eye"></i>&nbsp; Voir un exemple</a>
+    <a class="btn btn-block" id="btnPdf" href="#paroles"><svg class="cm-ic" aria-hidden="true"><use href="#ic-eye"></use></svg>&nbsp; Voir un exemple</a>
   </div>
 
   <!-- 4. PAROLES NORMALES — tout en bas -->
@@ -271,7 +298,7 @@
     var a = document.getElementById('btnPdf');
     if(PDF_URL){ a.href = PDF_URL; }
     else { a.removeAttribute('href'); a.style.opacity = '.55'; a.style.pointerEvents = 'none';
-           a.innerHTML = '<i class="fa-solid fa-file-pdf"></i>&nbsp; PDF des paroles · bientôt'; }
+           a.innerHTML = '<svg class="cm-ic" aria-hidden="true"><use href="#ic-file"></use></svg>&nbsp; PDF des paroles · bientôt'; }
   })();
 
   /* (lecteur instrumental retiré — la vidéo des paroles tourne déjà sur l'instrumentale) */
@@ -298,12 +325,12 @@
     var polls = 0;
     function poll(renderId){
       polls++;
-      if(polls > 45){ showPh('<i class="fa-solid fa-clock"></i>Le rendu prend plus de temps que prévu. Recharge la page dans un moment.'); return; }
+      if(polls > 45){ showPh('<svg class="cm-ic" aria-hidden="true"><use href="#ic-clock"></use></svg>Le rendu prend plus de temps que prévu. Recharge la page dans un moment.'); return; }
       fetch(API + '?render_id=' + encodeURIComponent(renderId), { cache:'no-store' })
         .then(function(r){ return r.ok ? r.json() : null; })
         .then(function(d){
           if(d && d.status === 'done' && d.url){ showVideo(d.url); return; }
-          if(d && d.status === 'failed'){ showPh('<i class="fa-solid fa-triangle-exclamation"></i>Le rendu a échoué. Réessaie plus tard.'); return; }
+          if(d && d.status === 'failed'){ showPh('<svg class="cm-ic" aria-hidden="true"><use href="#ic-alert"></use></svg>Le rendu a échoué. Réessaie plus tard.'); return; }
           setTimeout(function(){ poll(renderId); }, 4000);
         })
         .catch(function(){ setTimeout(function(){ poll(renderId); }, 4000); });
@@ -316,12 +343,12 @@
         .then(function(d){
           if(d && d.status === 'done' && d.url){ showVideo(d.url); return; }
           if(d && d.render_id){ poll(d.render_id); return; }
-          showPh('<i class="fa-solid fa-triangle-exclamation"></i>Génération indisponible pour le moment.');
+          showPh('<svg class="cm-ic" aria-hidden="true"><use href="#ic-alert"></use></svg>Génération indisponible pour le moment.');
         })
-        .catch(function(){ showPh('<i class="fa-solid fa-triangle-exclamation"></i>Génération indisponible pour le moment.'); });
+        .catch(function(){ showPh('<svg class="cm-ic" aria-hidden="true"><use href="#ic-alert"></use></svg>Génération indisponible pour le moment.'); });
     }
     function showButton(){
-      showPh('<i class="fa-solid fa-film"></i>Un aperçu des paroles qui défilent en musique.<br>'
+      showPh('<svg class="cm-ic" aria-hidden="true"><use href="#ic-film"></use></svg>Un aperçu des paroles qui défilent en musique.<br>'
         + '<button class="gen-btn" type="button" id="genVideoBtn">Générer l’aperçu vidéo</button>');
       var b = document.getElementById('genVideoBtn');
       if(b) b.addEventListener('click', function(){ trigger(b); });
@@ -348,15 +375,27 @@
 
   audio.addEventListener('loadedmetadata',function(){ progress.max=audio.duration||100; totEl.textContent=fmt(audio.duration); loading.style.display='none'; playBtn.disabled=false; });
   audio.addEventListener('error',function(){ loading.textContent='Lecture indisponible pour le moment.'; });
-  playBtn.addEventListener('click',function(){ if(playBtn.disabled||!source.src) return; if(audio.paused){ audio.play().then(function(){ playBtn.innerHTML='<i class="fa-solid fa-pause"></i>'; eq.classList.add('active'); }).catch(function(){}); } else { audio.pause(); playBtn.innerHTML='<i class="fa-solid fa-play"></i>'; eq.classList.remove('active'); } });
+  playBtn.addEventListener('click',function(){ if(playBtn.disabled||!source.src) return; if(audio.paused){ audio.play().then(function(){ playBtn.innerHTML='<svg class="cm-ic" aria-hidden="true"><use href="#ic-pause"></use></svg>'; eq.classList.add('active'); }).catch(function(){}); } else { audio.pause(); playBtn.innerHTML='<svg class="cm-ic" aria-hidden="true"><use href="#ic-play"></use></svg>'; eq.classList.remove('active'); } });
   audio.addEventListener('timeupdate',function(){ if(isDragging) return; var dur=audio.duration||1; progress.value=audio.currentTime; bar.style.width=((audio.currentTime/dur)*100)+'%'; curEl.textContent=fmt(audio.currentTime); });
-  audio.addEventListener('ended',function(){ audio.currentTime=0; playBtn.innerHTML='<i class="fa-solid fa-play"></i>'; eq.classList.remove('active'); bar.style.width='0%'; });
+  audio.addEventListener('ended',function(){ audio.currentTime=0; playBtn.innerHTML='<svg class="cm-ic" aria-hidden="true"><use href="#ic-play"></use></svg>'; eq.classList.remove('active'); bar.style.width='0%'; });
   progress.addEventListener('mousedown',function(){isDragging=true;}); progress.addEventListener('touchstart',function(){isDragging=true;});
   progress.addEventListener('mouseup',function(){isDragging=false;}); progress.addEventListener('touchend',function(){isDragging=false;});
   progress.addEventListener('input',function(){ var dur=audio.duration||1,val=parseFloat(progress.value); audio.currentTime=val; bar.style.width=((val/dur)*100)+'%'; curEl.textContent=fmt(val); });
-  function setVolIcon(v){ muteBtn.innerHTML = v==0 ? '<i class="fa-solid fa-volume-xmark"></i>' : v<0.5 ? '<i class="fa-solid fa-volume-low"></i>' : '<i class="fa-solid fa-volume-high"></i>'; }
+  function setVolIcon(v){ muteBtn.innerHTML = v==0 ? '<svg class="cm-ic" aria-hidden="true"><use href="#ic-volume-x"></use></svg>' : v<0.5 ? '<svg class="cm-ic" aria-hidden="true"><use href="#ic-volume-low"></use></svg>' : '<svg class="cm-ic" aria-hidden="true"><use href="#ic-volume-high"></use></svg>'; }
   volInput.addEventListener('input',function(){ var v=parseFloat(volInput.value); audio.volume=v; volBar.style.width=(v*100)+'%'; setVolIcon(v); });
   muteBtn.addEventListener('click',function(){ if(audio.volume>0){ lastVol=audio.volume; audio.volume=0; volInput.value=0; volBar.style.width='0%'; setVolIcon(0);} else { audio.volume=lastVol||1; volInput.value=audio.volume; volBar.style.width=(audio.volume*100)+'%'; setVolIcon(audio.volume);} });
+
+  /* Resync de l'UI du lecteur quand l'audio est mis en pause — par un clic OU par une vidéo
+     qui démarre (voir le handler global ci-dessous). Sans ça, le bouton resterait sur « pause ». */
+  audio.addEventListener('pause',function(){ playBtn.innerHTML='<svg class="cm-ic" aria-hidden="true"><use href="#ic-play"></use></svg>'; eq.classList.remove('active'); });
+
+  /* Un seul média à la fois : lecteur audio <-> vidéo souvenir <-> vidéo des paroles.
+     Phase de capture (le 'play' ne bulle pas) -> attrape aussi la vidéo des paroles injectée
+     dynamiquement après coup. Quand un média démarre, on met en pause tous les autres. */
+  document.addEventListener('play',function(e){
+    var el=e.target;
+    document.querySelectorAll('audio,video').forEach(function(m){ if(m!==el && !m.paused){ m.pause(); } });
+  },true);
 })();
 </script>
 
@@ -368,6 +407,8 @@
   var UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   var token=new URLSearchParams(location.search).get('id');
   if(!token || !UUID.test(token)) return;
+  /* Token présent = la chanson se compose vraiment en arrière-plan -> bandeau de rappel + redirection auto. */
+  var bar=document.getElementById('cmCompoBar'); if(bar) bar.classList.add('show');
   var done=false, tries=0;
   function check(){
     if(done) return;
