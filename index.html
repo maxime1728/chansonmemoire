@@ -229,7 +229,7 @@ html,body{overflow-x:hidden;}
   --plum-deep:#3c2e4d;
   --plum:#5d4a73;
   --mauve:#7a6494;
-  --muted:#776c83;
+  --muted:#655c6f;
   --candle:#bd8f49;
   --candle-deep:#a87d3a;
   --gold-soft:#e7d3a6;
@@ -406,11 +406,11 @@ a{color:inherit;}
 .ft .em{font-size:.84rem;color:rgba(255,255,255,.5);margin:0 0 20px;}
 .ft .em a{color:var(--candle);font-weight:700;text-decoration:none;}
 .ft nav{display:flex;flex-wrap:wrap;justify-content:center;gap:8px 18px;margin:0 0 20px;}
-.ft nav a{font-size:.8rem;color:rgba(255,255,255,.45);text-decoration:none;font-weight:600;transition:color .15s;}
+.ft nav a{font-size:.8rem;color:rgba(255,255,255,.7);text-decoration:none;font-weight:600;transition:color .15s;}
 @media(hover:hover){.ft nav a:hover{color:var(--candle);}}
-.ft .copy{font-size:.76rem;color:rgba(255,255,255,.28);}
+.ft .copy{font-size:.76rem;color:rgba(255,255,255,.6);}
 .ft .manage{margin-top:10px;}
-.ft .manage button{background:none;border:none;font-size:.76rem;color:rgba(255,255,255,.4);cursor:pointer;font-family:var(--ff-sans);text-decoration:underline;padding:0;}
+.ft .manage button{background:none;border:none;font-size:.76rem;color:rgba(255,255,255,.7);cursor:pointer;font-family:var(--ff-sans);text-decoration:underline;padding:0;}
 
 /* ════════ STICKY ════════ */
 .sticky{position:fixed;left:0;right:0;bottom:0;z-index:50;display:flex;justify-content:center;padding:9px 14px calc(9px + env(safe-area-inset-bottom));background:#fff;border-top:1px solid var(--line-mauve);box-shadow:0 -4px 16px rgba(60,46,77,.06);transform:translateY(130%);opacity:0;visibility:hidden;pointer-events:none;}
@@ -437,19 +437,12 @@ a{color:inherit;}
 /* ════════ EFFETS (greffés, design inchangé) ════════ */
 @keyframes fxBreathe{0%,100%{opacity:.55;transform:translateX(-50%) scale(.97);}50%{opacity:1;transform:translateX(-50%) scale(1.09);}}
 .hero::before{background:radial-gradient(ellipse at center,rgba(122,100,148,.34) 0%,rgba(189,143,73,.16) 40%,rgba(122,100,148,0) 72%);animation:fxBreathe 6s ease-in-out infinite;will-change:transform,opacity;}
-.hero{perspective:1000px;}
-.hero-in{transition:transform .3s ease-out;transform-style:preserve-3d;will-change:transform;}
-.fx-motes{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden;}
-.fx-mote{position:absolute;width:6px;height:6px;border-radius:50%;background:radial-gradient(circle,var(--gold-soft),transparent 70%);opacity:0;animation:fxRise linear infinite;}
-@keyframes fxRise{0%{opacity:0;transform:translateY(30px) scale(.6);}18%{opacity:.55;}100%{opacity:0;transform:translateY(-200px) scale(1.1);}}
 html.js .hero-in>*{opacity:0;transform:translateY(16px);}
 html.js .head-l,html.js .head-c,html.js .step,html.js .uc-card,html.js .track,html.js .temoin-feat,html.js .temoin,html.js .offer,html.js .faq-item,html.js .final-in{opacity:0;transform:translateY(24px);}
 .fx-in{opacity:1!important;transform:none!important;transition:opacity .7s ease,transform .75s cubic-bezier(.2,.7,.2,1);}
 .btn{position:relative;overflow:hidden;}
 .btn::after{content:"";position:absolute;top:0;left:-130%;width:55%;height:100%;background:linear-gradient(110deg,transparent,rgba(255,255,255,.45),transparent);transform:skewX(-18deg);transition:left .6s;pointer-events:none;}
 @media(hover:hover){.btn:hover::after{left:140%;}}
-@keyframes fxCta{0%,100%{box-shadow:0 6px 18px rgba(60,46,77,.22);}50%{box-shadow:0 12px 30px rgba(60,46,77,.42);}}
-.hero-cta .btn{animation:fxCta 3.4s ease-in-out infinite;}
 .fx-rip{position:absolute;border-radius:50%;background:rgba(255,255,255,.5);transform:translate(-50%,-50%) scale(0);animation:fxRipple .6s ease-out;pointer-events:none;}
 @keyframes fxRipple{to{transform:translate(-50%,-50%) scale(20);opacity:0;}}
 .uc-card h3{position:relative;display:inline-block;}
@@ -490,7 +483,6 @@ html.js .head-l,html.js .head-c,html.js .step,html.js .uc-card,html.js .track,ht
 
 <!-- HERO -->
 <section class="hero">
-  <div class="fx-motes" id="fxMotes" aria-hidden="true"></div>
   <div class="hero-in">
     <span class="hero-qc">Entreprise québécoise</span>
     <p class="hero-sub">Garde sa mémoire vivante</p>
@@ -820,16 +812,12 @@ function tSeekKey(seekDiv,e){
   window.addEventListener('scroll',toggle,{passive:true});
 })();
 
-/* ════ CONSENT ════ */
-(function(){var c=localStorage.getItem('cm_consent');if(!c){document.getElementById('consent').classList.add('show');}else if(c==='yes'){loadPixel();}})();
-function consentSet(ok){localStorage.setItem('cm_consent',ok?'yes':'no');var b=document.getElementById('consent');b.classList.remove('show','docked');if(ok)loadPixel();}
+/* ════ CONSENT (pixel + PageView/CAPI gérés par cm-pixel.js, partagé, chargé en defer) ════
+   La bannière injectée par cm-pixel.js est sautée car la bannière statique #consent existe déjà.
+   Au chargement : on montre #consent si aucun choix ; si consent=yes, cm-pixel.js (boot) charge le pixel. */
+(function(){var c=localStorage.getItem('cm_consent');if(!c){document.getElementById('consent').classList.add('show');}})();
+function consentSet(ok){var b=document.getElementById('consent');b.classList.remove('show','docked');if(window.cmConsentSet)window.cmConsentSet(ok);}
 function reopenConsent(){var b=document.getElementById('consent');b.classList.add('show');if(document.getElementById('sticky').classList.contains('show'))b.classList.add('docked');else b.classList.remove('docked');}
-function cmGetCookie(n){var m=document.cookie.match('(^|;)\\s*'+n+'\\s*=\\s*([^;]+)');return m?m.pop():'';}
-function loadPixel(){if(window._px)return;window._px=true;!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','909919758755200');
-  /* PageView avec eventID partagé -> dédup avec le PageView CAPI serveur (capi-pageview). Index = page d'entrée #1. */
-  var evid;try{evid=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():(Date.now()+'-'+Math.random().toString(16).slice(2));}catch(e){evid=String(Date.now());}
-  fbq('track','PageView',{},{eventID:evid});
-  try{var p=new URLSearchParams(location.search);fetch('/api/capi-pageview',{method:'POST',headers:{'Content-Type':'application/json'},keepalive:true,body:JSON.stringify({event_id:evid,fbclid:p.get('fbclid')||'',fbp:cmGetCookie('_fbp'),fbc:cmGetCookie('_fbc'),src:location.pathname})}).catch(function(){});}catch(e){}}
 
 /* ════ FAQ ════ */
 function qFaq(btn){var i=btn.closest('.faq-item'),open=i.classList.contains('open');document.querySelectorAll('.faq-item.open').forEach(function(x){x.classList.remove('open');x.querySelector('.faq-q').setAttribute('aria-expanded','false');});if(!open){i.classList.add('open');btn.setAttribute('aria-expanded','true');}}
@@ -837,22 +825,10 @@ function qFaq(btn){var i=btn.closest('.faq-item'),open=i.classList.contains('ope
 <script>
 (function(){
   if(matchMedia('(prefers-reduced-motion:reduce)').matches)return;
-  var m=document.getElementById('fxMotes');
-  if(m){for(var i=0;i<9;i++){var d=document.createElement('span');d.className='fx-mote';
-    d.style.left=(8+Math.random()*84)+'%';d.style.bottom=(Math.random()*42)+'%';
-    d.style.animationDuration=(8+Math.random()*7)+'s';d.style.animationDelay=(-Math.random()*9)+'s';m.appendChild(d);}}
   var hr=document.querySelectorAll('.hero-in>*');
   hr.forEach(function(el,i){setTimeout(function(){el.classList.add('fx-in');},120+i*120);});
   var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting)e.target.classList.add('fx-in');else e.target.classList.remove('fx-in');});},{threshold:.12});
   document.querySelectorAll('.head-l,.head-c,.step,.uc-card,.track,.temoin-feat,.temoin,.offer,.faq-item,.final-in').forEach(function(el){io.observe(el);});
-  var hero=document.querySelector('.hero'),tilt=document.querySelector('.hero-in'),raf=0,rx=0,ry=0;
-  function ap(){tilt.style.transform='rotateX('+ry+'deg) rotateY('+rx+'deg)';raf=0;}
-  function mv(x,y){var r=hero.getBoundingClientRect();rx=((x-r.left)/r.width-.5)*5;ry=-((y-r.top)/r.height-.5)*4;if(!raf)raf=requestAnimationFrame(ap);}
-  if(hero&&tilt){
-    hero.addEventListener('pointermove',function(e){mv(e.clientX,e.clientY);});
-    hero.addEventListener('touchmove',function(e){var t=e.touches[0];if(t)mv(t.clientX,t.clientY);},{passive:true});
-    hero.addEventListener('pointerleave',function(){rx=0;ry=0;if(!raf)raf=requestAnimationFrame(ap);});
-  }
   document.querySelectorAll('.btn').forEach(function(b){b.addEventListener('click',function(e){
     var r=b.getBoundingClientRect(),s=document.createElement('span');s.className='fx-rip';
     s.style.left=(e.clientX-r.left)+'px';s.style.top=(e.clientY-r.top)+'px';s.style.width=s.style.height='10px';
@@ -860,5 +836,6 @@ function qFaq(btn){var i=btn.closest('.faq-item'),open=i.classList.contains('ope
   });});
 })();
 </script>
+<script src="/js/cm-pixel.js" defer></script>
 </body>
 </html>
