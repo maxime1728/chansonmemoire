@@ -69,8 +69,8 @@ exports.handler = async (event) => {
     // On ne fait que SIGNALER le token à Make, qui relit le Project, génère le cadeau et pose
     // pdf_url (puis signet_url). N'écrit AUCUN nouveau champ ici et ne bloque jamais la réponse.
     // FULFILLMENT EN CODE (remplace MAKE_CADEAUX_WEBHOOK_URL) : déclenche la génération du PDF des
-    // paroles (signet retiré pour l'instant). lancer-cadeau/lancer-signet sont gatés 'purchased', idempotents,
-    // et écrivent pdf_url/signet_url (lus par lire-projet). Best-effort, ne bloque jamais la réponse.
+    // paroles (signet retiré pour l'instant). lancer-cadeau est gaté 'purchased', idempotent, et écrit
+    // pdf_url (lu par lire-projet). Best-effort, ne bloque jamais la réponse.
     const SITE = 'https://chansonmemoire.ca';
     if (fields.pdf_template)    { try { await fetch(`${SITE}/api/lancer-cadeau`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token }) }); } catch (_) {} }
 
