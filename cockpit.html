@@ -31,6 +31,8 @@
   .item .from { font-size:13px; font-weight:600; }
   .item .subj { font-size:12px; color:var(--muted); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .chip { display:inline-block; font-size:11px; background:#F3E8EF; color:var(--plum); padding:2px 8px; border-radius:10px; margin-top:6px; }
+  .item .arch { float:right; font-size:11px; color:var(--muted); background:#fff; border:1px solid var(--line); border-radius:7px; padding:3px 9px; cursor:pointer; }
+  @media (hover:hover) { .item .arch:hover { border-color:var(--plum); color:var(--plum); background:#F3E8EF; } }
 
   #detail { overflow:auto; padding:18px 24px 60px; }
   .meta { font-size:14px; margin-bottom:6px; }
@@ -189,11 +191,25 @@
     if (!liste.length) { el.innerHTML = '<div class="empty">Aucune conversation a traiter.</div>'; return; }
     el.innerHTML = liste.map(function (c) {
       return '<div class="item" data-id="' + esc(c.id) + '" onclick="ouvrir(\'' + c.id + '\', this)">' +
+        '<button class="arch" title="Deja regle ailleurs : sortir de la liste" onclick="archiver(\'' + c.id + '\', event)">Archiver</button>' +
         '<div class="from">' + esc(c.expediteur) + '</div>' +
         '<div class="subj">' + esc(c.sujet) + '</div>' +
         (c.type_correction ? '<span class="chip">' + esc(c.type_correction) + '</span>' : '') +
         '</div>';
     }).join('');
+  }
+
+  // « Archiver » : la conversation est deja reglee ailleurs (ex. repondu depuis Gmail) -> on la sort de la file.
+  async function archiver(id, ev){
+    if (ev) ev.stopPropagation();
+    var r = await post({ id:id, action:'archiver' });
+    if (r.ok && r.d && r.d.ok){
+      var node = document.querySelector('.item[data-id="' + id + '"]');
+      if (node) node.parentNode.removeChild(node);
+      if (CUR && CUR.id === id){ CUR = null; document.getElementById('detail').innerHTML = '<div class="empty">Conversation archivee.</div>'; }
+      if (!document.querySelectorAll('.item').length) document.getElementById('liste').innerHTML = '<div class="empty">Aucune conversation a traiter.</div>';
+      toast('Archive');
+    } else { toast('Echec archivage'); }
   }
 
   // ── DÉTAIL ───────────────────────────────────────────────────────────────────────────────────────
