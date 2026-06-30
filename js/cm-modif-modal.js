@@ -238,6 +238,12 @@
           els.note.textContent = 'Une version est déjà en préparation. Laisse-nous finir celle-là, puis réessaie.';
           return;   // #16 : pas envoyé -> on garde le brouillon
         }
+        if (res.route === 'plafond') {
+          // Plafond atteint : la demande est DÉJÀ enregistrée côté serveur (Maxime la reçoit) -> pas de
+          // double capture. Le client voit « on a bien reçu ta demande, on te revient ».
+          hideLoad(); clearDraft(); showDone();
+          return;
+        }
         // route 'regen' / 'prononciation' / cas inexploitable -> capture cockpit + message « on te revient ».
         hideLoad(); captureFallback(texte); clearDraft(); showDone();
       })
