@@ -13,9 +13,7 @@ const GENERATIONS = 'Generations';
 const CLD_SECRET  = process.env.CLOUDINARY_API_SECRET;
 
 const MG_KEY    = process.env.MAILGUN_API_KEY;
-const MG_DOMAIN = process.env.MAILGUN_DOMAIN_ACHAT || process.env.MAILGUN_DOMAIN;
-const MG_FROM   = process.env.MAILGUN_FROM_ACHAT || process.env.MAILGUN_FROM || 'Chanson Mémoire <info@chansonmemoire.ca>';
-const { envoyerCourriel: mgEnvoyer } = require('./courriel');
+const { envoyerCourriel: mgEnvoyer } = require('./courriel');   // cover = transactionnel -> From + sous-domaine résolus par TYPE (Lot 6)
 const SITE      = process.env.SITE_URL || 'https://chansonmemoire.ca';
 
 function formulaLiteral(v) {
@@ -56,7 +54,7 @@ function fullAudioUrl(stored) {
 
 // Envoi via le wrapper central (_lib/courriel) : POST Mailgun + journalisation Courriels (type 'cover').
 async function envoyerCourriel(to, subject, html, projetId) {
-  const { ok } = await mgEnvoyer({ to, subject, html, from: MG_FROM, domain: MG_DOMAIN, type: 'cover', projetId });
+  const { ok } = await mgEnvoyer({ to, subject, html, type: 'cover', projetId });
   return ok;
 }
 async function emailClient(api, headers, projet) {

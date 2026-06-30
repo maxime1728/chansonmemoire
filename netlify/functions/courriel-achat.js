@@ -17,9 +17,7 @@ const SITE     = 'https://chansonmemoire.ca';
 const UUID_V4  = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const MG_KEY    = process.env.MAILGUN_API_KEY;       // no-op si absent
-const MG_DOMAIN = process.env.MAILGUN_DOMAIN_ACHAT || process.env.MAILGUN_DOMAIN;        // sous-domaine TRANSACTIONNEL
-const MG_FROM   = process.env.MAILGUN_FROM_ACHAT || process.env.MAILGUN_FROM || 'Chanson Mémoire <info@chansonmemoire.ca>';   // post-achat -> sous-domaine achat
-const { envoyerCourriel: mgEnvoyer } = require('./_lib/courriel');
+const { envoyerCourriel: mgEnvoyer } = require('./_lib/courriel');   // From + sous-domaine d'envoi résolus par TYPE dans le wrapper (Lot 6)
 
 const UPSELL_LABEL = { instrumental: 'la version instrumentale', paroles_vivantes: 'les paroles vivantes en vidéo', pdf_paroles: 'les paroles en PDF' };
 
@@ -33,7 +31,7 @@ function esc(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&
 
 // Envoi via le wrapper central (_lib/courriel) : POST Mailgun + journalisation dans la table Courriels.
 async function envoyerCourriel(to, subject, html, projetId) {
-  const { ok } = await mgEnvoyer({ to, subject, html, from: MG_FROM, domain: MG_DOMAIN, type: 'achat', projetId });
+  const { ok } = await mgEnvoyer({ to, subject, html, type: 'achat', projetId });
   return ok;
 }
 

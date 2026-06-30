@@ -23,9 +23,7 @@ const CLD_KEY    = process.env.CLOUDINARY_API_KEY;
 const CLD_SECRET = process.env.CLOUDINARY_API_SECRET;
 
 const MG_KEY    = process.env.MAILGUN_API_KEY;       // no-op si absent (Mailgun en cours de config)
-const MG_DOMAIN = process.env.MAILGUN_DOMAIN_ACHAT || process.env.MAILGUN_DOMAIN;
-const MG_FROM   = process.env.MAILGUN_FROM || 'Chanson Mémoire <cadeau@chansonmemoire.ca>';
-const { envoyerCourriel: mgEnvoyer } = require('./_lib/courriel');
+const { envoyerCourriel: mgEnvoyer } = require('./_lib/courriel');   // cadeau = transactionnel -> From + sous-domaine résolus par TYPE (Lot 6)
 
 function formulaLiteral(v) {
   const s = String(v);
@@ -127,7 +125,7 @@ async function envoyerCourriel(to, titre, paroles, pdfBuffer, projetId) {
 
   const { ok } = await mgEnvoyer({
     to, subject: 'Les paroles de ' + (titre || 'votre chanson'), html,
-    from: MG_FROM, domain: MG_DOMAIN, type: 'cadeau', projetId,
+    type: 'cadeau', projetId,
     attachment: { buffer: pdfBuffer, filename: 'paroles.pdf', contentType: 'application/pdf' }
   });
   return ok;
