@@ -103,6 +103,9 @@ exports.handler = async (event) => {
     // qu'on consomme ici puis qu'on PROMEUT (5b). Flag OFF -> on lit l'ancien slot Projet adjusted_lyrics.
     const genProposee = (!regenerate && process.env.STATE_MOVE_PROPOSEE === '1')
       ? await trouverGenProposee(API, headers, p.project) : null;
+    // Plafond v2 : ce cover est-il déclenché par l'équipe (cockpit, marqueur cover_admin) ? -> admin_triggered
+    // sur la Gen (ne compte pas). Flag OFF -> faux, comportement inchangé. (régé = géré côté callback-cover.)
+    const adminCover = process.env.PLAFOND_V2 === '1' && !!p.cover_admin;
     const propLyrics = genProposee ? ((genProposee.fields || {}).lyrics || '').trim() : '';
     const propStyle  = genProposee ? ((genProposee.fields || {}).gen_style_prompt || '').trim() : '';
 
@@ -146,7 +149,7 @@ exports.handler = async (event) => {
     await fetch(`${API}/Projects/${projet.id}`, {
       method: 'PATCH',
       headers: { ...headers, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fields: { cover_task_id: String(taskId), cover_launched_at: new Date().toISOString(), pending_cover_style: style } })
+      body: JSON.stringify({ fields: { cover_task_id: String(taskId), cover_launched_at: new Date().toISOString(), pending_cover_style: style, ...(adminCover && !regenerate ? { cover_admin: false } : {}) } })
     });
 
     // 5b. MODÈLE GENERATION-LEVEL (cover « mélodie préservée » seulement) : crée la Generation cover en
@@ -159,14 +162,14 @@ exports.handler = async (event) => {
       if (existant) {
         await fetch(`${API}/Generations/${existant.id}`, {
           method: 'PATCH', headers: { ...headers, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ fields: { suno_task_id: String(taskId), incident_status: 'surveillance', version_status: 'en_production' } })
+          body: JSON.stringify({ fields: { suno_task_id: String(taskId), incident_status: 'surveillance', version_status: 'en_production', ...(adminCover ? { admin_triggered: true } : {}) } })
         });
       } else if (genProposee) {
         // STATE-MOVE (C2) : PROMEUT la Gen `proposée` existante -> en_production (audio_pending) au lieu
         // d'en créer une neuve. Conserve ses paroles/style édités + son generation_no. Idempotent.
         await fetch(`${API}/Generations/${genProposee.id}`, {
           method: 'PATCH', headers: { ...headers, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ fields: { suno_task_id: String(taskId), generation_status: 'audio_pending', version_status: 'en_production', incident_status: 'surveillance' } })
+          body: JSON.stringify({ fields: { suno_task_id: String(taskId), generation_status: 'audio_pending', version_status: 'en_production', incident_status: 'surveillance', ...(adminCover ? { admin_triggered: true } : {}) } })
         });
       } else {
         const newNo = await prochainNo(API, headers, p.project);
@@ -181,6 +184,7 @@ exports.handler = async (event) => {
         const ms = g.gen_music_style || p.music_style; if (ms) fields.gen_music_style = ms;
         const md = g.gen_mood        || p.mood;        if (md) fields.gen_mood        = md;
         const vx = g.gen_voice       || p.voice;       if (vx) fields.gen_voice       = vx;
+        if (adminCover) fields.admin_triggered = true;
         await fetch(`${API}/Generations`, {
           method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' },
           body: JSON.stringify({ fields })
