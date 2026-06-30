@@ -1916,6 +1916,24 @@ setTimeout(function(){ if (window.cmReady) window.cmReady(); }, 3000);  /* filet
   var send = document.getElementById('cm-modif-send');
   var chips = ov ? ov.querySelectorAll('.cm-modif-chip') : [];
 
+  /* #16 : brouillon non envoyé (par token) ; #6 : overlay de chargement plein écran. */
+  var DRAFT_KEY = 'cm_modif_draft_' + token;
+  function saveDraft(){ try { localStorage.setItem(DRAFT_KEY, (ta && ta.value) || ''); } catch(_){} }
+  function clearDraft(){ try { localStorage.removeItem(DRAFT_KEY); } catch(_){} }
+  var loadOv = null;
+  function showLoad(){
+    if(!loadOv){
+      var st = document.createElement('style'); st.textContent = '@keyframes cmModifSpin{to{transform:rotate(360deg);}}'; document.head.appendChild(st);
+      loadOv = document.createElement('div');
+      loadOv.id = 'cm-modif-loading';
+      loadOv.style.cssText = 'position:fixed;inset:0;z-index:1100;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:var(--cm-bg,#FBF7F2);text-align:center;padding:24px;';
+      loadOv.innerHTML = '<div style="width:44px;height:44px;border-radius:50%;border:3px solid var(--cm-mauve,#C98BB0);border-top-color:var(--cm-plum-dark,#5C2D4A);animation:cmModifSpin .8s linear infinite;"></div><p style="font-family:\'Mulish\',sans-serif;font-size:16px;color:var(--cm-text-sub,#7A6070);max-width:340px;line-height:1.5;">Un instant, on prépare tes paroles corrigées…</p>';
+      document.body.appendChild(loadOv);
+    }
+    loadOv.style.display = 'flex';
+  }
+  function hideLoad(){ if(loadOv) loadOv.style.display = 'none'; }
+
   var CFG = {
     pron:     { ph:"Quel mot, et comment ça devrait sonner ? Ex. : « Ghislaine » se dit « Jislaine ».", hint:"On vérifie la prononciation et on te revient." },
     souvenir: { ph:"Raconte le souvenir à ajouter. Ex. : ses étés au chalet avec les petits-enfants.", hint:"On réécrit les paroles, tu les valides, puis on régénère." },
@@ -1939,6 +1957,7 @@ setTimeout(function(){ if (window.cmReady) window.cmReady(); }, 3000);  /* filet
     var f = document.getElementById('cm-modif-form'), d = document.getElementById('cm-modif-done');
     if (f) f.style.display = ''; if (d) d.style.display = 'none';
     if (statusEl) statusEl.textContent = ''; if (send) send.disabled = false;
+    try { if (ta) ta.value = localStorage.getItem(DRAFT_KEY) || ''; } catch(_){}   // #16 : restaure le brouillon non envoyé
     ov.classList.add('show'); ov.setAttribute('aria-hidden','false');
     if (window.cmModal) window.cmModal.open(ov, closeModal);
   }
@@ -1957,32 +1976,37 @@ setTimeout(function(){ if (window.cmReady) window.cmReady(); }, 3000);  /* filet
   if (ok) ok.addEventListener('click', closeModal);
   if (ov) ov.addEventListener('click', function(e){ if (e.target === ov) closeModal(); });
 
+  if (ta) ta.addEventListener('input', saveDraft);   // #16 : garde le brouillon non envoyé
   if (send) send.addEventListener('click', function(){
     var texte = (ta && ta.value || '').trim();
     if (!texte){ if (statusEl) statusEl.textContent = 'Décris en quelques mots ce que tu veux ajuster.'; if (ta) ta.focus(); return; }
     send.disabled = true; if (statusEl) statusEl.textContent = 'Un instant, on prépare ta demande…';
+    showLoad();   // #6 : overlay de chargement plein écran pendant l'analyse
     fetch('/api/demander-modif-client', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ token: token, action: 'analyser', texte: texte }) })
       .then(function(r){ return r.ok ? r.json() : null; })
       .then(function(res){
         if (!res || !res.ok) throw new Error('ko');
         if (res.route === 'busy'){
+          hideLoad();
           if (statusEl) statusEl.textContent = 'Ta version précédente se prépare encore, laisse-lui un petit instant puis réessaie.';
-          send.disabled = false; return;
+          send.disabled = false; return;   // #16 : pas envoyé -> on garde le brouillon
         }
         if (res.route === 'cover'){
+          clearDraft();   // #16 : demande partie en proposition -> on vide le brouillon
           try { sessionStorage.setItem('cm_cover_' + token, JSON.stringify({ lyrics: res.lyrics || '', titre: res.titre || '' })); } catch (_) {}
           window.location.href = '/revision?id=' + encodeURIComponent(token) + '&mode=cover';
-          return;
+          return;   // l'overlay de chargement reste affiché pendant la bascule vers /revision
         }
         if (res.route === 'regen'){
+          hideLoad();
           if (statusEl) statusEl.textContent = 'Pour changer le style, choisis-le dans la liste.';
           closeModal(); if (bStyle) bStyle.click(); return;
         }
         /* prononciation : enregistre la demande (texte) pour l'équipe, message « on te revient ». */
         return fetch('/api/prononciation', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ token: token, mot:'', indication:'', autre: texte }) })
-          .then(function(){ var f=document.getElementById('cm-modif-form'), d=document.getElementById('cm-modif-done'); if (f) f.style.display='none'; if (d) d.style.display='block'; if (statusEl) statusEl.textContent=''; });
+          .then(function(){ hideLoad(); clearDraft(); var f=document.getElementById('cm-modif-form'), d=document.getElementById('cm-modif-done'); if (f) f.style.display='none'; if (d) d.style.display='block'; if (statusEl) statusEl.textContent=''; });
       })
-      .catch(function(){ send.disabled = false; if (statusEl) statusEl.textContent = 'Un souci est survenu. Réessaie dans un instant.'; });
+      .catch(function(){ hideLoad(); send.disabled = false; if (statusEl) statusEl.textContent = 'Un souci est survenu. Réessaie dans un instant.'; });
   });
 })();
 
