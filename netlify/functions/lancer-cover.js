@@ -13,6 +13,7 @@
 const crypto = require('crypto');
 const { styleFor } = require('./_lib/style');
 const { coverGenEnAttente, prochainNo, trouverGenProposee } = require('./_lib/cover');
+const { appliquerLexique, lireDictionnaire } = require('./_lib/lexique');   // dictionnaire phonétique (étape 3)
 
 const BASE_ID  = process.env.AIRTABLE_BASE_ID;
 const AT_TOKEN = process.env.AIRTABLE_TOKEN;
@@ -109,12 +110,24 @@ exports.handler = async (event) => {
     const propLyrics = genProposee ? ((genProposee.fields || {}).lyrics || '').trim() : '';
     const propStyle  = genProposee ? ((genProposee.fields || {}).gen_style_prompt || '').trim() : '';
 
-    // Paroles : Gen proposée (state-move) -> slot Projet adjusted_lyrics (legacy) -> phonétique -> origine.
-    // SUNO reçoit la version PHONÉTIQUE en priorité (= les nouvelles paroles avec les mots mal prononcés
-    // réécrits), car un cover porte presque toujours un changement de paroles ET parfois une prononciation.
-    // Les paroles AFFICHÉES au client restent claires (la Gen stocke adjusted_lyrics, pas ce prompt).
-    // lyrics_phonetique est tenu À JOUR par decortique (vidé si pas de prononciation) -> jamais périmé.
-    const prompt = propLyrics || (g.lyrics_phonetique && g.lyrics_phonetique.trim()) || (p.adjusted_lyrics && p.adjusted_lyrics.trim()) || g.lyrics || '';
+    // Paroles CLAIRES (affichées) : Gen proposée (state-move) -> slot Projet adjusted_lyrics -> origine.
+    const lyricsClean = propLyrics || (p.adjusted_lyrics && p.adjusted_lyrics.trim()) || g.lyrics || '';
+    let prompt;
+    if (process.env.LEXIQUE_PHON === '1') {
+      // DICTIONNAIRE PHONÉTIQUE (étape 3) : Suno reçoit lyricsClean RÉÉCRIT par le dictionnaire (global langue
+      // + override projet) -> corrections appliquées partout, pour toujours. L'affiché reste clair (la Gen
+      // stocke adjusted_lyrics, pas ce prompt). Best-effort : le dictionnaire ne bloque jamais l'envoi.
+      prompt = lyricsClean;
+      try {
+        const dict = await lireDictionnaire(API, headers, { langue: p.language || 'fr-CA', projetId: projet.id });
+        if (dict.size) prompt = appliquerLexique(lyricsClean, dict);
+      } catch (_) {}
+    } else {
+      // Legacy (#270) : SUNO reçoit lyrics_phonetique par-gen en priorité (= nouvelles paroles + mots réécrits),
+      // car un cover porte presque toujours un changement de paroles ET parfois une prononciation. Tenu à jour
+      // par decortique (vidé si pas de prononciation) -> jamais périmé.
+      prompt = propLyrics || (g.lyrics_phonetique && g.lyrics_phonetique.trim()) || (p.adjusted_lyrics && p.adjusted_lyrics.trim()) || g.lyrics || '';
+    }
     if (!prompt.trim()) return { statusCode: 409, body: JSON.stringify({ error: 'Paroles introuvables' }) };
     const style = propStyle || (p.adjusted_style_prompt && p.adjusted_style_prompt.trim())
       || await styleFor({ music_style: g.gen_music_style || p.music_style, mood: g.gen_mood || p.mood, cadeau: p.song_type === 'cadeau', language: p.language });
