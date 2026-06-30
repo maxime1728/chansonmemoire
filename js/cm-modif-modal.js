@@ -144,6 +144,8 @@
     [].forEach.call(els.chips.children, function (b) { styleChip(b, b.dataset.k === k); });
     var c = CHIPS.filter(function (x) { return x.k === k; })[0];
     if (c) { els.ta.setAttribute('placeholder', c.ph); els.hint.textContent = c.hint; }
+    // #16 : on garde aussi la pastille choisie (par token), pour qu'elle survive un close/reopen.
+    try { localStorage.setItem('cm_modif_chip_' + (cfg && cfg.token), k || ''); } catch (_) {}
   }
 
   function openModal() {
@@ -153,8 +155,15 @@
     els.sub.textContent = cfg.sub;
     els.hint.textContent = cfg.hint;
     try { els.ta.value = localStorage.getItem('cm_modif_draft_' + cfg.token) || ''; } catch (_) { els.ta.value = ''; }   // #16 : restaure le brouillon non envoyé
-    els.ta.setAttribute('placeholder', 'Décris ce que tu aimerais changer…');
-    [].forEach.call(els.chips.children, function (b) { styleChip(b, false); });
+    // #16 : restaure aussi la pastille choisie (placeholder + hint de contexte), sinon retour à l'état neutre.
+    var savedChip = '';
+    try { savedChip = localStorage.getItem('cm_modif_chip_' + cfg.token) || ''; } catch (_) {}
+    if (savedChip && CHIPS.some(function (c) { return c.k === savedChip; })) {
+      setActive(savedChip);
+    } else {
+      els.ta.setAttribute('placeholder', 'Décris ce que tu aimerais changer…');
+      [].forEach.call(els.chips.children, function (b) { styleChip(b, false); });
+    }
     els.form.style.display = '';
     els.done.style.display = 'none';
     els.note.textContent = '';
@@ -206,7 +215,7 @@
   // Mode SELF-SERVE post-achat (locké avec Maxime 2026-06-30) : on route via demander-modif-client.
   // Une demande de PAROLES (route 'cover') part en acceptation INLINE sur /revision, comme l'aperçu,
   // au lieu du « on te revient par courriel ». Style/prononciation restent capturés au cockpit (decortique).
-  function clearDraft() { try { localStorage.removeItem('cm_modif_draft_' + cfg.token); } catch (_) {} }
+  function clearDraft() { try { localStorage.removeItem('cm_modif_draft_' + cfg.token); localStorage.removeItem('cm_modif_chip_' + cfg.token); } catch (_) {} }
   function hideLoad() { if (els.load) els.load.classList.remove('show'); }
 
   function submitSelfServe(texte) {

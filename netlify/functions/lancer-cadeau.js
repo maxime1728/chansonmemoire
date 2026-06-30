@@ -118,10 +118,10 @@ async function envoyerCourriel(to, titre, paroles, pdfBuffer, projetId) {
   const parolesHtml = String(paroles || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/\n/g, '<br>');
   const html =
     `<div style="font-family:Georgia,serif;color:#2E1A28;line-height:1.7;max-width:560px;">` +
-    `<p>Voici les paroles de <strong>${titre || 'votre chanson'}</strong> — en pièce jointe, une belle feuille en PDF à imprimer ou à garder.</p>` +
+    `<p>Voici les paroles de <strong>${titre || 'votre chanson'}</strong> : en pièce jointe, une belle feuille en PDF à imprimer ou à garder.</p>` +
     `<hr style="border:none;border-top:1px solid #E5DAE0;margin:18px 0;">` +
     `<div style="white-space:normal;color:#3a2a34;">${parolesHtml}</div>` +
-    `<p style="margin-top:22px;color:#7A6070;">Elle vous appartient — gardez-la précieusement.<br>— L'équipe Chanson Mémoire</p></div>`;
+    `<p style="margin-top:22px;color:#7A6070;">Elle vous appartient, gardez-la précieusement.<br>L'équipe Chanson Mémoire</p></div>`;
 
   const { ok } = await mgEnvoyer({
     to, subject: 'Les paroles de ' + (titre || 'votre chanson'), html,

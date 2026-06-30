@@ -185,7 +185,7 @@
     <div class="section-title">Sa vidéo souvenir</div>
     <p class="section-sub">Un montage de ses photos au fil des paroles, porté par sa chanson.</p>
     <div class="video-frame">
-      <video src="https://res.cloudinary.com/dcx1tfm47/video/upload/v1782528297/video-memoire/memoire_8f42d53a-627e-4370-be0f-2dba1683325b.mp4" controls preload="metadata" playsinline></video>
+      <video src="https://res.cloudinary.com/dcx1tfm47/video/upload/v1782528297/video-memoire/memoire_8f42d53a-627e-4370-be0f-2dba1683325b.mp4" poster="https://res.cloudinary.com/dcx1tfm47/video/upload/so_2/v1782528297/video-memoire/memoire_8f42d53a-627e-4370-be0f-2dba1683325b.jpg" controls preload="metadata" playsinline></video>
     </div>
   </div>
 
@@ -323,10 +323,16 @@
     var f = document.getElementById('videoFrame');
     var API = '/api/exemple-paroles-vivantes';
 
+    /* Thumbnail : frame JPG Cloudinary (so_2) dérivée de l'URL vidéo -> plus de cadre noir. */
+    function posterFor(u){
+      if(!u || u.indexOf('res.cloudinary.com') < 0 || u.indexOf('/upload/') < 0) return '';
+      return u.replace(/\.(mp4|mov|webm|m4v)(\?.*)?$/i, '.jpg').replace('/upload/', '/upload/so_2/');
+    }
     function showVideo(url){
       f.innerHTML = '';
       var v = document.createElement('video');
       v.src = url; v.controls = true; v.preload = 'metadata'; v.setAttribute('playsinline','');
+      var p = posterFor(url); if(p) v.setAttribute('poster', p);
       f.appendChild(v);
     }
     function showPh(html){ f.innerHTML = '<div class="video-ph">' + html + '</div>'; }
@@ -450,6 +456,22 @@
   setTimeout(check,20000);
 })();
 </script>
+  <!-- Popup « page exemple » pour les visiteurs SANS token (navigation libre) : réutilise la même
+       fenêtre que le cas avec token (#3), avec un texte générique. 1 fois par session. -->
+  <script>
+  (function(){
+    var UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    var token=new URLSearchParams(location.search).get('id');
+    if(token && UUID.test(token)) return;   /* cas token = géré par le bloc #3 ci-dessus */
+    try{ if(sessionStorage.getItem('cm_ex_intro_seen')) return; }catch(_){}
+    var ov=document.getElementById('exIntroOverlay'); if(!ov) return;
+    var p=ov.querySelector('p');
+    if(p) p.innerHTML="On te montre à quoi ressemblera une page-mémoire. La tienne sera unique, créée à partir de tes souvenirs.";
+    ov.classList.add('show'); ov.setAttribute('aria-hidden','false');
+    var cb=document.getElementById('exIntroClose'); if(cb) cb.focus();
+    try{ sessionStorage.setItem('cm_ex_intro_seen','1'); }catch(_){}
+  })();
+  </script>
   <script src="/js/cm-pixel.js" defer></script>
 </body>
 </html>
