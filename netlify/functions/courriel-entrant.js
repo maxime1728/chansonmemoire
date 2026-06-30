@@ -13,8 +13,10 @@
 // d'échec d'écriture ou d'erreur, on répond 5xx -> Mailgun RÉESSAIE (plusieurs heures). Les cas filtrés
 // volontairement (nos adresses, auto-réponses) répondent 200 (ce ne sont pas des pertes).
 //
-// FIL : courriels d'un même échange (expéditeur + sujet normalisé, 30 j) regroupés (thread_key) ; on
-// vide alors brouillon_ia pour que le cron re-rédige sur le fil complet. PLUSIEURS PROJETS : tous liés.
+// FIL : UNE conversation par CLIENT (thread_key = adresse de l'expéditeur seule). Tout l'historique du
+// client est regroupé dans une ligne ; on vide alors brouillon_ia pour que le cron re-rédige sur le fil
+// complet, et on alimente `historique` (timeline lisible). PLUSIEURS PROJETS : tous liés (l'IA est avertie
+// du nombre de projets côté brouillon-cron pour ne pas confondre les chansons).
 //
 // Voix/garde-fous (CLAUDE.md) : appliqués côté brouillon-cron (rédaction). Env : MAILGUN_SIGNING_KEY,
 // MAKE_WEBHOOK_SECRET, AIRTABLE_TOKEN, AIRTABLE_BASE_ID.
@@ -26,12 +28,14 @@ const AT_TOKEN = process.env.AIRTABLE_TOKEN;
 const API      = `https://api.airtable.com/v0/${BASE_ID}`;
 const SECRET   = process.env.MAKE_WEBHOOK_SECRET;
 const MG_SIGNING_KEY = process.env.MAILGUN_SIGNING_KEY;   // clé de signature webhook Mailgun (voie DIRECTE)
+const CLD_CLOUD  = process.env.CLOUDINARY_CLOUD_NAME;     // pièces jointes -> Cloudinary (URL permanente pour Airtable)
+const CLD_KEY    = process.env.CLOUDINARY_API_KEY;
+const CLD_SECRET = process.env.CLOUDINARY_API_SECRET;
 
 const CLIENTS  = 'tblQbF1OlE3uRxFra';
 const CONVOS   = 'tbl3KBgXthCPromxF';
 const CLIENT_PROJECTS_LINK = 'fldayFzM1PdALeWKL';   // lien Clients -> Projects (lu par returnFieldsByFieldId)
 
-const FENETRE_FIL_MS = 30 * 24 * 60 * 60 * 1000;     // au-delà de 30 j, un même sujet = nouvelle conversation
 const MAX_TEXTE      = 90000;                          // garde-fou longueur (champ long text)
 
 // Échappe une valeur pour un littéral filterByFormula. null si ambigu (' et ").
@@ -61,6 +65,29 @@ function estAutoReponse(subject) {
   return /^(re:\s*)?(out of office|absence|automatic reply|réponse automatique|delivery status|undeliverable|mail delivery|échec de remise)/i.test(subject || '');
 }
 
+// Upload d'une pièce jointe sur Cloudinary (resource_type auto = tout type) -> URL permanente pour Airtable.
+// Best-effort : '' si non configuré / échec (on ne bloque jamais la capture du courriel).
+async function uploadPieceJointe(buffer, filename, contentType) {
+  if (!CLD_CLOUD || !CLD_KEY || !CLD_SECRET) return '';
+  try {
+    const ts = Math.floor(Date.now() / 1000);
+    const folder = 'cm_courriels';
+    const publicId = `pj_${ts}_${Math.random().toString(36).slice(2, 8)}`;
+    const toSign = `folder=${folder}&public_id=${publicId}&timestamp=${ts}`;
+    const signature = crypto.createHash('sha1').update(toSign + CLD_SECRET).digest('hex');
+    const form = new FormData();
+    form.append('file', new Blob([buffer], { type: contentType || 'application/octet-stream' }), filename || 'piece');
+    form.append('api_key', CLD_KEY);
+    form.append('timestamp', String(ts));
+    form.append('public_id', publicId);
+    form.append('folder', folder);
+    form.append('signature', signature);
+    const r = await fetch(`https://api.cloudinary.com/v1_1/${CLD_CLOUD}/auto/upload`, { method: 'POST', body: form });
+    const d = await r.json().catch(() => ({}));
+    return (r.ok && d.secure_url) ? d.secure_url : '';
+  } catch (_) { return ''; }
+}
+
 // Vérifie la signature d'un POST Mailgun entrant : HMAC-SHA256(timestamp+token) == signature.
 // Ferme l'endpoint à tout sauf Mailgun.
 function verifierMailgun(timestamp, token, signature) {
@@ -77,6 +104,7 @@ exports.handler = async (event) => {
 
   const ct = (event.headers['content-type'] || event.headers['Content-Type'] || '').toLowerCase();
   let from = '', subject = '', message = '', msgId = '', recipient = '';
+  let attachFiles = [];   // pièces jointes (voie Mailgun multipart seulement)
 
   if (ct.includes('application/json')) {
     if (!SECRET) { console.error('[courriel-entrant] MAKE_WEBHOOK_SECRET manquant'); return { statusCode: 500, body: '{}' }; }
@@ -104,6 +132,12 @@ exports.handler = async (event) => {
     message = (form.get('stripped-text') || form.get('body-plain') || '').toString().trim();   // texte sans l'historique cité
     msgId = (form.get('Message-Id') || form.get('message-id') || '').toString().trim();
     recipient = (form.get('recipient') || '').toString().trim();
+    // Pièces jointes Mailgun : champs attachment-1..N (+ attachment-count). On les retient pour upload Cloudinary.
+    const nAtt = parseInt(form.get('attachment-count') || '0', 10) || 0;
+    for (let i = 1; i <= nAtt; i++) {
+      const part = form.get(`attachment-${i}`);
+      if (part && typeof part.arrayBuffer === 'function') attachFiles.push(part);
+    }
   }
 
   if (!from) return { statusCode: 200, body: JSON.stringify({ ok: true, skipped: 'no_sender' }) };
@@ -112,7 +146,9 @@ exports.handler = async (event) => {
 
   const headers = { Authorization: `Bearer ${AT_TOKEN}` };
   const now = new Date();
-  const threadKey = `${from.toLowerCase()}|${normaliserSujet(subject).toLowerCase()}`.slice(0, 250);
+  // Option douce : 1 ligne par CLIENT -> thread_key = email seul (sujet ignoré). Tout l'historique du
+  // client se regroupe ; les multi-projets sont distingués par le lien Projet + projet_a_travailler.
+  const threadKey = from.toLowerCase().slice(0, 250);
 
   try {
     // 1. MATCH : Client par email -> TOUS ses projets (best-effort ; non bloquant pour la capture).
@@ -127,26 +163,48 @@ exports.handler = async (event) => {
       if (Array.isArray(projs)) projectIds = projs.slice();
     }
 
-    // 2. FIL : conversation existante (même thread_key, récente) ?
+    // 2. FIL : conversation existante du client (même thread_key = même email) ? On fusionne TOUJOURS
+    //    (1 ligne par client) ; un client qui réécrit rouvre sa conversation (statut repassé à a_verifier).
     let existing = null;
     const litThread = formulaLiteral(threadKey);
     if (litThread !== null) {
       const fT = encodeURIComponent(`{thread_key}=${litThread}`);
       const rT = await fetch(`${API}/${CONVOS}?filterByFormula=${fT}&sort%5B0%5D%5Bfield%5D=recu_le&sort%5B0%5D%5Bdirection%5D=desc&maxRecords=1`, { headers });
       const dT = await rT.json().catch(() => ({}));
-      const cand = dT.records && dT.records[0];
-      if (cand) {
-        const prev = cand.fields && cand.fields.recu_le ? new Date(cand.fields.recu_le).getTime() : 0;
-        if (now.getTime() - prev <= FENETRE_FIL_MS) existing = cand;
-      }
+      existing = (dT.records && dT.records[0]) || null;
     }
 
     // 3. Texte du fil (accumulé si on regroupe).
-    const sep = `\n\n──────── ${now.toISOString().slice(0, 16).replace('T', ' ')} ────────\n`;
+    const horodatage = now.toISOString().slice(0, 16).replace('T', ' ');
+    const sep = `\n\n──────── ${horodatage} ────────\n`;
     const threadText = existing ? ((existing.fields.message || '') + sep + message).slice(-MAX_TEXTE) : message;
+
+    // Timeline lisible (vue inbox) : entrant ↓ / sortant ↑. Le sortant est ajouté par repondre-courriel à l'envoi.
+    const histoEntry = `↓ ${horodatage} — reçu de ${from}\n${message}`;
+    const historique = existing ? ((existing.fields.historique || '') + '\n\n' + histoEntry).slice(-MAX_TEXTE) : histoEntry;
 
     const liensExistants = (existing && Array.isArray(existing.fields.Projet)) ? existing.fields.Projet : [];
     const liens = [...new Set([...liensExistants, ...projectIds])];
+
+    // Pièces jointes -> Cloudinary -> champ attachment (append aux existantes). Best-effort : un échec
+    // d'upload n'empêche jamais l'enregistrement du courriel.
+    let piecesJointes = null;
+    if (attachFiles.length) {
+      try {
+        const ajoutees = [];
+        for (const part of attachFiles) {
+          const buf = Buffer.from(await part.arrayBuffer());
+          const url = await uploadPieceJointe(buf, part.name, part.type);
+          if (url) ajoutees.push({ url, filename: part.name || 'piece-jointe' });
+        }
+        if (ajoutees.length) {
+          const existAtt = (existing && Array.isArray(existing.fields.pieces_jointes))
+            ? existing.fields.pieces_jointes.map(a => ({ url: a.url, filename: a.filename }))
+            : [];
+          piecesJointes = [...existAtt, ...ajoutees];
+        }
+      } catch (e) { console.error('[courriel-entrant] pieces jointes', e && e.message); }
+    }
 
     // 4. STORE — étape critique. PAS de brouillon ici (découplé -> brouillon-cron) : la capture ne dépend
     //    pas d'Anthropic. brouillon_ia vide + statut a_verifier => apparaît en file, le cron le rédige.
@@ -154,14 +212,17 @@ exports.handler = async (event) => {
       expediteur: from,
       sujet: subject.slice(0, 250),
       message: threadText,
+      historique: historique,
       recu_le: now.toISOString(),
       statut: 'a_verifier',
       message_id: msgId.slice(0, 250),
       thread_key: threadKey
     };
     if (liens.length) champs.Projet = liens;
+    if (piecesJointes) champs.pieces_jointes = piecesJointes;
     if (existing) {
       champs.brouillon_ia = '';   // nouveau message dans le fil -> le cron re-rédige sur le fil complet
+      champs.resume_ia = '';      // fil rouvert -> le résumé sera régénéré à la prochaine clôture
     } else {
       if (recipient) champs.destinataire = recipient;
       champs.repondre_de = recipient;   // « De » par défaut = l'adresse à laquelle le client a écrit

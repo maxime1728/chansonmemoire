@@ -22,17 +22,15 @@ const MAX_RETRIES  = 6;   // plafond de relances paroles (anti-coût)
 const MG_KEY    = process.env.MAILGUN_API_KEY;
 const MG_DOMAIN = process.env.MAILGUN_DOMAIN_MARKETING;
 const MG_FROM   = process.env.MAILGUN_FROM_MARKETING || 'Chanson Mémoire <nathalie@info.chansonmemoire.ca>';
+const { envoyerCourriel: mgEnvoyer } = require('./_lib/courriel');
 
 function headers() { return { Authorization: `Bearer ${AT_TOKEN}` }; }
 function formulaLiteral(v) { const s = String(v); if (!s.includes('"')) return `"${s}"`; if (!s.includes("'")) return `'${s}'`; return null; }
 
-async function envoyerCourriel(to, subject, html) {
-  if (!MG_KEY || !MG_DOMAIN || !to || !to.includes('@')) return false;
-  const form = new FormData();
-  form.append('from', MG_FROM); form.append('to', to); form.append('subject', subject); form.append('html', html);
-  const auth = 'Basic ' + Buffer.from('api:' + MG_KEY).toString('base64');
-  const r = await fetch(`https://api.mailgun.net/v3/${MG_DOMAIN}/messages`, { method: 'POST', headers: { Authorization: auth }, body: form });
-  return r.ok;
+// Envoi via le wrapper central (_lib/courriel) : POST Mailgun + journalisation Courriels (type 'recovery').
+async function envoyerCourriel(to, subject, html, projetId) {
+  const { ok } = await mgEnvoyer({ to, subject, html, from: MG_FROM, domain: MG_DOMAIN, type: 'recovery', projetId });
+  return ok;
 }
 
 async function emailDuClient(p) {
@@ -102,7 +100,7 @@ exports.handler = async () => {
         if (pret) {
           const to = await emailDuClient(p);
           const ok = await envoyerCourriel(to, 'Tes paroles sont prêtes',
-            wrap(`<p>Bonne nouvelle : les paroles de ta chanson sont prêtes !</p><p>Tu peux les relire, les ajuster si tu veux, puis lancer la création de la chanson.</p>${bouton(`${SITE}/revision?id=${encodeURIComponent(token)}`, 'Voir mes paroles')}`));
+            wrap(`<p>Bonne nouvelle : les paroles de ta chanson sont prêtes !</p><p>Tu peux les relire, les ajuster si tu veux, puis lancer la création de la chanson.</p>${bouton(`${SITE}/revision?id=${encodeURIComponent(token)}`, 'Voir mes paroles')}`), rec.id);
           if (ok) { await patchProjet(rec.id, { recovery_email_sent_at: now, recovery_pending: null }); sent++; } else { waiting++; }
         } else { waiting++; }
       }
@@ -111,7 +109,7 @@ exports.handler = async () => {
         if (await chansonPrete(p.project)) {
           const to = await emailDuClient(p);
           const ok = await envoyerCourriel(to, 'Sa chanson est prête',
-            wrap(`<p>Sa chanson est prête à écouter !</p>${bouton(`${SITE}/apercu?id=${encodeURIComponent(token)}`, 'Écouter sa chanson')}`));
+            wrap(`<p>Sa chanson est prête à écouter !</p>${bouton(`${SITE}/apercu?id=${encodeURIComponent(token)}`, 'Écouter sa chanson')}`), rec.id);
           if (ok) { await patchProjet(rec.id, { recovery_email_sent_at: now, recovery_pending: null }); sent++; } else { waiting++; }
         } else { waiting++; }
       }

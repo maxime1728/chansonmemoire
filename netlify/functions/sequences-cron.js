@@ -27,6 +27,7 @@ const CLIENTS      = 'tblQbF1OlE3uRxFra';
 const MG_KEY    = process.env.MAILGUN_API_KEY;
 const MG_DOMAIN = process.env.MAILGUN_DOMAIN_MARKETING;
 const MG_FROM   = process.env.MAILGUN_FROM_MARKETING || 'Chanson Mémoire <info@chansonmemoire.ca>';
+const { envoyerCourriel: mgEnvoyer } = require('./_lib/courriel');
 const POSTAL    = process.env.CM_POSTAL_ADDRESS || '';
 
 const MAX_PER_RUN = 40;
@@ -60,18 +61,14 @@ async function emailOf(project) {
     return (d.fields && d.fields.email) || '';
   } catch (_) { return ''; }
 }
-async function envoyer(to, subject, html, unsub) {
-  if (!MG_KEY || !MG_DOMAIN || !to || !to.includes('@')) return false;
-  const form = new FormData();
-  form.append('from', MG_FROM); form.append('to', to);
-  form.append('subject', subject); form.append('html', html);
-  form.append('h:List-Unsubscribe', `<${unsub}>`);
-  form.append('h:List-Unsubscribe-Post', 'List-Unsubscribe=One-Click');
-  try {
-    const r = await fetch(`https://api.mailgun.net/v3/${MG_DOMAIN}/messages`, { method: 'POST', headers: { Authorization: auth() }, body: form });
-    if (!r.ok) console.error('[sequences-cron] Mailgun', r.status, (await r.text().catch(() => '')).slice(0, 200));
-    return r.ok;
-  } catch (e) { console.error('[sequences-cron] envoi', e && e.message); return false; }
+// Envoi Mailgun marketing via le wrapper central (_lib/courriel) : POST + journalisation Courriels
+// (type 'sequence') + en-têtes de désabonnement (livrabilité + 1-clic).
+async function envoyer(to, subject, html, unsub, projetId) {
+  const { ok } = await mgEnvoyer({
+    to, subject, html, from: MG_FROM, domain: MG_DOMAIN, type: 'sequence', projetId,
+    headers: { 'List-Unsubscribe': `<${unsub}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' }
+  });
+  return ok;
 }
 
 exports.handler = async () => {
@@ -125,7 +122,7 @@ exports.handler = async () => {
         const ctx = { prenom: pf.deceased_name || '', token, song_type: pf.song_type || 'hommage', lien: `${SITE}/page-memoire?id=${encodeURIComponent(token)}`, unsub, postal: POSTAL };
         const mail = seq.emails[step];
 
-        const ok = await envoyer(to, mail.subject, mail.html(ctx), unsub);
+        const ok = await envoyer(to, mail.subject, mail.html(ctx), unsub, project && project.id);
         if (!ok) continue;   // Mailgun pas prêt -> on réessaie au prochain passage (sans avancer)
         sent++;
 

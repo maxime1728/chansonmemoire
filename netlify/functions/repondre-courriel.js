@@ -24,6 +24,7 @@ const SECRET   = process.env.MAKE_WEBHOOK_SECRET;
 const MG_KEY    = process.env.MAILGUN_API_KEY;
 const MG_DOMAIN = process.env.MAILGUN_DOMAIN_SUPPORT || 'support.chansonmemoire.ca';  // sous-domaine d'ENVOI (protège la racine)
 const MG_FROM   = process.env.MAILGUN_FROM_SUPPORT || 'Chanson Mémoire <nathalie@chansonmemoire.ca>';
+const { logCourriel } = require('./_lib/courriel');
 
 const CONVOS = 'tbl3KBgXthCPromxF';
 const REC_ID = /^rec[A-Za-z0-9]{14}$/;
@@ -116,10 +117,30 @@ exports.handler = async (event) => {
       return { statusCode: 502, body: JSON.stringify({ error: 'Envoi échoué', mailgun_status: rM.status, detail }) };
     }
 
-    // 5. Marque la conversation comme répondue (et garde le texte envoyé).
+    // 4. Journalisation Courriels (type 'support') — best-effort, sur le Message-Id renvoyé par Mailgun.
+    //    On récupère l'id de la ligne Courriels pour la rattacher au fil (champ Courriels de la Conversation).
+    let courrielId = '';
+    try {
+      let mid = '';
+      try { mid = ((await rM.json()).id || '').replace(/^<|>$/g, ''); } catch (_) {}
+      const pid = (Array.isArray(f.projet_a_travailler) && f.projet_a_travailler[0])
+               || (Array.isArray(f.Projet) && f.Projet[0]) || '';
+      courrielId = await logCourriel({ type: 'support', to, subject, projetId: pid, messageId: mid });
+    } catch (_) {}
+
+    // 5. Marque la conversation répondue + ajoute le sortant au fil (historique ↑) + statut du dernier envoi
+    //    + rattache la ligne Courriels (pour voir livré/ouvert depuis le fil).
+    const horodatage = new Date().toISOString().slice(0, 16).replace('T', ' ');
+    const histoEntry = `↑ ${horodatage} — envoyé à ${to}\n${corps}`;
+    const historique = ((f.historique || '') + '\n\n' + histoEntry).slice(-90000);
+    const champs = {
+      statut: 'repondu', repondu_le: new Date().toISOString(), reponse: corps, envoyer: false,
+      historique, dernier_envoi_statut: 'envoyé'
+    };
+    if (courrielId) champs.Courriels = [...(Array.isArray(f.Courriels) ? f.Courriels : []), courrielId];
     await fetch(`${API}/${CONVOS}/${id}`, {
       method: 'PATCH', headers: { ...headers, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fields: { statut: 'repondu', repondu_le: new Date().toISOString(), reponse: corps, envoyer: false } })
+      body: JSON.stringify({ typecast: true, fields: champs })
     });
 
     return { statusCode: 200, body: JSON.stringify({ ok: true, to }) };

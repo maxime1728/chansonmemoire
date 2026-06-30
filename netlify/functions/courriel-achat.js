@@ -19,6 +19,7 @@ const UUID_V4  = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-
 const MG_KEY    = process.env.MAILGUN_API_KEY;       // no-op si absent
 const MG_DOMAIN = process.env.MAILGUN_DOMAIN_ACHAT || process.env.MAILGUN_DOMAIN;        // sous-domaine TRANSACTIONNEL
 const MG_FROM   = process.env.MAILGUN_FROM_ACHAT || process.env.MAILGUN_FROM || 'Chanson Mémoire <info@chansonmemoire.ca>';   // post-achat -> sous-domaine achat
+const { envoyerCourriel: mgEnvoyer } = require('./_lib/courriel');
 
 const UPSELL_LABEL = { instrumental: 'la version instrumentale', paroles_vivantes: 'les paroles vivantes en vidéo', pdf_paroles: 'les paroles en PDF' };
 
@@ -30,16 +31,10 @@ function formulaLiteral(v) {
 }
 function esc(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
 
-async function envoyerCourriel(to, subject, html) {
-  if (!MG_KEY || !MG_DOMAIN || !to || !to.includes('@')) return false;
-  const form = new FormData();
-  form.append('from', MG_FROM);
-  form.append('to', to);
-  form.append('subject', subject);
-  form.append('html', html);
-  const auth = 'Basic ' + Buffer.from('api:' + MG_KEY).toString('base64');
-  const r = await fetch(`https://api.mailgun.net/v3/${MG_DOMAIN}/messages`, { method: 'POST', headers: { Authorization: auth }, body: form });
-  return r.ok;
+// Envoi via le wrapper central (_lib/courriel) : POST Mailgun + journalisation dans la table Courriels.
+async function envoyerCourriel(to, subject, html, projetId) {
+  const { ok } = await mgEnvoyer({ to, subject, html, from: MG_FROM, domain: MG_DOMAIN, type: 'achat', projetId });
+  return ok;
 }
 
 async function emailClient(projet, headers) {
@@ -133,7 +128,7 @@ exports.handler = async (event) => {
     }
 
     let sent = 0;
-    for (const r of recipients) { if (await envoyerCourriel(r, subject, html)) sent++; }
+    for (const r of recipients) { if (await envoyerCourriel(r, subject, html, projet && projet.id)) sent++; }
     return { statusCode: 200, body: JSON.stringify({ ok: true, sent, recipients: recipients.length }) };
   } catch (err) {
     console.error('[courriel-achat]', err && err.message);
