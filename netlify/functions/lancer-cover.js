@@ -12,7 +12,7 @@
 
 const crypto = require('crypto');
 const { styleFor } = require('./_lib/style');
-const { coverGenEnAttente, prochainNo } = require('./_lib/cover');
+const { coverGenEnAttente, prochainNo, trouverGenProposee } = require('./_lib/cover');
 
 const BASE_ID  = process.env.AIRTABLE_BASE_ID;
 const AT_TOKEN = process.env.AIRTABLE_TOKEN;
@@ -99,10 +99,17 @@ exports.handler = async (event) => {
     const uploadUrl = fullAudioUrl(g.cloudinary_audio_url || '');
     if (!regenerate && !uploadUrl) return { statusCode: 409, body: JSON.stringify({ error: 'Audio source introuvable' }) };
 
-    // Paroles ajustées (decortique) -> sinon paroles d'origine. Style ajusté -> sinon style d'origine.
-    const prompt = (p.adjusted_lyrics && p.adjusted_lyrics.trim()) || (g.lyrics_phonetique && g.lyrics_phonetique.trim()) || g.lyrics || '';   // #12 : phonétique si présente
+    // STATE-MOVE Lot 4 (C2, flag-gated) : la proposition vit dans une Gen `proposée` (paroles+style édités),
+    // qu'on consomme ici puis qu'on PROMEUT (5b). Flag OFF -> on lit l'ancien slot Projet adjusted_lyrics.
+    const genProposee = (!regenerate && process.env.STATE_MOVE_PROPOSEE === '1')
+      ? await trouverGenProposee(API, headers, p.project) : null;
+    const propLyrics = genProposee ? ((genProposee.fields || {}).lyrics || '').trim() : '';
+    const propStyle  = genProposee ? ((genProposee.fields || {}).gen_style_prompt || '').trim() : '';
+
+    // Paroles : Gen proposée (state-move) -> slot Projet adjusted_lyrics (legacy) -> phonétique -> origine.
+    const prompt = propLyrics || (p.adjusted_lyrics && p.adjusted_lyrics.trim()) || (g.lyrics_phonetique && g.lyrics_phonetique.trim()) || g.lyrics || '';   // #12 : phonétique si présente
     if (!prompt.trim()) return { statusCode: 409, body: JSON.stringify({ error: 'Paroles introuvables' }) };
-    const style = (p.adjusted_style_prompt && p.adjusted_style_prompt.trim())
+    const style = propStyle || (p.adjusted_style_prompt && p.adjusted_style_prompt.trim())
       || await styleFor({ music_style: g.gen_music_style || p.music_style, mood: g.gen_mood || p.mood, cadeau: p.song_type === 'cadeau', language: p.language });
     const vocalGender = /Masculin/i.test(g.gen_voice || p.voice || '') ? 'm' : 'f';
 
@@ -153,6 +160,13 @@ exports.handler = async (event) => {
         await fetch(`${API}/Generations/${existant.id}`, {
           method: 'PATCH', headers: { ...headers, 'Content-Type': 'application/json' },
           body: JSON.stringify({ fields: { suno_task_id: String(taskId), incident_status: 'surveillance', version_status: 'en_production' } })
+        });
+      } else if (genProposee) {
+        // STATE-MOVE (C2) : PROMEUT la Gen `proposée` existante -> en_production (audio_pending) au lieu
+        // d'en créer une neuve. Conserve ses paroles/style édités + son generation_no. Idempotent.
+        await fetch(`${API}/Generations/${genProposee.id}`, {
+          method: 'PATCH', headers: { ...headers, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fields: { suno_task_id: String(taskId), generation_status: 'audio_pending', version_status: 'en_production', incident_status: 'surveillance' } })
         });
       } else {
         const newNo = await prochainNo(API, headers, p.project);
