@@ -13,8 +13,10 @@
 // d'échec d'écriture ou d'erreur, on répond 5xx -> Mailgun RÉESSAIE (plusieurs heures). Les cas filtrés
 // volontairement (nos adresses, auto-réponses) répondent 200 (ce ne sont pas des pertes).
 //
-// FIL : courriels d'un même échange (expéditeur + sujet normalisé, 30 j) regroupés (thread_key) ; on
-// vide alors brouillon_ia pour que le cron re-rédige sur le fil complet. PLUSIEURS PROJETS : tous liés.
+// FIL : UNE conversation par CLIENT (thread_key = adresse de l'expéditeur seule). Tout l'historique du
+// client est regroupé dans une ligne ; on vide alors brouillon_ia pour que le cron re-rédige sur le fil
+// complet, et on alimente `historique` (timeline lisible). PLUSIEURS PROJETS : tous liés (l'IA est avertie
+// du nombre de projets côté brouillon-cron pour ne pas confondre les chansons).
 //
 // Voix/garde-fous (CLAUDE.md) : appliqués côté brouillon-cron (rédaction). Env : MAILGUN_SIGNING_KEY,
 // MAKE_WEBHOOK_SECRET, AIRTABLE_TOKEN, AIRTABLE_BASE_ID.
@@ -31,7 +33,6 @@ const CLIENTS  = 'tblQbF1OlE3uRxFra';
 const CONVOS   = 'tbl3KBgXthCPromxF';
 const CLIENT_PROJECTS_LINK = 'fldayFzM1PdALeWKL';   // lien Clients -> Projects (lu par returnFieldsByFieldId)
 
-const FENETRE_FIL_MS = 30 * 24 * 60 * 60 * 1000;     // au-delà de 30 j, un même sujet = nouvelle conversation
 const MAX_TEXTE      = 90000;                          // garde-fou longueur (champ long text)
 
 // Échappe une valeur pour un littéral filterByFormula. null si ambigu (' et ").
@@ -112,7 +113,9 @@ exports.handler = async (event) => {
 
   const headers = { Authorization: `Bearer ${AT_TOKEN}` };
   const now = new Date();
-  const threadKey = `${from.toLowerCase()}|${normaliserSujet(subject).toLowerCase()}`.slice(0, 250);
+  // Option douce : 1 ligne par CLIENT -> thread_key = email seul (sujet ignoré). Tout l'historique du
+  // client se regroupe ; les multi-projets sont distingués par le lien Projet + projet_a_travailler.
+  const threadKey = from.toLowerCase().slice(0, 250);
 
   try {
     // 1. MATCH : Client par email -> TOUS ses projets (best-effort ; non bloquant pour la capture).
@@ -127,23 +130,25 @@ exports.handler = async (event) => {
       if (Array.isArray(projs)) projectIds = projs.slice();
     }
 
-    // 2. FIL : conversation existante (même thread_key, récente) ?
+    // 2. FIL : conversation existante du client (même thread_key = même email) ? On fusionne TOUJOURS
+    //    (1 ligne par client) ; un client qui réécrit rouvre sa conversation (statut repassé à a_verifier).
     let existing = null;
     const litThread = formulaLiteral(threadKey);
     if (litThread !== null) {
       const fT = encodeURIComponent(`{thread_key}=${litThread}`);
       const rT = await fetch(`${API}/${CONVOS}?filterByFormula=${fT}&sort%5B0%5D%5Bfield%5D=recu_le&sort%5B0%5D%5Bdirection%5D=desc&maxRecords=1`, { headers });
       const dT = await rT.json().catch(() => ({}));
-      const cand = dT.records && dT.records[0];
-      if (cand) {
-        const prev = cand.fields && cand.fields.recu_le ? new Date(cand.fields.recu_le).getTime() : 0;
-        if (now.getTime() - prev <= FENETRE_FIL_MS) existing = cand;
-      }
+      existing = (dT.records && dT.records[0]) || null;
     }
 
     // 3. Texte du fil (accumulé si on regroupe).
-    const sep = `\n\n──────── ${now.toISOString().slice(0, 16).replace('T', ' ')} ────────\n`;
+    const horodatage = now.toISOString().slice(0, 16).replace('T', ' ');
+    const sep = `\n\n──────── ${horodatage} ────────\n`;
     const threadText = existing ? ((existing.fields.message || '') + sep + message).slice(-MAX_TEXTE) : message;
+
+    // Timeline lisible (vue inbox) : entrant ↓ / sortant ↑. Le sortant est ajouté par repondre-courriel à l'envoi.
+    const histoEntry = `↓ ${horodatage} — reçu de ${from}\n${message}`;
+    const historique = existing ? ((existing.fields.historique || '') + '\n\n' + histoEntry).slice(-MAX_TEXTE) : histoEntry;
 
     const liensExistants = (existing && Array.isArray(existing.fields.Projet)) ? existing.fields.Projet : [];
     const liens = [...new Set([...liensExistants, ...projectIds])];
@@ -154,6 +159,7 @@ exports.handler = async (event) => {
       expediteur: from,
       sujet: subject.slice(0, 250),
       message: threadText,
+      historique: historique,
       recu_le: now.toISOString(),
       statut: 'a_verifier',
       message_id: msgId.slice(0, 250),
@@ -162,6 +168,7 @@ exports.handler = async (event) => {
     if (liens.length) champs.Projet = liens;
     if (existing) {
       champs.brouillon_ia = '';   // nouveau message dans le fil -> le cron re-rédige sur le fil complet
+      champs.resume_ia = '';      // fil rouvert -> le résumé sera régénéré à la prochaine clôture
     } else {
       if (recipient) champs.destinataire = recipient;
       champs.repondre_de = recipient;   // « De » par défaut = l'adresse à laquelle le client a écrit

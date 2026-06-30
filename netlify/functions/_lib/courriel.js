@@ -40,9 +40,11 @@ async function projetIdParToken(token) {
 
 // Crée la ligne Courriels. Best-effort : ne lève jamais. messageId peut être vide (Mailgun n'a pas renvoyé
 // d'id) -> on log quand même l'envoi, sans corrélation webhook possible.
+// Retourne le recordId de la ligne Courriels créée ('' si rien). Best-effort : ne lève jamais.
+// Le rattachement au fil (lien Conversation) se fait côté appelant (repondre-courriel) via le champ Courriels.
 async function logCourriel({ type, to, subject, projetId, token, messageId }) {
   const BASE = process.env.AIRTABLE_BASE_ID, AT = process.env.AIRTABLE_TOKEN;
-  if (!BASE || !AT) return;
+  if (!BASE || !AT) return '';
   try {
     let pid = projetId || '';
     if (!pid && token) pid = await projetIdParToken(token);
@@ -55,12 +57,14 @@ async function logCourriel({ type, to, subject, projetId, token, messageId }) {
       message_id:   messageId || ''
     };
     if (pid) fields.Projet = [pid];
-    await fetch(`https://api.airtable.com/v0/${BASE}/${COURRIELS}`, {
+    const r = await fetch(`https://api.airtable.com/v0/${BASE}/${COURRIELS}`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${AT}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ typecast: true, fields })   // typecast : crée les choix de type/statut au besoin
     });
-  } catch (_) { /* la journalisation ne bloque jamais un envoi */ }
+    if (!r.ok) return '';
+    try { return ((await r.json()).id) || ''; } catch (_) { return ''; }
+  } catch (_) { return ''; }   // la journalisation ne bloque jamais un envoi
 }
 
 // Envoi central. opts :

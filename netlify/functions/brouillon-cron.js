@@ -99,8 +99,14 @@ async function construireContexts(projectIds, headers) {
 // Appel Anthropic AVEC timeout (jamais bloquer le cron). Renvoie {brouillon, confiance, categorie} ou null.
 async function genererBrouillon(f, contexts) {
   if (!ANTHROPIC_KEY) return null;
+  // Drapeau multi-projets (compté sur les liens RÉELS, pas le contexte tronqué) : l'IA ne doit jamais
+  // confondre les chansons. Si la demande est ambiguë, elle demande au lieu de supposer.
+  const nProjets = Array.isArray(f.Projet) ? f.Projet.length : (contexts || []).length;
+  const drapeauProjets = nProjets > 1
+    ? `\n⚠ CE CLIENT A ${nProjets} PROJETS (chansons distinctes). Identifie de LAQUELLE il parle d'après le fil ; si c'est ambigu, demande-le-lui poliment au lieu de supposer. Nomme chaque chanson par la personne honorée.\n`
+    : '';
   const userPrompt =
-    `ÉCHANGE REÇU\nDe : ${f.expediteur || ''}\nSujet : ${f.sujet || '(aucun)'}\n\nFil (du plus ancien au plus récent) :\n${(f.message || '').slice(-MAX_TEXTE)}\n\n` +
+    `ÉCHANGE REÇU\nDe : ${f.expediteur || ''}\nSujet : ${f.sujet || '(aucun)'}\n\nFil (du plus ancien au plus récent) :\n${(f.message || '').slice(-MAX_TEXTE)}\n${drapeauProjets}\n` +
     `CONTEXTE DES PROJETS DU CLIENT (peut être vide) :\n${JSON.stringify(contexts || [])}`;
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
@@ -116,6 +122,29 @@ async function genererBrouillon(f, contexts) {
     const txt = (data.content && data.content[0] && data.content[0].text) || '';
     return extraireJson(txt);
   } catch (e) { console.error('[brouillon-cron] Anthropic', e && e.message); return null; }
+  finally { clearTimeout(timer); }
+}
+
+// RÉSUMÉ d'un fil clôturé : 1-2 phrases pour avoir une ligne lisible par client sans dérouler tout l'échange.
+// Best-effort (timeout) : '' si indisponible -> on réessaiera au passage suivant.
+async function genererResume(f) {
+  if (!ANTHROPIC_KEY) return '';
+  const fil = (f.historique || f.message || '').slice(-MAX_TEXTE);
+  if (!fil.trim()) return '';
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST', signal: ctrl.signal,
+      headers: { 'content-type': 'application/json', 'x-api-key': ANTHROPIC_KEY, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 200,
+        system: "Résume ce fil de support client en 1 à 2 phrases neutres et factuelles : ce que le client demandait et ce qui a été fait ou répondu. Français correct, sans tiret cadratin. Réponds UNIQUEMENT par le résumé, rien d'autre.",
+        messages: [{ role: 'user', content: fil }] })
+    });
+    if (!res.ok) return '';
+    const data = await res.json().catch(() => ({}));
+    return ((data.content && data.content[0] && data.content[0].text) || '').trim();
+  } catch (_) { return ''; }
   finally { clearTimeout(timer); }
 }
 
@@ -147,7 +176,26 @@ exports.handler = async () => {
       } catch (_) { echecs++; }
     }
 
-    return { statusCode: 200, body: JSON.stringify({ ok: true, trouve: recs.length, rediges, echecs }) };
+    // 2e passe : RÉSUMÉ des fils clôturés (statut=repondu) encore sans resume_ia -> 1 ligne lisible par client.
+    let resumes = 0;
+    try {
+      const fR = encodeURIComponent('AND({statut}="repondu", {resume_ia}="")');
+      const rR = await fetch(`${API}/${CONVOS}?filterByFormula=${fR}&maxRecords=${MAX_PER_RUN}`, { headers });
+      const recsR = (((await rR.json().catch(() => ({}))).records) || []);
+      for (const rec of recsR) {
+        const resume = await genererResume(rec.fields || {});
+        if (!resume) continue;
+        try {
+          await fetch(`${API}/${CONVOS}/${rec.id}`, {
+            method: 'PATCH', headers: { ...headers, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fields: { resume_ia: resume.slice(0, MAX_TEXTE) } })
+          });
+          resumes++;
+        } catch (_) {}
+      }
+    } catch (_) {}
+
+    return { statusCode: 200, body: JSON.stringify({ ok: true, trouve: recs.length, rediges, echecs, resumes }) };
   } catch (err) {
     console.error('[brouillon-cron]', err && err.message);
     return { statusCode: 200, body: '{}' };
