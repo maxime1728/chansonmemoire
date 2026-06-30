@@ -9,7 +9,7 @@ const assert = require('node:assert');
 const { expediteurParType } = require('../netlify/functions/_lib/courriel');
 
 // Efface les surcharges MAILGUN_* pour tester les DÉFAUTS de façon déterministe, puis restaure.
-const KEYS = ['MAILGUN_FROM_ACHAT', 'MAILGUN_FROM_MARKETING', 'MAILGUN_FROM_SUPPORT',
+const KEYS = ['MAILGUN_FROM', 'MAILGUN_FROM_ACHAT', 'MAILGUN_FROM_MARKETING', 'MAILGUN_FROM_SUPPORT',
               'MAILGUN_DOMAIN_ACHAT', 'MAILGUN_DOMAIN_MARKETING', 'MAILGUN_DOMAIN_SUPPORT', 'MAILGUN_DOMAIN'];
 function sansEnv(fn) {
   const sauve = {};
@@ -33,10 +33,10 @@ test('support -> From RACINE affiché + envoi via le sous-domaine support', () =
   });
 });
 
-test('marketing (nurture/sequence/recovery) -> From sur le sous-domaine info. (protège la racine)', () => {
+test('marketing (nurture/sequence/recovery) -> From RACINE affiché (envoi via sous-domaine info.)', () => {
   sansEnv(() => {
     for (const t of ['nurture', 'sequence', 'recovery']) {
-      assert.match(expediteurParType(t).from, /<nathalie@info\.chansonmemoire\.ca>/, `${t} ne doit PAS exposer la racine`);
+      assert.match(expediteurParType(t).from, /<nathalie@chansonmemoire\.ca>/, `${t} affiche la racine`);
     }
   });
 });
@@ -47,11 +47,13 @@ test('type inconnu -> traité comme transactionnel (From racine, jamais échec s
   });
 });
 
-test('les variables MAILGUN_FROM_* surchargent le défaut', () => {
-  const sauve = process.env.MAILGUN_FROM_ACHAT;
-  process.env.MAILGUN_FROM_ACHAT = 'Test <x@exemple.ca>';
-  try { assert.strictEqual(expediteurParType('achat').from, 'Test <x@exemple.ca>'); }
-  finally { if (sauve === undefined) delete process.env.MAILGUN_FROM_ACHAT; else process.env.MAILGUN_FROM_ACHAT = sauve; }
+test('MAILGUN_FROM surcharge globalement le From racine (knob unique, tous les flux)', () => {
+  const sauve = process.env.MAILGUN_FROM;
+  process.env.MAILGUN_FROM = 'Test <x@exemple.ca>';
+  try {
+    assert.strictEqual(expediteurParType('achat').from, 'Test <x@exemple.ca>');
+    assert.strictEqual(expediteurParType('nurture').from, 'Test <x@exemple.ca>');
+  } finally { if (sauve === undefined) delete process.env.MAILGUN_FROM; else process.env.MAILGUN_FROM = sauve; }
 });
 
 test('le domaine d ENVOI marketing vient de l env (MAILGUN_DOMAIN_MARKETING)', () => {

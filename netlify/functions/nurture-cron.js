@@ -23,7 +23,7 @@ const API      = `https://api.airtable.com/v0/${BASE_ID}`;
 const SITE     = 'https://chansonmemoire.ca';
 
 const MG_KEY    = process.env.MAILGUN_API_KEY;
-const { envoyerCourriel: mgEnvoyer } = require('./_lib/courriel');   // nurture = marketing -> From sous-domaine info. + envoi info. (Lot 6)
+const { envoyerCourriel: mgEnvoyer } = require('./_lib/courriel');   // nurture = marketing -> From racine affiché, envoi via sous-domaine info. (Lot 6)
 const POSTAL    = process.env.CM_POSTAL_ADDRESS || '';
 
 const MAX_PER_RUN = 40;

@@ -28,7 +28,7 @@ const PROJECTS     = 'tblh7O8eoog7RyTMJ';
 const CLIENTS      = 'tblQbF1OlE3uRxFra';
 
 const MG_KEY    = process.env.MAILGUN_API_KEY;
-const { envoyerCourriel: mgEnvoyer } = require('./_lib/courriel');   // sequence = marketing -> From sous-domaine info. + envoi info. (Lot 6)
+const { envoyerCourriel: mgEnvoyer } = require('./_lib/courriel');   // sequence = marketing -> From racine affiché, envoi via sous-domaine info. (Lot 6)
 const POSTAL    = process.env.CM_POSTAL_ADDRESS || '';
 
 const MAX_PER_RUN = 40;

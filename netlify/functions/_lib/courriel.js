@@ -18,29 +18,23 @@ const CLIENTS   = 'tblQbF1OlE3uRxFra';
 const TYPES_SUPPRIMABLES = new Set(['nurture', 'sequence', 'recovery']);   // flux RÉPÉTABLES : on saute les adresses mortes
 const TYPES_MARKETING    = new Set(['nurture', 'sequence']);               // marketing : on saute AUSSI les clients désabonnés (nurture_optout, LCAP)
 
-// ── Lot 6 : routage From / sous-domaine d'ENVOI par TYPE (un seul endroit décide) ──────────────────
-// PRINCIPE (protéger le domaine racine) : on ENVOIE toujours via un sous-domaine, JAMAIS la racine.
-// Le From AFFICHÉ est la RACINE pour le transactionnel + le support (confiance/marque) ; il reste sur
-// le sous-domaine MARKETING pour les flux répétables (nurture/sequence/recovery), pour ne jamais
-// exposer la racine aux plaintes spam. DMARC relaxed aligne un From racine avec le DKIM du sous-domaine.
-// Les MAILGUN_FROM_* restent des surcharges optionnelles ; à défaut, on applique ces valeurs.
-const FROM_RACINE    = 'Chanson Mémoire <nathalie@chansonmemoire.ca>';
-const FROM_MARKETING = 'Chanson Mémoire <nathalie@info.chansonmemoire.ca>';
+// ── Lot 6 : From AFFICHÉ + sous-domaine d'ENVOI, résolus par TYPE (un seul endroit décide) ──────────
+// DÉCISION (Maxime) : le From affiché est TOUJOURS la racine (cohérence de marque). On protège quand
+// même la racine en ENVOYANT via un sous-domaine par flux (achat./info./support.), jamais la racine :
+// l'IP, le DKIM, le Return-Path et les flux de plaintes restent isolés sur le sous-domaine, et DMARC
+// relaxed aligne le From racine avec le DKIM du sous-domaine. `MAILGUN_FROM` = surcharge globale du From.
+const FROM_RACINE = 'Chanson Mémoire <nathalie@chansonmemoire.ca>';
 
-// { domain, from } selon le type. domain = sous-domaine d'ENVOI (jamais la racine nue), pris dans l'env.
+// { domain, from } selon le type. from = racine (affichée) ; domain = sous-domaine d'ENVOI (jamais la racine).
 function expediteurParType(type) {
-  // marketing répétable -> envoi + From sur le sous-domaine info. (ne jamais exposer la racine)
+  const from = process.env.MAILGUN_FROM || FROM_RACINE;
   if (type === 'nurture' || type === 'sequence' || type === 'recovery') {
-    return { domain: process.env.MAILGUN_DOMAIN_MARKETING,
-             from:   process.env.MAILGUN_FROM_MARKETING || FROM_MARKETING };
+    return { from, domain: process.env.MAILGUN_DOMAIN_MARKETING };                       // marketing -> info.
   }
   if (type === 'support') {
-    return { domain: process.env.MAILGUN_DOMAIN_SUPPORT || 'support.chansonmemoire.ca',
-             from:   process.env.MAILGUN_FROM_SUPPORT || FROM_RACINE };
+    return { from, domain: process.env.MAILGUN_DOMAIN_SUPPORT || 'support.chansonmemoire.ca' };
   }
-  // transactionnel par défaut (achat, cadeau, cover, et tout type non listé) : From RACINE, envoi via achat.
-  return { domain: process.env.MAILGUN_DOMAIN_ACHAT || process.env.MAILGUN_DOMAIN,
-           from:   process.env.MAILGUN_FROM_ACHAT || FROM_RACINE };
+  return { from, domain: process.env.MAILGUN_DOMAIN_ACHAT || process.env.MAILGUN_DOMAIN };  // transactionnel
 }
 
 function formulaLiteral(v) {

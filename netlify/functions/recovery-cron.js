@@ -20,7 +20,7 @@ const MAX_RETRIES  = 6;   // plafond de relances paroles (anti-coût)
 
 // Mailgun MARKETING. No-op si non configuré (ne casse jamais le cron).
 const MG_KEY    = process.env.MAILGUN_API_KEY;
-const { envoyerCourriel: mgEnvoyer } = require('./_lib/courriel');   // recovery = marketing -> From sous-domaine info. + envoi info. (Lot 6)
+const { envoyerCourriel: mgEnvoyer } = require('./_lib/courriel');   // recovery = marketing -> From racine affiché, envoi via sous-domaine info. (Lot 6)
 
 function headers() { return { Authorization: `Bearer ${AT_TOKEN}` }; }
 function formulaLiteral(v) { const s = String(v); if (!s.includes('"')) return `"${s}"`; if (!s.includes("'")) return `'${s}'`; return null; }
