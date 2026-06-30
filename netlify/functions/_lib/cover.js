@@ -25,6 +25,18 @@ function formulaLiteral(v) {
   return null;
 }
 
+// RÈGLE DE PROMOTION (modèle Generation-level) : faut-il publier une version cover LIVRÉE comme
+// nouvelle version active d'un projet ? Post-achat UNIQUEMENT (en pré-achat, lire-projet sert déjà la
+// plus récente, donc rien à promouvoir). On ne promeut que vers une version STRICTEMENT plus récente
+// (idempotent ; jamais de régression vers une version antérieure). Pur -> testé (tests/cover-promotion.test.js).
+function versionPlusRecenteAPublier({ commercialStatus, activeNo, deliveredNo } = {}) {
+  if (commercialStatus !== 'purchased') return false;
+  const a = parseInt(activeNo, 10);
+  const d = parseInt(deliveredNo, 10);
+  if (!Number.isInteger(a) || !Number.isInteger(d)) return false;
+  return d > a;
+}
+
 // URL audio Cloudinary COMPLÈTE (signée si 'authenticated') — sert de source à couvrir.
 function parseCloudinary(url) {
   const m = /res\.cloudinary\.com\/([^/]+)\/video\/(upload|authenticated)\/(?:s--[^/]+--\/)?(?:v\d+\/)?(.+?)(\.\w+)?$/.exec(url || '');
@@ -98,7 +110,8 @@ async function livrerCover({ api, headers, projet, coverGen, audioUrl, songId })
       cloudinary_audio_url: hosted,
       song_id: songId || g.song_id || '',
       generation_status: 'audio_generated',
-      incident_status: 'résolu'
+      incident_status: 'résolu',
+      version_status: 'publiée'
     } })
   });
 
@@ -111,6 +124,24 @@ async function livrerCover({ api, headers, projet, coverGen, audioUrl, songId })
     method: 'PATCH', headers: { ...headers, 'Content-Type': 'application/json' },
     body: JSON.stringify({ fields: projPatch })
   });
+
+  // 3b. Post-achat : l'ancienne version active devient « remplacée » (le cockpit voit clair quelle
+  //     version est en ligne). Best-effort : ne bloque jamais la livraison.
+  if (Number.isInteger(purchasedNo) && purchasedNo !== newNo) {
+    try {
+      const litOld = formulaLiteral(p.project);
+      if (litOld !== null) {
+        const fOld = encodeURIComponent(`AND({project}=${litOld},{generation_no}=${purchasedNo})`);
+        const rOld = await fetch(`${api}/${GENERATIONS}?filterByFormula=${fOld}&maxRecords=1`, { headers });
+        const dOld = await rOld.json().catch(() => ({}));
+        const oldGen = dOld.records && dOld.records[0];
+        if (oldGen) await fetch(`${api}/${GENERATIONS}/${oldGen.id}`, {
+          method: 'PATCH', headers: { ...headers, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fields: { version_status: 'remplacée' } })
+        });
+      }
+    } catch (_) { /* la rétrogradation de l'ancienne version ne bloque jamais */ }
+  }
 
   // 4. Courriel « nouvelle version prête » (best-effort, voix de marque).
   try {
@@ -142,4 +173,4 @@ async function coverEnVol(api, headers, projectPrimary, maxAgeMin = 15) {
   } catch (_) { return false; }   // en cas de doute, on ne bloque pas
 }
 
-module.exports = { parseCloudinary, fullAudioUrl, coverGenEnAttente, prochainNo, livrerCover, coverEnVol };
+module.exports = { parseCloudinary, fullAudioUrl, coverGenEnAttente, prochainNo, livrerCover, coverEnVol, versionPlusRecenteAPublier };

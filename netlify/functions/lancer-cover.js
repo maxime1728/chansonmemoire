@@ -152,12 +152,13 @@ exports.handler = async (event) => {
       if (existant) {
         await fetch(`${API}/Generations/${existant.id}`, {
           method: 'PATCH', headers: { ...headers, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ fields: { suno_task_id: String(taskId), incident_status: 'surveillance' } })
+          body: JSON.stringify({ fields: { suno_task_id: String(taskId), incident_status: 'surveillance', version_status: 'en_production' } })
         });
       } else {
         const newNo = await prochainNo(API, headers, p.project);
         const fields = {
           project: [projet.id], generation_no: newNo, type: 'cover', generation_status: 'audio_pending',
+          version_status: 'en_production',
           post_purchase: true, suno_task_id: String(taskId),
           lyrics: ((p.adjusted_lyrics && p.adjusted_lyrics.trim()) || g.lyrics || '').slice(0, 6000),
           song_title: (g.song_title || 'Pour toujours'),

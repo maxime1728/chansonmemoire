@@ -346,9 +346,11 @@
     });
   });
 
-  /* 4. Demander une modification (décortique) — modale unifiée partagée, gaté `purchased` (le bouton
-     vit dans #modifZone, affiché seulement aux acheteurs). Même endpoint /api/decortique. */
-  if(window.cmModifModal) window.cmModifModal.init({ token: token, trigger: document.getElementById('btnModif') });
+  /* 4. Demander une modification — modale unifiée partagée, gaté `purchased` (le bouton vit dans
+     #modifZone, affiché seulement aux acheteurs). Self-serve : une demande de PAROLES part en
+     acceptation inline sur /revision (route 'cover' de demander-modif-client) ; style/prononciation
+     restent capturés au cockpit (decortique). */
+  if(window.cmModifModal) window.cmModifModal.init({ token: token, trigger: document.getElementById('btnModif'), selfServe: true });
   /* Purchase Meta : gere par cm-pixel.js (partage). PageView + CAPI = cm-pixel.js ; le Purchase passe
      par window.cmTrack (eventID = sha256(token.purchase), dedup avec le CAPI serveur suivi-funnel).
      On attend DOMContentLoaded pour que cm-pixel.js (charge en defer) ait defini window.cmTrack.
