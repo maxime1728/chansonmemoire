@@ -53,7 +53,7 @@ function gabarit({ intro, corps, lien }) {
     `<p style="font-size:18px;color:#5C2D4A;margin:0 0 14px;">${intro}</p>` +
     `<p style="margin:0 0 22px;">${corps}</p>` +
     `<p style="margin:0 0 26px;"><a href="${lien}" style="background:#5C2D4A;color:#F5F0EA;text-decoration:none;padding:12px 22px;border-radius:8px;display:inline-block;">Accéder à ma page</a></p>` +
-    `<p style="color:#7A6070;margin:0;">— L'équipe Chanson Mémoire</p></div>`;
+    `<p style="color:#7A6070;margin:0;">L'équipe Chanson Mémoire</p></div>`;
 }
 
 exports.handler = async (event) => {
@@ -98,7 +98,7 @@ exports.handler = async (event) => {
       const label = UPSELL_LABEL[body.upsell_type] || 'votre complément';
       subject = 'Votre complément est confirmé';
       html = gabarit({
-        intro: 'Merci — c’est confirmé.',
+        intro: 'Merci, c’est confirmé.',
         corps: `Nous préparons ${esc(label)} pour votre chanson. Vous le retrouverez sur votre page dès qu’il est prêt.`,
         lien
       });
