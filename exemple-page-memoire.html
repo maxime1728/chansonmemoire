@@ -38,6 +38,15 @@
   @keyframes compoPulse{0%,100%{opacity:.5;transform:scale(.85);}50%{opacity:1;transform:scale(1);}}
   @media(prefers-reduced-motion:reduce){.cm-compo-bar .compo-dot{animation:none;}}
 
+  /* ── Popup d'arrivée depuis l'attente (#3) : rappelle que c'est un exemple, la sienne se crée ── */
+  .ex-pop-overlay{position:fixed;inset:0;background:rgba(92,45,74,.55);display:none;align-items:center;justify-content:center;padding:20px;z-index:200;}
+  .ex-pop-overlay.show{display:flex;}
+  .ex-pop-box{background:#fff;border:1px solid var(--line);border-radius:18px;padding:30px 26px;max-width:420px;text-align:center;box-shadow:0 14px 50px rgba(92,45,74,.25);}
+  .ex-pop-box h2{font-family:'Newsreader',Georgia,serif;font-style:italic;font-weight:400;color:var(--cm-plum-dark);font-size:1.5rem;margin:0 0 12px;}
+  .ex-pop-box p{font-size:.97rem;color:var(--cm-text-sub);line-height:1.6;margin:0;}
+  .ex-pop-close{margin-top:18px;background:var(--cm-plum-dark);color:#fff;border:0;border-radius:999px;padding:11px 26px;font:700 .95rem Mulish,system-ui,sans-serif;cursor:pointer;}
+  @media(hover:hover){.ex-pop-close:hover{opacity:.92;}}
+
   .eyebrow{font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--cm-gold);text-align:center;margin-bottom:12px;}
   h1#title{font-family:'Newsreader',Georgia,serif;font-style:italic;font-size:clamp(26px,6vw,34px);font-weight:400;color:var(--cm-plum-dark);text-align:center;margin:0 0 10px;line-height:1.25;}
   .subtitle{color:var(--cm-text-sub);font-size:13px;text-align:center;margin:0 0 26px;text-transform:uppercase;letter-spacing:0.10em;font-weight:700;min-height:1em;}
@@ -401,6 +410,15 @@
 })();
 </script>
 
+<!-- #3 : popup d'arrivée depuis l'attente (affichée seulement avec un token) -->
+<div class="ex-pop-overlay" id="exIntroOverlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="exIntroTitle">
+  <div class="ex-pop-box">
+    <h2 id="exIntroTitle">Ceci est une page exemple</h2>
+    <p>On te montre à quoi ressemblera ta page-mémoire. Ta chanson, elle, est <strong>en cours de création</strong> en ce moment, patiente encore un petit instant : on t'amène à sa page dès qu'elle est prête.</p>
+    <button type="button" id="exIntroClose" class="ex-pop-close" onclick="var o=this.closest('.ex-pop-overlay');o.classList.remove('show');o.setAttribute('aria-hidden','true');">Compris</button>
+  </div>
+</div>
+
 <!-- #9 : si on arrive ici AVEC un token (depuis l'attente), on surveille la chanson et on
      redirige vers l'aperçu dès qu'elle est prête — comme la page d'attente. Sans token = exemple
      statique (aucun appel). Le visiteur peut donc parcourir cet exemple pendant la création. -->
@@ -411,6 +429,14 @@
   if(!token || !UUID.test(token)) return;
   /* Token présent = la chanson se compose vraiment en arrière-plan -> bandeau de rappel + redirection auto. */
   var bar=document.getElementById('cmCompoBar'); if(bar) bar.classList.add('show');
+  /* #3 : popup d'arrivée (une fois par session) : c'est un exemple, la sienne se crée. */
+  try{
+    if(!sessionStorage.getItem('cm_ex_intro_seen')){
+      var ov=document.getElementById('exIntroOverlay');
+      if(ov){ ov.classList.add('show'); ov.setAttribute('aria-hidden','false'); var cb=document.getElementById('exIntroClose'); if(cb) cb.focus(); }
+      sessionStorage.setItem('cm_ex_intro_seen','1');
+    }
+  }catch(_){}
   var done=false, tries=0;
   function check(){
     if(done) return;

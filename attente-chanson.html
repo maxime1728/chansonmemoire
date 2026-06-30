@@ -233,8 +233,9 @@ body{font-family:"Mulish",system-ui,sans-serif;color:#2e1a28;background:#f8f4f0;
 .r-card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:18px;text-align:left;display:flex;gap:16px;align-items:center;text-decoration:none;color:inherit;transition:border-color .18s,box-shadow .18s,transform .18s;}
 @media(hover:hover){a.r-card:hover{border-color:var(--candle);box-shadow:0 8px 24px rgba(92,45,74,.10);transform:translateY(-1px);}}
 .r-cta{display:inline-block;margin-top:6px;font-size:.8rem;font-weight:800;letter-spacing:.02em;color:var(--candle);}
-.r-thumb{flex:0 0 auto;width:84px;height:84px;border-radius:12px;background:linear-gradient(135deg,var(--candle-soft),#f3e8d2);display:flex;align-items:center;justify-content:center;font-size:1.9rem;overflow:hidden;}
+.r-thumb{position:relative;flex:0 0 auto;width:84px;height:84px;border-radius:12px;background:linear-gradient(135deg,var(--candle-soft),#f3e8d2);display:flex;align-items:center;justify-content:center;font-size:1.9rem;overflow:hidden;}
 .r-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+.r-ex{position:absolute;top:5px;left:5px;background:rgba(92,45,74,.92);color:#fff;font:800 .54rem/1 "Mulish",system-ui,sans-serif;letter-spacing:.09em;text-transform:uppercase;padding:3px 6px;border-radius:6px;}
 .r-body{flex:1;}
 .r-tag{font-size:.68rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--candle);display:block;margin-bottom:4px;}
 .r-title{font-family:"Newsreader",serif;font-weight:600;color:var(--plum-deep);font-size:1.05rem;margin-bottom:3px;}
@@ -294,10 +295,10 @@ body{font-family:"Mulish",system-ui,sans-serif;color:#2e1a28;background:#f8f4f0;
   <div class="in">
     <span class="eyebrow">Pendant que sa chanson se termine</span>
     <h2 class="serif">Sa chanson, et tout ce qui peut l'accompagner</h2>
-    <p class="sub">Sa chanson sur sa page privée est incluse. Le reste, c'est en option, si tu veux aller plus loin.</p>
+    <p class="sub">Sa chanson sur sa page privée est incluse. Les aperçus ci-dessous sont des <strong>exemples</strong> pour te montrer le rendu, le temps que la sienne se termine.</p>
     <div class="receive-grid">
       <a class="r-card" href="exemple-page-memoire.html">
-        <div class="r-thumb" aria-hidden="true">🎵</div>
+        <div class="r-thumb" aria-hidden="true"><span class="r-ex">Exemple</span>🎵</div>
         <div class="r-body">
           <span class="r-tag">Inclus</span>
           <div class="r-title">Une page-mémoire à partager</div>
@@ -307,7 +308,7 @@ body{font-family:"Mulish",system-ui,sans-serif;color:#2e1a28;background:#f8f4f0;
       </a>
       <p class="r-divider">En option, pour aller plus loin</p>
       <a class="r-card" href="exemple-page-memoire.html#paroles">
-        <div class="r-thumb" aria-hidden="true">📄</div>
+        <div class="r-thumb" aria-hidden="true"><span class="r-ex">Exemple</span>📄</div>
         <div class="r-body">
           <span class="r-tag">En option</span>
           <div class="r-title">Les paroles en PDF</div>
@@ -316,7 +317,7 @@ body{font-family:"Mulish",system-ui,sans-serif;color:#2e1a28;background:#f8f4f0;
         </div>
       </a>
       <a class="r-card" href="exemple-page-memoire.html#video">
-        <div class="r-thumb" aria-hidden="true">🎬</div>
+        <div class="r-thumb" aria-hidden="true"><span class="r-ex">Exemple</span>🎬</div>
         <div class="r-body">
           <span class="r-tag">En option</span>
           <div class="r-title">Une vidéo des paroles</div>
@@ -500,6 +501,15 @@ body{font-family:"Mulish",system-ui,sans-serif;color:#2e1a28;background:#f8f4f0;
   </div>
 </div>
 
+<!-- POPUP D'ARRIVÉE : « sa chanson se crée, ne ferme pas la page » (#1) -->
+<div class="cm-delay-overlay" id="cmIntroOverlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="cmIntroTitle">
+  <div class="cm-delay-box">
+    <h2 class="serif" id="cmIntroTitle">Sa chanson est en cours de création</h2>
+    <p>On compose son œuvre en ce moment même. <strong>Garde cette page ouverte, ne la ferme pas</strong> : on t'amène automatiquement à sa page dès qu'elle est prête (c'est généralement une affaire de quelques minutes).</p>
+    <button type="button" class="cm-delay-close" id="cmIntroClose" onclick="closeIntro()">Compris</button>
+  </div>
+</div>
+
 <script>
 /* ════════════════════════════════════════
    INJECTION DU PRÉNOM DU DÉFUNT
@@ -630,6 +640,22 @@ function showDelayPopup(){
   try{ var t = getToken(); if(t) fetch('/api/signaler-echec', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ token: t, kind: 'song' }) }); }catch(_){}
 }
 
+/* #1 : popup d'arrivée « ne ferme pas la page ». */
+function closeIntro(){
+  var o = document.getElementById("cmIntroOverlay");
+  if(!o) return;
+  o.classList.remove("show"); o.setAttribute("aria-hidden","true");
+  if(o._key){ document.removeEventListener("keydown", o._key); o._key = null; }
+}
+function showIntro(){
+  var o = document.getElementById("cmIntroOverlay");
+  if(!o) return;
+  o.classList.add("show"); o.setAttribute("aria-hidden","false");
+  var cl = document.getElementById("cmIntroClose"); if(cl) cl.focus();
+  o._key = function(e){ if(e.key === "Escape") closeIntro(); };
+  document.addEventListener("keydown", o._key);
+}
+
 function checkReady(){
   if(redirected) return;
 
@@ -684,6 +710,14 @@ setTimeout(checkReady, 20000); /* premier check après 20 secondes */
     if(i >= 0){ hash = h.slice(i); h = h.slice(0, i); }
     a.setAttribute('href', h + '?id=' + encodeURIComponent(t) + hash);
   });
+})();
+
+/* #1 : affiche la popup d'arrivée une fois par session (après l'écran de chargement). */
+(function(){
+  try{ if(sessionStorage.getItem('cm_intro_seen')) return; }catch(_){}
+  function go(){ showIntro(); try{ sessionStorage.setItem('cm_intro_seen','1'); }catch(_){} }
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function(){ setTimeout(go, 600); });
+  else setTimeout(go, 600);
 })();
 </script>
 
