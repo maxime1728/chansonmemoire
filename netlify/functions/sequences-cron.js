@@ -3,17 +3,20 @@
 // MOTEUR GÉNÉRIQUE multi-séquences (fonction planifiée, horaire). Pour CHAQUE séquence du registre
 // (_lib/sequences.js), via la table Inscriptions :
 //   1. INSCRIT les Projets éligibles (enrollFormula) qui n'ont pas déjà une inscription pour la séquence.
+//      Jamais un client désabonné (nurture_optout, #13).
 //   2. ENVOIE le courriel dû (next_at <= maintenant), avance l'étape, ou termine.
-//   3. SORT ceux qui ne doivent plus y être : désinscription globale (nurture_status=unsubscribed) ou
-//      condition de sortie de la séquence (ex. remboursé).
+//   3. SORT ceux qui ne doivent plus y être : désinscription globale (nurture_status=unsubscribed),
+//      désabonnement client (nurture_optout, #13) ou condition de sortie de la séquence (ex. remboursé).
+//   4. RÉCONCILIE le champ sequence_active du Projet (séquence(s) en cours, lisible d'un coup d'œil, #10).
 //
-// La relance « rattrapage » (non-acheteurs) reste sur nurture-cron — intacte. Ce moteur gère les
-// séquences déclarées dans le registre (Bienvenue, puis parrainage / cross-sell).
+// La relance « rattrapage » (non-acheteurs) reste sur nurture-cron. Ce moteur gère les séquences
+// déclarées dans le registre (Bienvenue, parrainage, cross-sell, Noël).
 //
 // Best-effort : jamais d'exception qui casse le cron ; on n'avance que si l'envoi a réussi.
 // Env : MAILGUN_API_KEY + MAILGUN_DOMAIN_MARKETING + MAILGUN_FROM_MARKETING + CM_POSTAL_ADDRESS.
 
 const { SEQUENCES } = require('./_lib/sequences');
+const { etiquetteSequenceActive, clientDesabonne } = require('./_lib/nurture-state');
 
 const BASE_ID  = process.env.AIRTABLE_BASE_ID;
 const AT_TOKEN = process.env.AIRTABLE_TOKEN;
@@ -50,16 +53,17 @@ async function atPatch(table, id, fields) {
 async function fetchProject(id) {
   try { const r = await fetch(`${API}/${PROJECTS}/${id}`, { headers: H() }); return r.ok ? await r.json() : null; } catch (_) { return null; }
 }
-async function emailOf(project) {
+// Email + désabonnement marketing du client lié (1 GET). Best-effort : valeurs vides si indisponible.
+async function clientInfo(project) {
   try {
     const link = project && project.fields && project.fields.Client;
     const recId = Array.isArray(link) ? link[0] : null;
-    if (!recId) return '';
+    if (!recId) return { email: '', optout: false };
     const r = await fetch(`${API}/${CLIENTS}/${recId}`, { headers: H() });
-    if (!r.ok) return '';
-    const d = await r.json();
-    return (d.fields && d.fields.email) || '';
-  } catch (_) { return ''; }
+    if (!r.ok) return { email: '', optout: false };
+    const f = (await r.json()).fields || {};
+    return { email: f.email || '', optout: clientDesabonne(f) };
+  } catch (_) { return { email: '', optout: false }; }
 }
 // Envoi Mailgun marketing via le wrapper central (_lib/courriel) : POST + journalisation Courriels
 // (type 'sequence') + en-têtes de désabonnement (livrabilité + 1-clic).
@@ -69,6 +73,38 @@ async function envoyer(to, subject, html, unsub, projetId) {
     headers: { 'List-Unsubscribe': `<${unsub}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' }
   });
   return ok;
+}
+
+// #10 RÉCONCILIATION de sequence_active : champ lisible sur le Projet = séquence(s) active(s), rattrapage
+// (état porté par le Projet) + registre (table Inscriptions). Source UNIQUE pour éviter deux écrivains ;
+// n'écrit que les projets dont le libellé change. Best-effort, plafonné.
+async function reconcilierSequenceActive() {
+  const desired = new Map();   // projectId -> [libellés]
+  const courant = new Map();   // projectId -> sequence_active connu (pour n'écrire que les changements)
+  const add = (id, label) => { if (id && label) { const a = desired.get(id) || []; a.push(label); desired.set(id, a); } };
+
+  // Registre : inscriptions actives -> séquence(s) par projet.
+  const insActives = await atSearch(INSCRIPTIONS, `{statut}='active'`, 1000);
+  for (const ins of insActives) {
+    const pj = Array.isArray(ins.fields.Projet) ? ins.fields.Projet[0] : null;
+    add(pj, ins.fields.sequence);
+  }
+  // Rattrapage : projets en relance active (état porté par le Projet, hors Inscriptions).
+  const enRelance = await atSearch(PROJECTS, `{nurture_status}='active'`, 1000);
+  for (const p of enRelance) { add(p.id, 'rattrapage'); courant.set(p.id, p.fields.sequence_active || ''); }
+  // Projets déjà étiquetés : connaître leur valeur courante + repérer ceux à vider.
+  const etiquetes = await atSearch(PROJECTS, `NOT({sequence_active}='')`, 1000);
+  for (const p of etiquetes) { courant.set(p.id, p.fields.sequence_active || ''); if (!desired.has(p.id)) desired.set(p.id, []); }
+
+  let n = 0;
+  for (const [id, arr] of desired) {
+    const val = etiquetteSequenceActive(arr);
+    const cur = courant.has(id) ? courant.get(id) : '';
+    if (val === cur) continue;          // aucun changement -> pas d'écriture
+    if (n >= 200) break;                // plafond de sécurité
+    try { await atPatch(PROJECTS, id, { sequence_active: val }); n++; } catch (_) {}
+  }
+  return n;
 }
 
 exports.handler = async () => {
@@ -86,7 +122,8 @@ exports.handler = async () => {
         const firstGap = (seq.emails[0] && seq.emails[0].gapBeforeH) || 24;
         for (const p of eligibles) {
           if (inscrits.has(p.id)) continue;
-          const email = await emailOf(p);
+          const { email, optout } = await clientInfo(p);
+          if (optout) continue;   // #13 LCAP : client désabonné -> jamais (ré)inscrit.
           try {
             await atCreate(INSCRIPTIONS, {
               client: email || '', Projet: [p.id], sequence: seq.id, step: 0,
@@ -105,16 +142,20 @@ exports.handler = async () => {
         const project = projId ? await fetchProject(projId) : null;
         const pf = (project && project.fields) || {};
 
-        // Sortie : désinscription globale ou condition de la séquence.
+        // Sortie : désinscription globale (projet) ou condition de la séquence (ex. remboursé).
         if (!project || pf.nurture_status === 'unsubscribed' || (seq.exit && seq.exit(pf))) {
           try { await atPatch(INSCRIPTIONS, ins.id, { statut: pf.nurture_status === 'unsubscribed' ? 'unsubscribed' : 'done' }); } catch (_) {}
           continue;
         }
 
+        // Sortie LCAP : désabonnement au niveau CLIENT (vaut pour TOUS ses projets, #13).
+        const info = await clientInfo(project);
+        if (info.optout) { try { await atPatch(INSCRIPTIONS, ins.id, { statut: 'unsubscribed' }); } catch (_) {} continue; }
+
         const step = Number(f.step) || 0;
         if (step >= seq.emails.length) { try { await atPatch(INSCRIPTIONS, ins.id, { statut: 'done' }); } catch (_) {} continue; }
 
-        const to = f.client || await emailOf(project);
+        const to = f.client || info.email;
         if (!to) { try { await atPatch(INSCRIPTIONS, ins.id, { statut: 'done' }); } catch (_) {} continue; }
 
         const token = pf.token || '';
@@ -135,7 +176,8 @@ exports.handler = async () => {
 
       out[seq.id] = { enrolled, sent };
     }
-    return { statusCode: 200, body: JSON.stringify({ ok: true, sequences: out }) };
+    const sequence_active_maj = await reconcilierSequenceActive();   // #10
+    return { statusCode: 200, body: JSON.stringify({ ok: true, sequences: out, sequence_active_maj }) };
   } catch (err) {
     console.error('[sequences-cron]', err && err.message);
     return { statusCode: 200, body: JSON.stringify({ ok: false }) };
