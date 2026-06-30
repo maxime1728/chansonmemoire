@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
+<script src="/js/cm-token.js"></script>
 <title>Création en cours · Chanson Mémoire</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -613,7 +614,7 @@ var MAJ = false, BASE = 0;
 try { var _q = new URLSearchParams(window.location.search); MAJ = _q.get("maj") === "1"; BASE = parseInt(_q.get("base"), 10) || 0; } catch(e){}
 
 function getToken(){
-  try{ return new URLSearchParams(window.location.search).get("id"); }
+  try{ return (window.cmToken ? window.cmToken() : new URLSearchParams(window.location.search).get("id")); }
   catch(e){ return null; }
 }
 
@@ -748,7 +749,7 @@ setTimeout(checkReady, 20000); /* premier check après 20 secondes */
    LOADER anti-flash + ADAPTATION hommage/cadeau + ÉTAPES RÉELLES (statut Suno)
 ════════════════════════════════════════ */
 (function(){
-  var tok = new URLSearchParams(location.search).get('id');
+  var tok = (window.cmToken ? window.cmToken() : new URLSearchParams(location.search).get('id'));
   var UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
   function hideLoader(){

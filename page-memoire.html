@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
+<script src="/js/cm-token.js"></script>
 <title>Ta chanson · Chanson Mémoire</title>
 <!-- Page MÉMOIRE (livraison finale, post-acceptation). SEULE page où le téléchargement est offert.
      Lecteur de l'aperçu + download chanson + cadeau v1 = paroles en PDF (signet à venir),
@@ -259,7 +260,7 @@
     clearTimeout(t._h); t._h=setTimeout(function(){ t.style.display='none'; }, 5000);
   }
   var UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  var token = new URLSearchParams(window.location.search).get('id') || '';
+  var token = (window.cmToken ? window.cmToken() : (new URLSearchParams(window.location.search).get('id') || ''));
   if(!UUID_V4.test(token)){ document.getElementById('title').textContent='Lien invalide'; document.querySelector('.wrap').innerHTML='<img src="https://res.cloudinary.com/dcx1tfm47/image/upload/f_auto,q_auto/v1781659915/Logo_Chanson_M%C3%A9moire_jiq5ce.png" alt="Chanson Mémoire" style="height:42px;width:auto;display:block;margin:0 auto 28px;"><h1 id="title">Lien invalide</h1>'; return; }
 
   function post(url, payload){ return fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).then(function(r){return r.ok?r.json():null;}); }

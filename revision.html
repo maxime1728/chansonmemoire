@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="robots" content="noindex, nofollow" />
   <meta name="referrer" content="no-referrer" />
+  <script src="/js/cm-token.js"></script>
   <title>Tes paroles · Chanson Mémoire</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -240,7 +241,7 @@
        construit côté serveur via JSON.stringify). */
     const LANCER_CHANSON  = '/api/lancer-chanson';
 
-    const token = new URLSearchParams(location.search).get('id');
+    const token = (window.cmToken ? window.cmToken() : new URLSearchParams(location.search).get('id'));
     const IS_COVER = new URLSearchParams(location.search).get('mode') === 'cover';   /* correction de paroles depuis l'aperçu (mélodie gardée) */
 
     /* ── Polling + auto-relance (chargement initial) ──
