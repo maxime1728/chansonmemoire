@@ -8,9 +8,9 @@
 <meta name="description" content="Crée une chanson personnalisée en mémoire d'un être cher. Paroles et mélodie composées sur mesure à partir de tes souvenirs. Aperçu gratuit : tu ne paies que si elle te touche le cœur.">
 
 <!-- ═══ FAVICON ═══ -->
-<link rel="icon" type="image/png" sizes="48x48" href="https://res.cloudinary.com/dcx1tfm47/image/upload/c_fill,w_48,h_48/v1782682803/Favicon_Chanson_M%C3%A9moire_pftcgs.png">
-<link rel="icon" type="image/png" sizes="96x96" href="https://res.cloudinary.com/dcx1tfm47/image/upload/c_fill,w_96,h_96/v1782682803/Favicon_Chanson_M%C3%A9moire_pftcgs.png">
-<link rel="apple-touch-icon" sizes="180x180" href="https://res.cloudinary.com/dcx1tfm47/image/upload/c_fill,w_180,h_180/v1782682803/Favicon_Chanson_M%C3%A9moire_pftcgs.png">
+<link rel="icon" type="image/png" sizes="48x48" href="https://res.cloudinary.com/dcx1tfm47/image/upload/f_auto,q_auto,c_fill,w_48,h_48/v1782682803/Favicon_Chanson_M%C3%A9moire_pftcgs.png">
+<link rel="icon" type="image/png" sizes="96x96" href="https://res.cloudinary.com/dcx1tfm47/image/upload/f_auto,q_auto,c_fill,w_96,h_96/v1782682803/Favicon_Chanson_M%C3%A9moire_pftcgs.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://res.cloudinary.com/dcx1tfm47/image/upload/f_auto,q_auto,c_fill,w_180,h_180/v1782682803/Favicon_Chanson_M%C3%A9moire_pftcgs.png">
 
 <!-- ═══ INDEXATION & CANONICAL ═══ -->
 <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
@@ -26,7 +26,7 @@
 <meta property="og:url" content="https://chansonmemoire.ca/">
 <meta property="og:title" content="Chanson Mémoire · Une chanson pour quelqu'un que tu n'oublieras jamais">
 <meta property="og:description" content="Crée une chanson personnalisée en mémoire d'un être cher. Paroles et mélodie composées sur mesure à partir de tes souvenirs. Aperçu gratuit : tu ne paies que si elle te touche le cœur.">
-<meta property="og:image" content="https://res.cloudinary.com/dcx1tfm47/image/upload/c_fill,w_1200,h_630/v1781659915/Logo_Chanson_M%C3%A9moire_jiq5ce.png">
+<meta property="og:image" content="https://res.cloudinary.com/dcx1tfm47/image/upload/f_auto,q_auto,c_fill,w_1200,h_630/v1781659915/Logo_Chanson_M%C3%A9moire_jiq5ce.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Chanson Mémoire · chansons personnalisées en mémoire d'un être cher">
@@ -37,7 +37,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Chanson Mémoire · Une chanson pour quelqu'un que tu n'oublieras jamais">
 <meta name="twitter:description" content="Crée une chanson personnalisée en mémoire d'un être cher. Aperçu gratuit : tu ne paies que si elle te touche.">
-<meta name="twitter:image" content="https://res.cloudinary.com/dcx1tfm47/image/upload/c_fill,w_1200,h_630/v1781659915/Logo_Chanson_M%C3%A9moire_jiq5ce.png">
+<meta name="twitter:image" content="https://res.cloudinary.com/dcx1tfm47/image/upload/f_auto,q_auto,c_fill,w_1200,h_630/v1781659915/Logo_Chanson_M%C3%A9moire_jiq5ce.png">
 
 <!-- ═══ SITEMAP ═══ -->
 <link rel="sitemap" type="application/xml" href="/sitemap.xml">
@@ -55,9 +55,9 @@
       "url": "https://chansonmemoire.ca/",
       "logo": {
         "@type": "ImageObject",
-        "url": "https://res.cloudinary.com/dcx1tfm47/image/upload/v1781659915/Logo_Chanson_M%C3%A9moire_jiq5ce.png"
+        "url": "https://res.cloudinary.com/dcx1tfm47/image/upload/f_auto,q_auto/v1781659915/Logo_Chanson_M%C3%A9moire_jiq5ce.png"
       },
-      "image": "https://res.cloudinary.com/dcx1tfm47/image/upload/v1781659915/Logo_Chanson_M%C3%A9moire_jiq5ce.png",
+      "image": "https://res.cloudinary.com/dcx1tfm47/image/upload/f_auto,q_auto/v1781659915/Logo_Chanson_M%C3%A9moire_jiq5ce.png",
       "email": "nathalie@chansonmemoire.ca",
       "areaServed": {
         "@type": "Country",
@@ -211,10 +211,13 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Preconnect CDN images (Cloudinary) + audios (filesafe) : etablit DNS+TLS tot, accelere le LCP -->
+<link rel="preconnect" href="https://res.cloudinary.com">
+<link rel="preconnect" href="https://assets.cdn.filesafe.space">
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Mulish:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <!-- Attribution Meta first/last-touch : capter des l'accueil (page d'entree principale), avant tout. -->
 <!-- Sentry navigateur (erreurs JS), token/PII scrubbes avant envoi (cm-sentry.js). -->
-<script src="/js/cm-sentry.js"></script>
+<script src="/js/cm-sentry.js" defer></script>
 <script src="/js/cm-attrib.js" defer></script>
 <style>
 /* ════════ TOKENS ════════ */
@@ -460,7 +463,7 @@ html.js .head-l,html.js .head-c,html.js .step,html.js .uc-card,html.js .track,ht
 <header class="hd">
   <div class="hd-in">
     <a class="hd-logo" href="/" aria-label="Chanson Mémoire · Accueil">
-      <img src="https://res.cloudinary.com/dcx1tfm47/image/upload/v1781659915/Logo_Chanson_M%C3%A9moire_jiq5ce.png"
+      <img src="https://res.cloudinary.com/dcx1tfm47/image/upload/f_auto,q_auto/v1781659915/Logo_Chanson_M%C3%A9moire_jiq5ce.png"
            alt="Chanson Mémoire"
            width="120" height="32"
            loading="eager">
@@ -705,7 +708,7 @@ html.js .head-l,html.js .head-c,html.js .step,html.js .uc-card,html.js .track,ht
 <!-- FOOTER -->
 <footer class="ft">
   <img class="ft-logo"
-       src="https://res.cloudinary.com/dcx1tfm47/image/upload/v1782350975/Logo_Chanson_M%C3%A9moire_1080_x_1080_px_2_cosouh.png"
+       src="https://res.cloudinary.com/dcx1tfm47/image/upload/f_auto,q_auto/v1782350975/Logo_Chanson_M%C3%A9moire_1080_x_1080_px_2_cosouh.png"
        alt="Chanson Mémoire"
        width="120" height="36"
        loading="lazy">
