@@ -182,6 +182,7 @@
       <button class="btn-accept" id="btnAccept" type="button">Accepter cette version et télécharger</button>
     </div>
     <p class="note">Tu recevras ta chanson et tes paroles en PDF sur ta page.</p>
+    <p class="note" id="extrasNote" style="display:none;margin-top:8px;"></p>
   </div>
 
   <!-- DEMANDE DE MODIFICATION (avant ou après acceptation) — modale unifiée (js/cm-modif-modal.js) -->
@@ -264,6 +265,14 @@
     else { loading.textContent = "Ta chanson se finalise, réessaie dans un instant."; }
     /* Demande de modification : réservée aux acheteurs (gaté serveur aussi). */
     if(d.commercial_status === 'purchased'){ var mz = document.getElementById('modifZone'); if(mz) mz.style.display = 'block'; }
+    /* Order bumps achetés au checkout -> à commander sur la page-mémoire après acceptation (item 2). */
+    var ex = d.extras || {}, achetes = [];
+    if(ex.instrumental === 'achete')     achetes.push('ta version instrumentale');
+    if(ex.paroles_vivantes === 'achete') achetes.push('ta vidéo des paroles');
+    if(achetes.length){
+      var en = document.getElementById('extrasNote');
+      if(en){ en.textContent = 'Tu as ajouté ' + achetes.join(' et ') + ' à ton achat. Tu pourras les commander sur ta page, une fois cette version acceptée.'; en.style.display = 'block'; }
+    }
   })
   .catch(function(){ loading.textContent = "Une erreur est survenue. Réessayez dans un instant."; });
 

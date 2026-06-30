@@ -136,6 +136,10 @@ exports.handler = async (event) => {
         audio_url:         audioUrl,
         suggestions:       gen.suggestions || '[]',         // bulles dynamiques — exposition INTENTIONNELLE (au-delà des 5 champs §6 ; à refléter dans CLAUDE.md §6)
         commercial_status: projet.fields.commercial_status || 'preview_only',
+        extras: {                                                  // statut order bumps : achete -> commande -> livre (page-memoire)
+          instrumental:     projet.fields.extra_instrumental     || '',
+          paroles_vivantes: projet.fields.extra_paroles_vivantes || ''
+        },
         song_type:         projet.fields.song_type || 'hommage',   // hommage|cadeau -> adapte le copy + pilote le loader anti-flash (non-PII)
         style:             gen.gen_music_style || projet.fields.music_style || '',   // affichage acceptation (titre + style + ambiance)
         ambiance:          gen.gen_mood        || projet.fields.mood        || '',
