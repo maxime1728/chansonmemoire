@@ -32,7 +32,12 @@
 .cmm-confirm{background:var(--cm-plum-dark,#5C2D4A);border:none;color:#fff;}\
 .cmm-confirm:disabled{opacity:.6;cursor:default;}\
 .cmm-note{font-size:12px;color:var(--cm-text-sub,#7A6070);margin-top:12px;text-align:center;min-height:1em;}\
-.cmm-done{font-size:14px;line-height:1.6;color:var(--cm-text,#2E1A28);}';
+.cmm-done{font-size:14px;line-height:1.6;color:var(--cm-text,#2E1A28);}\
+.cmm-fullload{position:fixed;inset:0;z-index:1100;display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:var(--cm-bg,#FBF7F2);text-align:center;padding:24px;}\
+.cmm-fullload.show{display:flex;}\
+.cmm-fullspin{width:44px;height:44px;border-radius:50%;border:3px solid var(--cm-mauve,#C98BB0);border-top-color:var(--cm-plum-dark,#5C2D4A);animation:cmmspin .8s linear infinite;}\
+.cmm-fulltxt{font-family:"Mulish",sans-serif;font-size:16px;color:var(--cm-text-sub,#7A6070);max-width:340px;line-height:1.5;}\
+@keyframes cmmspin{to{transform:rotate(360deg);}}';
 
   /* Puces : ORIENTENT le placeholder (et le ton du suivi), ne décident pas seules. Pas de « style ». */
   var CHIPS = [
@@ -89,8 +94,15 @@
       '</div>';
     document.body.appendChild(ov);
 
+    // #6 : overlay de chargement plein écran pendant l'analyse de la demande (paroles corrigées).
+    var load = document.createElement('div');
+    load.className = 'cmm-fullload'; load.setAttribute('aria-hidden', 'true');
+    load.innerHTML = '<div class="cmm-fullspin" aria-hidden="true"></div><p class="cmm-fulltxt">Un instant, on prépare tes paroles corrigées…</p>';
+    document.body.appendChild(load);
+
     els = {
       ov: ov,
+      load: load,
       modal:  ov.querySelector('.cmm-modal'),
       title:  ov.querySelector('.cmm-title'),
       sub:    ov.querySelector('.cmm-sub'),
@@ -116,6 +128,8 @@
     els.cancel.addEventListener('click', closeModal);
     ov.addEventListener('click', function (e) { if (e.target === ov) closeModal(); });
     els.send.addEventListener('click', submit);
+    // #16 : on garde le brouillon de la demande tant qu'il n'est pas envoyé (par token).
+    els.ta.addEventListener('input', function () { try { localStorage.setItem('cm_modif_draft_' + (cfg && cfg.token), els.ta.value); } catch (_) {} });
 
     built = true;
   }
@@ -138,7 +152,7 @@
     els.title.textContent = cfg.title;
     els.sub.textContent = cfg.sub;
     els.hint.textContent = cfg.hint;
-    els.ta.value = '';
+    try { els.ta.value = localStorage.getItem('cm_modif_draft_' + cfg.token) || ''; } catch (_) { els.ta.value = ''; }   // #16 : restaure le brouillon non envoyé
     els.ta.setAttribute('placeholder', 'Décris ce que tu aimerais changer…');
     [].forEach.call(els.chips.children, function (b) { styleChip(b, false); });
     els.form.style.display = '';
@@ -192,6 +206,9 @@
   // Mode SELF-SERVE post-achat (locké avec Maxime 2026-06-30) : on route via demander-modif-client.
   // Une demande de PAROLES (route 'cover') part en acceptation INLINE sur /revision, comme l'aperçu,
   // au lieu du « on te revient par courriel ». Style/prononciation restent capturés au cockpit (decortique).
+  function clearDraft() { try { localStorage.removeItem('cm_modif_draft_' + cfg.token); } catch (_) {} }
+  function hideLoad() { if (els.load) els.load.classList.remove('show'); }
+
   function submitSelfServe(texte) {
     fetch('/api/demander-modif-client', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -199,22 +216,23 @@
     })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (res) {
-        if (!res || !res.ok) { captureFallback(texte); showDone(); return; }
+        if (!res || !res.ok) { hideLoad(); captureFallback(texte); clearDraft(); showDone(); return; }
         if (res.route === 'cover') {
+          clearDraft();   // #16 : la demande est partie en proposition -> on vide le brouillon
           try { sessionStorage.setItem('cm_cover_' + cfg.token, JSON.stringify({ lyrics: res.lyrics || '', titre: res.titre || '' })); } catch (_) {}
           window.location.href = '/revision?id=' + encodeURIComponent(cfg.token) + '&mode=cover';
-          return;   // on navigue vers /revision : pas de message « done »
+          return;   // on navigue vers /revision : l'overlay de chargement reste affiché pendant la bascule
         }
         if (res.route === 'busy') {
+          hideLoad();
           els.send.disabled = false;
           els.note.textContent = 'Une version est déjà en préparation. Laisse-nous finir celle-là, puis réessaie.';
-          return;
+          return;   // #16 : pas envoyé -> on garde le brouillon
         }
         // route 'regen' / 'prononciation' / cas inexploitable -> capture cockpit + message « on te revient ».
-        captureFallback(texte);
-        showDone();
+        hideLoad(); captureFallback(texte); clearDraft(); showDone();
       })
-      .catch(function () { captureFallback(texte); showDone(); });
+      .catch(function () { hideLoad(); captureFallback(texte); clearDraft(); showDone(); });
   }
 
   function submit() {
@@ -222,7 +240,7 @@
     if (texte.length < 4) { els.note.textContent = 'Décris en quelques mots ce que tu veux ajuster.'; els.ta.focus(); return; }
     els.send.disabled = true; els.note.textContent = 'Un instant, on regarde ta demande…';
 
-    if (cfg.selfServe) { submitSelfServe(texte); return; }
+    if (cfg.selfServe) { if (els.load) els.load.classList.add('show'); submitSelfServe(texte); return; }
 
     var payload = { token: cfg.token };
     payload[cfg.champ] = texte;

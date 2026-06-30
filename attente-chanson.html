@@ -607,6 +607,11 @@ var hardStop   = 90;    /* ~30 min -> on cesse de sonder (le courriel + la senti
 var popupShown = false;
 var pollingInterval;
 
+/* #9 : mode « mise à jour » (cover). On attend une version PLUS RÉCENTE que la baseline avant de
+   revenir à l'aperçu (sinon on renverrait sur l'ancienne version, déjà audio_generated). */
+var MAJ = false, BASE = 0;
+try { var _q = new URLSearchParams(window.location.search); MAJ = _q.get("maj") === "1"; BASE = parseInt(_q.get("base"), 10) || 0; } catch(e){}
+
 function getToken(){
   try{ return new URLSearchParams(window.location.search).get("id"); }
   catch(e){ return null; }
@@ -665,6 +670,23 @@ function checkReady(){
 
   var token = getToken();
   if(!token || !UUID_V4.test(token)) return;
+
+  if(MAJ){
+    /* On compte les versions : dès qu'il y en a une de plus que la baseline, la nouvelle est prête. */
+    fetch("/api/lire-versions", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ token: token }), cache:"no-store" })
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(d){
+        var n = (d && d.versions && d.versions.length) || 0;
+        if(n > BASE && !redirected){
+          clearInterval(pollingInterval); redirected = true;
+          var o = document.getElementById("cmDelayOverlay"); if(o){ o.classList.remove("show"); o.setAttribute("aria-hidden","true"); }
+          var msg = document.getElementById("statusMsg"); if(msg){ var dots = msg.querySelector(".wait-dots"); if(dots) dots.remove(); msg.innerHTML = "Sa nouvelle version est prête, on t'amène à sa page."; }
+          setTimeout(function(){ window.location.href = REDIRECT_BASE + "?id=" + encodeURIComponent(token); }, 1500);
+        }
+      })
+      .catch(function(){ /* silencieux — on réessaie au prochain intervalle */ });
+    return;
+  }
 
   fetch("/api/lire-projet", {
     method: "POST",
