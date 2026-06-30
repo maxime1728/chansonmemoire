@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Cockpit corrections</title>
+<style>
+  :root { --plum:#5C2D4A; --cream:#F5F0EA; --ink:#2E1A28; --muted:#7A6070; --line:#E5DAE0; --propbg:#FCF7FA; --propline:#D8B7CC; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; color:var(--ink); background:var(--cream); }
+  header { background:var(--plum); color:#fff; padding:12px 18px; font-size:16px; font-weight:600; }
+  #gate { max-width:360px; margin:80px auto; background:#fff; padding:24px; border-radius:12px; border:1px solid var(--line); }
+  #gate label { font-size:14px; color:var(--muted); }
+  #gate input { width:100%; padding:10px; font-size:15px; border:1px solid var(--line); border-radius:8px; margin:10px 0; }
+  button.btn { background:var(--plum); color:#fff; border:none; padding:10px 16px; border-radius:8px; font-size:14px; cursor:pointer; }
+  button.btn:hover { opacity:.92; }
+  #app { display:none; grid-template-columns:320px 1fr; height:calc(100vh - 46px); }
+  #liste { border-right:1px solid var(--line); overflow:auto; background:#fff; }
+  .item { padding:12px 16px; border-bottom:1px solid var(--line); cursor:pointer; }
+  .item:hover { background:var(--cream); }
+  .item.sel { background:#F3E8EF; }
+  .item .from { font-size:13px; font-weight:600; }
+  .item .subj { font-size:12px; color:var(--muted); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .chip { display:inline-block; font-size:11px; background:#F3E8EF; color:var(--plum); padding:2px 8px; border-radius:10px; margin-top:6px; }
+  #detail { overflow:auto; padding:18px 22px; }
+  .meta { font-size:13px; color:var(--muted); margin-bottom:14px; }
+  .cols { display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:start; }
+  .col h3 { font-size:12px; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); margin:0 0 8px; }
+  .col.prop h3 { color:var(--plum); }
+  .fieldcard { background:#fff; border:1px solid var(--line); border-radius:10px; padding:12px 14px; margin-bottom:12px; }
+  .col.prop .fieldcard { border-color:var(--propline); background:var(--propbg); }
+  .label { font-size:11px; color:var(--muted); margin-bottom:4px; text-transform:uppercase; letter-spacing:.4px; }
+  .val { font-size:14px; line-height:1.6; white-space:pre-wrap; }
+  .dim { color:#bbb; }
+  .empty { color:var(--muted); padding:48px 24px; text-align:center; }
+  .err { color:#b00020; font-size:13px; margin-top:8px; }
+  .phase2 { margin-top:18px; padding:12px 14px; border:1px dashed var(--propline); border-radius:10px; font-size:13px; color:var(--muted); background:#fff; }
+</style>
+</head>
+<body>
+<header>Cockpit corrections</header>
+
+<div id="gate">
+  <label for="pass">Mot de passe</label>
+  <input id="pass" type="password" autocomplete="current-password" autofocus>
+  <button class="btn" onclick="entrer()">Entrer</button>
+  <div id="gateErr" class="err"></div>
+</div>
+
+<div id="app">
+  <div id="liste"></div>
+  <div id="detail"><div class="empty">Choisis une conversation a gauche.</div></div>
+</div>
+
+<script>
+  var KEY_STORE = 'cockpit_key';
+  var KEY = sessionStorage.getItem(KEY_STORE) || '';
+
+  function esc(s){ return (s == null ? '' : String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  async function api(params) {
+    var r = await fetch('/api/cockpit-data' + (params || ''), { headers: { 'x-cockpit-key': KEY } });
+    if (r.status === 401) throw new Error('401');
+    return r.json();
+  }
+
+  async function entrer() {
+    KEY = document.getElementById('pass').value.trim();
+    try {
+      var d = await api('');
+      sessionStorage.setItem(KEY_STORE, KEY);
+      document.getElementById('gate').style.display = 'none';
+      document.getElementById('app').style.display = 'grid';
+      rendreListe((d && d.liste) || []);
+    } catch (e) {
+      document.getElementById('gateErr').textContent = 'Mot de passe invalide.';
+    }
+  }
+
+  function rendreListe(liste) {
+    var el = document.getElementById('liste');
+    if (!liste.length) { el.innerHTML = '<div class="empty">Aucune conversation a traiter.</div>'; return; }
+    el.innerHTML = liste.map(function (c) {
+      return '<div class="item" onclick="ouvrir(\'' + c.id + '\', this)">' +
+        '<div class="from">' + esc(c.expediteur) + '</div>' +
+        '<div class="subj">' + esc(c.sujet) + '</div>' +
+        (c.type_correction ? '<span class="chip">' + esc(c.type_correction) + '</span>' : '') +
+        '</div>';
+    }).join('');
+  }
+
+  function bloc(label, valeur) {
+    return '<div class="fieldcard"><div class="label">' + label + '</div><div class="val">' +
+      (valeur ? esc(valeur) : '<span class="dim">vide</span>') + '</div></div>';
+  }
+
+  async function ouvrir(id, node) {
+    var items = document.querySelectorAll('.item');
+    for (var i = 0; i < items.length; i++) items[i].classList.remove('sel');
+    if (node) node.classList.add('sel');
+    document.getElementById('detail').innerHTML = '<div class="empty">Chargement...</div>';
+    var d = await api('?id=' + encodeURIComponent(id));
+    var x = (d && d.detail) || {};
+    document.getElementById('detail').innerHTML =
+      '<div class="meta">' + esc(x.expediteur) + ' &middot; ' + esc(x.sujet) +
+        (x.type_correction ? ' &middot; <b style="color:#5C2D4A">' + esc(x.type_correction) + '</b>' : '') + '</div>' +
+      '<div class="cols">' +
+        '<div class="col">' +
+          '<h3>Actuel (en ligne)</h3>' +
+          bloc('Paroles', x.paroles_actuelles) +
+          bloc('Style', x.prompt_style_actuel) +
+          bloc('Voix', x.voix) +
+        '</div>' +
+        '<div class="col prop">' +
+          '<h3>Propose (a appliquer)</h3>' +
+          bloc('Paroles', x.paroles_corrigees) +
+          bloc('Style', x.prompt_style) +
+        '</div>' +
+      '</div>' +
+      '<div class="phase2">Phase 2 (a venir) : edition du propose, ecoute de la version regeneree, et les boutons Appliquer / Envoyer ici meme.</div>';
+  }
+
+  if (KEY) {
+    api('').then(function (d) {
+      document.getElementById('gate').style.display = 'none';
+      document.getElementById('app').style.display = 'grid';
+      rendreListe((d && d.liste) || []);
+    }).catch(function () { /* clef invalide -> on laisse l'ecran mot de passe */ });
+  }
+</script>
+</body>
+</html>
