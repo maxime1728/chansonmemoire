@@ -40,15 +40,17 @@ function verifie(timestamp, token, signature) {
 }
 
 // Mappe un event Mailgun -> { statut, champs de date }. Renvoie null pour les events ignorés.
-function mapEvent(evt, isoNow, row) {
+// `severity` ('temporary'|'permanent') ne vaut que pour 'failed' : un échec TEMPORAIRE n'est PAS un rejet
+// (Mailgun réessaie) -> ignoré. Seul l'échec PERMANENT (et la plainte spam) marque 'rejeté'.
+function mapEvent(evt, isoNow, row, severity) {
   const f = (row && row.fields) || {};
   switch (evt) {
     case 'delivered': return { statut: 'livré',  fields: { livre_le: f.livre_le || isoNow } };
     case 'opened':    return { statut: 'ouvert', fields: { ouvert_le: f.ouvert_le || isoNow, ouvertures: (parseInt(f.ouvertures, 10) || 0) + 1 } };
     case 'clicked':   return { statut: 'cliqué', fields: { clique_le: f.clique_le || isoNow } };
-    case 'failed':    return { statut: 'rejeté', fields: { bounced: true } };
+    case 'failed':    return severity === 'temporary' ? null : { statut: 'rejeté', fields: { bounced: true } };
     case 'complained':return { statut: 'rejeté', fields: { bounced: true } };
-    default:          return null;   // accepted / stored / unsubscribed... : ignorés
+    default:          return null;   // accepted / opened-stored / unsubscribed / temporary fail : ignorés
   }
 }
 
@@ -110,7 +112,8 @@ exports.handler = async (event) => {
     if (!row) return { statusCode: 200, body: '{}' };  // courriel non suivi (alerte interne, etc.)
 
     const isoNow = new Date(ed.timestamp ? ed.timestamp * 1000 : Date.now()).toISOString();
-    const m = mapEvent(evt, isoNow, row);
+    const severity = (ed.severity || (ed['delivery-status'] && ed['delivery-status'].severity) || '').toLowerCase();
+    const m = mapEvent(evt, isoNow, row, severity);
     if (!m) return { statusCode: 200, body: '{}' };
 
     const fields = Object.assign({}, m.fields);
