@@ -157,13 +157,17 @@ exports.handler = async (event) => {
       p.append('line_items[0][quantity]', '1');
       const bumpMap = { instrumental: PRICE_INSTRU, paroles_vivantes: PRICE_PAROLES };
       let li = 1;
+      const bumpsFactures = [];
       for (const key of bumpsRequested) {
         const pid = bumpMap[key];
         if (!pid) continue;                       // env de prix manquante -> on saute (le repli protège)
         p.append(`line_items[${li}][price]`, pid);
         p.append(`line_items[${li}][quantity]`, '1');
+        bumpsFactures.push(key);
         li += 1;
       }
+      // Trace des bumps RÉELLEMENT facturés -> le webhook les enregistre (extra_* = achete, à commander).
+      if (bumpsFactures.length) p.append('metadata[bumps]', bumpsFactures.join(','));
       return p;
     }
 

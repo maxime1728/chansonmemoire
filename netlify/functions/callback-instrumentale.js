@@ -70,6 +70,11 @@ exports.handler = async (event) => {
         method: 'PATCH', headers: { ...headers, 'Content-Type': 'application/json' },
         body: JSON.stringify({ fields: { instrumental_url: hosted || instrumentalUrl } })
       });
+      // Extra suivi -> statut 'livre' sur le PROJET (vue admin acheté/commandé/reçu). Best-effort.
+      try {
+        const pid = (table === 'Projects') ? rec.id : (Array.isArray(rec.fields.project) ? rec.fields.project[0] : null);
+        if (pid) await fetch(`${API}/Projects/${pid}`, { method: 'PATCH', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify({ typecast: true, fields: { extra_instrumental: 'livre' } }) });
+      } catch (_) {}
     }
 
     // 2. VOIX ISOLÉE -> ré-héberge + écrit vocal_url. PATCH SÉPARÉ best-effort : si le champ

@@ -177,11 +177,11 @@
     <div class="section-title">Prolonge ta chanson</div>
     <p class="section-sub">Des compléments pour faire durer et partager ce souvenir.</p>
     <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:14px;text-align:left;">
-      <div><strong>Version instrumentale</strong> · 19,99 $<br><span style="font-size:13px;opacity:.7;">La trame musicale seule, sans voix.</span></div>
+      <div><strong>Version instrumentale</strong> <span class="up-price">· 19,99 $</span><br><span style="font-size:13px;opacity:.7;">La trame musicale seule, sans voix.</span></div>
       <button class="btn btn-ghost" type="button" data-upsell="instrumental" style="white-space:nowrap;">Ajouter</button>
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:16px;text-align:left;">
-      <div><strong>Paroles vivantes en vidéo</strong> · 13,99 $<br><span style="font-size:13px;opacity:.7;">Les paroles animées, à partager avec tes proches.</span></div>
+      <div><strong>Paroles vivantes en vidéo</strong> <span class="up-price">· 13,99 $</span><br><span style="font-size:13px;opacity:.7;">Les paroles animées, à partager avec tes proches.</span></div>
       <button class="btn btn-ghost" type="button" data-upsell="paroles_vivantes" style="white-space:nowrap;">Ajouter</button>
     </div>
     <p class="ok-msg" id="upsellMsg" style="display:none;"></p>
@@ -292,7 +292,7 @@
     // Cadeau : PDF prêt -> téléchargement ; déjà demandé -> en préparation ; sinon -> bouton.
     if(d.pdf_url){ showCadeauxReady(d.pdf_url); }
     else if(d.cadeaux_requested){ showCadeauxPending(); }
-    initUpsell(d.commercial_status === 'purchased', { instrumental: d.instrumental_url, paroles_vivantes: d.video_url });
+    initUpsell(d.commercial_status === 'purchased', { instrumental: d.instrumental_url, paroles_vivantes: d.video_url }, d.extras || {});
     initVideoMemoire(d.commercial_status === 'purchased', d.memoire_photos, d.memoire_pinned, d.memoire_naissance, d.memoire_deces, d.memoire_citation, d.video_memoire_url);
   }).catch(function(){ loading.textContent='Une erreur est survenue.'; });
 
@@ -376,24 +376,49 @@
 
   /* ── Upsell post-achat (add-ons payants) — affiché uniquement aux acheteurs (pic émotionnel). ──
      delivered = { instrumental: url|'', paroles_vivantes: url|'' } : add-on déjà livré -> téléchargement. */
-  function initUpsell(purchased, delivered){
+  /* Statuts order bumps : '' (jamais acheté) | 'achete' (payé au checkout, à commander) |
+     'commande' (production lancée) | 'livre' (reçu). delivered[type] = URL livrée (téléchargement). */
+  function initUpsell(purchased, delivered, extras){
     var card = document.getElementById('upsellCard');
     if(!card || !purchased) return;
     card.style.display='block';
-    delivered = delivered || {};
+    delivered = delivered || {}; extras = extras || {};
+    function setPrix(row, txt){ var pr=row && row.querySelector('.up-price'); if(pr){ pr.textContent=txt; pr.style.fontSize='13px'; pr.style.opacity='.75'; } }
+    function statique(btn, label){ var s=document.createElement('span'); s.className='btn btn-ghost'; s.style.whiteSpace='nowrap'; s.style.opacity='.7'; s.style.cursor='default'; s.textContent=label; btn.parentNode.replaceChild(s, btn); return s; }
     [].forEach.call(card.querySelectorAll('[data-upsell]'), function(btn){
       var type = btn.getAttribute('data-upsell');
-      /* Add-on déjà livré -> on remplace « Ajouter » par un téléchargement. */
-      if(delivered[type]){
-        var a=document.createElement('a');
-        a.className='btn btn-ghost'; a.href=delivered[type]; a.setAttribute('download','');
-        a.style.whiteSpace='nowrap'; a.textContent='Télécharger';
-        btn.parentNode.replaceChild(a, btn);
+      var row  = btn.parentNode;
+      var st   = (extras[type] || '').toString();
+      /* Livré -> téléchargement (ou « Reçu » si statut livre sans URL exposée). */
+      if(delivered[type] || st==='livre'){
+        setPrix(row, 'Reçu');
+        if(delivered[type]){
+          var a=document.createElement('a'); a.className='btn btn-ghost'; a.href=delivered[type]; a.setAttribute('download','');
+          a.style.whiteSpace='nowrap'; a.textContent='Télécharger'; row.replaceChild(a, btn);
+        } else { statique(btn, 'Reçu ✓'); }
         return;
       }
+      /* En cours de production. */
+      if(st==='commande'){ setPrix(row, 'Inclus dans ton achat'); statique(btn, 'En préparation'); return; }
+      /* Acheté au checkout -> à COMMANDER (sans repayer). */
+      if(st==='achete'){
+        setPrix(row, 'Inclus dans ton achat');
+        btn.textContent='Commander';
+        btn.addEventListener('click', function(){
+          btn.disabled=true; btn.textContent='Un instant…';
+          post('/api/commander-bump',{token:token, type:type}).then(function(res){
+            if(res && res.ok){
+              statique(btn, 'En préparation');
+              var m=document.getElementById('upsellMsg'); if(m){ m.textContent='Parfait ! On prépare ton complément, on t’écrit dès qu’il est prêt.'; m.style.display='block'; }
+            } else { btn.disabled=false; btn.textContent='Commander'; cmToast("Un souci est survenu. Réessaie."); }
+          }).catch(function(){ btn.disabled=false; btn.textContent='Commander'; cmToast("Une erreur est survenue."); });
+        });
+        return;
+      }
+      /* Jamais acheté -> upsell payant (Stripe Checkout), comme avant. */
       btn.addEventListener('click', function(){
         btn.disabled=true; var old=btn.textContent; btn.textContent='Un instant…';
-        post('/api/creer-upsell',{token:token, upsell_type:btn.getAttribute('data-upsell')}).then(function(res){
+        post('/api/creer-upsell',{token:token, upsell_type:type}).then(function(res){
           if(res && res.url){ window.location.href=res.url; return; }   /* → Stripe Checkout */
           btn.disabled=false; btn.textContent=old; cmToast("Paiement indisponible pour le moment. Réessayez.");
         }).catch(function(){ btn.disabled=false; btn.textContent=old; cmToast("Une erreur est survenue."); });

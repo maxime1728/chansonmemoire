@@ -25,7 +25,8 @@ const PROJECTS = 'tblh7O8eoog7RyTMJ', UPSELLS = 'tbl0Z52D8l4555Has';
 // Projects
 const P = { token:'fldqBcPOplqI7pmTh', commercial:'fldLFpeLNHU0ewF7A', funnel:'fldepcYRBoQsGoVkJ',
   purchase_date:'fldeh0MKHnUvgV4Wo', amount:'fld4qP6Vt9U1Hygcb', stripe_session:'fldrp48w47JknP0P3',
-  stripe_pi:'fldsGvEeBhuv6p8zO', purchased_gen_no:'fld6eCLXNbuMzMw1h' };
+  stripe_pi:'fldsGvEeBhuv6p8zO', purchased_gen_no:'fld6eCLXNbuMzMw1h',
+  extra_instrumental:'fldQqTCFHaMmBwTsa', extra_paroles_vivantes:'fldmZfynBKPLEXlb6' };
 // Upsells
 const U = { price:'fldJoXqpwDjsLVhNg', type:'fldLcJfOQyAnH0uyB', status:'fldUYpFPzKft1YAZL',
   date:'fldZecCcKwrJCbqdr', project:'fldlPqxt6COxeuBgT' };
@@ -92,6 +93,11 @@ async function handler(event) {
       uf[U.price] = montant; uf[U.type] = md.upsell_type || ''; uf[U.status] = 'paid';
       uf[U.date] = new Date().toISOString().slice(0, 10); uf[U.project] = [projet.id];
       await fetch(`${API}/${UPSELLS}`, { method: 'POST', headers: { ...atHeaders(), 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: uf, typecast: true }) });
+      // Extra suivi acheté en upsell -> statut 'commande' (la production se lance juste après).
+      const upf = {};
+      if (md.upsell_type === 'instrumental')     upf[P.extra_instrumental]     = 'commande';
+      if (md.upsell_type === 'paroles_vivantes') upf[P.extra_paroles_vivantes] = 'commande';
+      if (Object.keys(upf).length) { try { await fetch(`${API}/${PROJECTS}/${projet.id}`, { method: 'PATCH', headers: { ...atHeaders(), 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: upf, typecast: true }) }); } catch (_) {} }
       if (md.upsell_type === 'instrumental')     await appel('/api/lancer-instrumentale', { token });
       if (md.upsell_type === 'paroles_vivantes') await appel('/api/lancer-paroles-vivantes', { token });
       await appel('/api/courriel-achat', { token, kind: 'upsell', upsell_type: md.upsell_type, email });
@@ -109,6 +115,11 @@ async function handler(event) {
     pf[P.stripe_session] = sess.id;
     pf[P.stripe_pi] = sess.payment_intent || '';
     if (md.generation_no) pf[P.purchased_gen_no] = Number(md.generation_no);
+    // Order bumps achetés au checkout (metadata posée par creer-checkout) -> statut 'achete' (à COMMANDER
+    // par le client sur page-memoire). On NE lance PAS la production ici (décision Maxime : commande explicite).
+    const bumps = (md.bumps || '').split(',').map((s) => s.trim()).filter(Boolean);
+    if (bumps.includes('instrumental'))     pf[P.extra_instrumental]     = 'achete';
+    if (bumps.includes('paroles_vivantes')) pf[P.extra_paroles_vivantes] = 'achete';
     const ru = await fetch(`${API}/${PROJECTS}/${projet.id}`, { method: 'PATCH', headers: { ...atHeaders(), 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: pf, typecast: true }) });
     if (!ru.ok) { await capture(new Error('stripe-webhook: update Projet KO'), { token, status: ru.status }); return { statusCode: 500, body: 'maj-projet-ko' }; }   // 500 -> Stripe retentera (idempotence protege)
 

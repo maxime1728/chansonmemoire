@@ -49,11 +49,12 @@ exports.handler = async (event) => {
   try {
     // Cible = la GENERATION achetée. Deux chemins : metadata=token (-> Project -> sa version achetée),
     // sinon video_task_id (-> directement la Generation ; repli Projects pour le legacy).
-    let target = null;   // { table, id }
+    let target = null, projetId = null;   // { table, id } + le Projet (pour le statut extra 'livre')
 
     if (UUID_V4.test(meta)) {
       const projet = (((await (await fetch(`${API}/Projects?filterByFormula=${encodeURIComponent(`{token}=${formulaLiteral(meta)}`)}&maxRecords=1`, { headers })).json()) || {}).records || [])[0] || null;
       if (projet) {
+        projetId = projet.id;
         const no = parseInt(projet.fields.purchased_generation_no, 10);
         const projLit = formulaLiteral(projet.fields.project);
         if (Number.isInteger(no) && projLit !== null) {
@@ -68,10 +69,10 @@ exports.handler = async (event) => {
       if (lit !== null) {
         const fr = encodeURIComponent(`{video_task_id}=${lit}`);
         const gen = (((await (await fetch(`${API}/Generations?filterByFormula=${fr}&maxRecords=1`, { headers })).json()) || {}).records || [])[0] || null;
-        if (gen) target = { table: 'Generations', id: gen.id };
+        if (gen) { target = { table: 'Generations', id: gen.id }; projetId = Array.isArray(gen.fields.project) ? gen.fields.project[0] : null; }
         else {
           const projet = (((await (await fetch(`${API}/Projects?filterByFormula=${fr}&maxRecords=1`, { headers })).json()) || {}).records || [])[0] || null;
-          if (projet) target = { table: 'Projects', id: projet.id };
+          if (projet) { target = { table: 'Projects', id: projet.id }; projetId = projet.id; }
         }
       }
     }
@@ -85,6 +86,8 @@ exports.handler = async (event) => {
       headers: { ...headers, 'Content-Type': 'application/json' },
       body: JSON.stringify({ fields: { video_url: hosted || videoUrl } })
     });
+    // Extra suivi -> statut 'livre' sur le PROJET (vue admin acheté/commandé/reçu). Best-effort.
+    if (projetId) { try { await fetch(`${API}/Projects/${projetId}`, { method: 'PATCH', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify({ typecast: true, fields: { extra_paroles_vivantes: 'livre' } }) }); } catch (_) {} }
     return { statusCode: 200, body: JSON.stringify({ ok: true }) };
   } catch (err) {
     return { statusCode: 200, body: '{}' };   // un callback ne renvoie jamais d'erreur au fournisseur
