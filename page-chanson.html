@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
+<script src="/js/cm-token.js"></script>
 <title>Ta chanson · Chanson Mémoire</title>
 <!-- Page d'ACCEPTATION post-achat. Affiche la version ACHETÉE (titre + style + ambiance) avec le
      lecteur de l'aperçu. PAS de téléchargement ici. « Accepter cette version et télécharger »
@@ -245,7 +246,7 @@
   }
   var UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   var ACCEPT_TEXT_VERSION = 'cgv-livraison-v2-2026-06';
-  var token = new URLSearchParams(window.location.search).get('id') || '';
+  var token = (window.cmToken ? window.cmToken() : (new URLSearchParams(window.location.search).get('id') || ''));
 
   if(!UUID_V4.test(token)){
     document.getElementById('title').textContent = 'Lien invalide';

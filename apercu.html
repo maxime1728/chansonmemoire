@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
+<script src="/js/cm-token.js"></script>
 <title>Ton aperçu · Chanson Mémoire</title>
 <script src="/js/cm-name.js"></script>
 <script>
@@ -14,7 +15,7 @@
   window._CM = {
     nom:    (window.cmName ? cmName(p.get('name')) : p.get('name')) || '',
     taskid: p.get('taskid')  || '',
-    id:     p.get('id')      || '',   /* token UUID — clé de régénération */
+    id:     (window.CM_TOKEN || p.get('id')) || '',   /* token UUID (réserve cm-token.js), clé de régénération */
     mp3:    p.get('preview1')|| ''
   };
   /* Loi 25 — on NE garde PAS de PII dans l'URL : dès le chargement, on nettoie la barre d'adresse
@@ -22,7 +23,10 @@
      persiste plus dans l'historique / le presse-papier / un partage de lien. L'email n'est plus
      lu du tout (creer-checkout va le chercher côté serveur sur le Client lié). */
   if (window._CM.id) {
-    try { history.replaceState({}, '', '/apercu?id=' + encodeURIComponent(window._CM.id)); } catch (e) {}
+    /* cm-token.js a deja retire ?id (si la reserve sessionStorage a reussi). Ici on retire le RESTE de la
+       PII (name/taskid/preview1/email) SANS toucher au statut de ?id -> en navigation privee le token reste
+       dans l'URL et le refresh continue de marcher. */
+    try { var _u = new URL(location.href); ['name','taskid','preview1','email'].forEach(function(k){ _u.searchParams.delete(k); }); history.replaceState({}, '', _u.pathname + (_u.search || '') + (_u.hash || '')); } catch (e) {}
   }
   /* Titre de l'onglet personnalisé */
   if (window._CM.nom) {
