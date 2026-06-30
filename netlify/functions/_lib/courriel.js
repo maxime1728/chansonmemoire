@@ -18,6 +18,31 @@ const CLIENTS   = 'tblQbF1OlE3uRxFra';
 const TYPES_SUPPRIMABLES = new Set(['nurture', 'sequence', 'recovery']);   // flux RÉPÉTABLES : on saute les adresses mortes
 const TYPES_MARKETING    = new Set(['nurture', 'sequence']);               // marketing : on saute AUSSI les clients désabonnés (nurture_optout, LCAP)
 
+// ── Lot 6 : routage From / sous-domaine d'ENVOI par TYPE (un seul endroit décide) ──────────────────
+// PRINCIPE (protéger le domaine racine) : on ENVOIE toujours via un sous-domaine, JAMAIS la racine.
+// Le From AFFICHÉ est la RACINE pour le transactionnel + le support (confiance/marque) ; il reste sur
+// le sous-domaine MARKETING pour les flux répétables (nurture/sequence/recovery), pour ne jamais
+// exposer la racine aux plaintes spam. DMARC relaxed aligne un From racine avec le DKIM du sous-domaine.
+// Les MAILGUN_FROM_* restent des surcharges optionnelles ; à défaut, on applique ces valeurs.
+const FROM_RACINE    = 'Chanson Mémoire <nathalie@chansonmemoire.ca>';
+const FROM_MARKETING = 'Chanson Mémoire <nathalie@info.chansonmemoire.ca>';
+
+// { domain, from } selon le type. domain = sous-domaine d'ENVOI (jamais la racine nue), pris dans l'env.
+function expediteurParType(type) {
+  // marketing répétable -> envoi + From sur le sous-domaine info. (ne jamais exposer la racine)
+  if (type === 'nurture' || type === 'sequence' || type === 'recovery') {
+    return { domain: process.env.MAILGUN_DOMAIN_MARKETING,
+             from:   process.env.MAILGUN_FROM_MARKETING || FROM_MARKETING };
+  }
+  if (type === 'support') {
+    return { domain: process.env.MAILGUN_DOMAIN_SUPPORT || 'support.chansonmemoire.ca',
+             from:   process.env.MAILGUN_FROM_SUPPORT || FROM_RACINE };
+  }
+  // transactionnel par défaut (achat, cadeau, cover, et tout type non listé) : From RACINE, envoi via achat.
+  return { domain: process.env.MAILGUN_DOMAIN_ACHAT || process.env.MAILGUN_DOMAIN,
+           from:   process.env.MAILGUN_FROM_ACHAT || FROM_RACINE };
+}
+
 function formulaLiteral(v) {
   const s = String(v);
   if (!s.includes('"')) return `"${s}"`;
@@ -92,7 +117,7 @@ async function logCourriel({ type, to, subject, projetId, token, messageId }) {
 
 // Envoi central. opts :
 //   to, subject, html, text       (text optionnel)
-//   from   (def. MAILGUN_FROM), domain (def. MAILGUN_DOMAIN), apiKey (def. MAILGUN_API_KEY)
+//   from, domain   (def. : résolus par TYPE via expediteurParType, Lot 6), apiKey (def. MAILGUN_API_KEY)
 //   headers      { 'List-Unsubscribe': '<...>', 'In-Reply-To': '<mid>', ... } -> préfixés 'h:'
 //   attachment   { buffer, filename, contentType }
 //   type, projetId, token         (pour le log)
@@ -100,9 +125,10 @@ async function logCourriel({ type, to, subject, projetId, token, messageId }) {
 // Retour : { ok, id } (id = Message-Id Mailgun, sans chevrons).
 async function envoyerCourriel(opts) {
   opts = opts || {};
+  const exp    = expediteurParType(opts.type);   // Lot 6 : From + sous-domaine d'envoi selon le type
   const apiKey = opts.apiKey || process.env.MAILGUN_API_KEY;
-  const domain = opts.domain || process.env.MAILGUN_DOMAIN;
-  const from   = opts.from   || process.env.MAILGUN_FROM || 'Chanson Mémoire <info@chansonmemoire.ca>';
+  const domain = opts.domain || exp.domain;
+  const from   = opts.from   || exp.from;
   const to     = opts.to;
   if (!apiKey || !domain || !to || !String(to).includes('@')) return { ok: false, id: '' };
 
@@ -151,4 +177,4 @@ async function envoyerCourriel(opts) {
   return { ok: true, id };
 }
 
-module.exports = { envoyerCourriel, logCourriel, projetIdParToken };
+module.exports = { envoyerCourriel, logCourriel, projetIdParToken, expediteurParType };

@@ -20,16 +20,14 @@ const MAX_RETRIES  = 6;   // plafond de relances paroles (anti-coût)
 
 // Mailgun MARKETING. No-op si non configuré (ne casse jamais le cron).
 const MG_KEY    = process.env.MAILGUN_API_KEY;
-const MG_DOMAIN = process.env.MAILGUN_DOMAIN_MARKETING;
-const MG_FROM   = process.env.MAILGUN_FROM_MARKETING || 'Chanson Mémoire <nathalie@info.chansonmemoire.ca>';
-const { envoyerCourriel: mgEnvoyer } = require('./_lib/courriel');
+const { envoyerCourriel: mgEnvoyer } = require('./_lib/courriel');   // recovery = marketing -> From sous-domaine info. + envoi info. (Lot 6)
 
 function headers() { return { Authorization: `Bearer ${AT_TOKEN}` }; }
 function formulaLiteral(v) { const s = String(v); if (!s.includes('"')) return `"${s}"`; if (!s.includes("'")) return `'${s}'`; return null; }
 
 // Envoi via le wrapper central (_lib/courriel) : POST Mailgun + journalisation Courriels (type 'recovery').
 async function envoyerCourriel(to, subject, html, projetId) {
-  const { ok } = await mgEnvoyer({ to, subject, html, from: MG_FROM, domain: MG_DOMAIN, type: 'recovery', projetId });
+  const { ok } = await mgEnvoyer({ to, subject, html, type: 'recovery', projetId });
   return ok;
 }
 

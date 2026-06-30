@@ -23,9 +23,7 @@ const API      = `https://api.airtable.com/v0/${BASE_ID}`;
 const SITE     = 'https://chansonmemoire.ca';
 
 const MG_KEY    = process.env.MAILGUN_API_KEY;
-const MG_DOMAIN = process.env.MAILGUN_DOMAIN_MARKETING;
-const MG_FROM   = process.env.MAILGUN_FROM_MARKETING || 'Chanson Mémoire <info@chansonmemoire.ca>';
-const { envoyerCourriel: mgEnvoyer } = require('./_lib/courriel');
+const { envoyerCourriel: mgEnvoyer } = require('./_lib/courriel');   // nurture = marketing -> From sous-domaine info. + envoi info. (Lot 6)
 const POSTAL    = process.env.CM_POSTAL_ADDRESS || '';
 
 const MAX_PER_RUN = 40;
@@ -66,7 +64,7 @@ async function clientInfo(projet) {
 // (type 'nurture') + en-têtes de désabonnement (livrabilité + 1-clic Gmail/Outlook).
 async function envoyer(to, subject, html, unsub, projetId) {
   const { ok } = await mgEnvoyer({
-    to, subject, html, from: MG_FROM, domain: MG_DOMAIN, type: 'nurture', projetId,
+    to, subject, html, type: 'nurture', projetId,
     headers: { 'List-Unsubscribe': `<${unsub}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' }
   });
   return ok;

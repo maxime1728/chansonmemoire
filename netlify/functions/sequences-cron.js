@@ -28,9 +28,7 @@ const PROJECTS     = 'tblh7O8eoog7RyTMJ';
 const CLIENTS      = 'tblQbF1OlE3uRxFra';
 
 const MG_KEY    = process.env.MAILGUN_API_KEY;
-const MG_DOMAIN = process.env.MAILGUN_DOMAIN_MARKETING;
-const MG_FROM   = process.env.MAILGUN_FROM_MARKETING || 'Chanson Mémoire <info@chansonmemoire.ca>';
-const { envoyerCourriel: mgEnvoyer } = require('./_lib/courriel');
+const { envoyerCourriel: mgEnvoyer } = require('./_lib/courriel');   // sequence = marketing -> From sous-domaine info. + envoi info. (Lot 6)
 const POSTAL    = process.env.CM_POSTAL_ADDRESS || '';
 
 const MAX_PER_RUN = 40;
@@ -69,7 +67,7 @@ async function clientInfo(project) {
 // (type 'sequence') + en-têtes de désabonnement (livrabilité + 1-clic).
 async function envoyer(to, subject, html, unsub, projetId) {
   const { ok } = await mgEnvoyer({
-    to, subject, html, from: MG_FROM, domain: MG_DOMAIN, type: 'sequence', projetId,
+    to, subject, html, type: 'sequence', projetId,
     headers: { 'List-Unsubscribe': `<${unsub}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' }
   });
   return ok;
