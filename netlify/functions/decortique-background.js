@@ -118,11 +118,14 @@ ${piedAuto()}`;
       try { await patch(CONVOS, convoId, champsConvo); } catch (_) {}
     }
 
-    // Prononciation post-achat : la réécriture PHONÉTIQUE va sur la version de référence (lyrics_phonetique,
-    // envoyé à Suno), PAS dans les paroles affichées (adjusted_lyrics/paroles_corrigees restent CLAIRES). Le
-    // cockpit la lit via generation_a_travailler et l'affiche en bloc « Prononciation ». Best-effort.
-    if (phonetique && phonetique.trim() && genRec) {
-      try { await patch(GENERATIONS, genRec.id, { lyrics_phonetique: phonetique.trim() }); } catch (_) {}
+    // Prononciation : la version PHONÉTIQUE (= nouvelles paroles avec mots mal prononcés réécrits) va sur la
+    // version de référence (lyrics_phonetique, envoyé à Suno), PAS dans les paroles AFFICHÉES (qui restent
+    // claires). Dès qu'une demande TOUCHE les paroles (adjLyrics présent) : on écrit le phonétique s'il y en a
+    // un, SINON on VIDE lyrics_phonetique (sinon un ancien phonétique périmé serait chanté à la place des
+    // nouvelles paroles). Le cockpit le lit via generation_a_travailler (bloc « Prononciation »). Best-effort.
+    if (genRec && adjLyrics && adjLyrics.trim()) {
+      const valPhon = (phonetique && phonetique.trim()) ? phonetique.trim() : '';
+      try { await patch(GENERATIONS, genRec.id, { lyrics_phonetique: valPhon }); } catch (_) {}
     }
 
     return { statusCode: 200, body: JSON.stringify({ ok: true }) };

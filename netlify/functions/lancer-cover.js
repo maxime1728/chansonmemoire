@@ -110,7 +110,11 @@ exports.handler = async (event) => {
     const propStyle  = genProposee ? ((genProposee.fields || {}).gen_style_prompt || '').trim() : '';
 
     // Paroles : Gen proposée (state-move) -> slot Projet adjusted_lyrics (legacy) -> phonétique -> origine.
-    const prompt = propLyrics || (p.adjusted_lyrics && p.adjusted_lyrics.trim()) || (g.lyrics_phonetique && g.lyrics_phonetique.trim()) || g.lyrics || '';   // #12 : phonétique si présente
+    // SUNO reçoit la version PHONÉTIQUE en priorité (= les nouvelles paroles avec les mots mal prononcés
+    // réécrits), car un cover porte presque toujours un changement de paroles ET parfois une prononciation.
+    // Les paroles AFFICHÉES au client restent claires (la Gen stocke adjusted_lyrics, pas ce prompt).
+    // lyrics_phonetique est tenu À JOUR par decortique (vidé si pas de prononciation) -> jamais périmé.
+    const prompt = propLyrics || (g.lyrics_phonetique && g.lyrics_phonetique.trim()) || (p.adjusted_lyrics && p.adjusted_lyrics.trim()) || g.lyrics || '';
     if (!prompt.trim()) return { statusCode: 409, body: JSON.stringify({ error: 'Paroles introuvables' }) };
     const style = propStyle || (p.adjusted_style_prompt && p.adjusted_style_prompt.trim())
       || await styleFor({ music_style: g.gen_music_style || p.music_style, mood: g.gen_mood || p.mood, cadeau: p.song_type === 'cadeau', language: p.language });
