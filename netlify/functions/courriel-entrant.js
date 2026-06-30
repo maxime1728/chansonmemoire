@@ -28,6 +28,9 @@ const AT_TOKEN = process.env.AIRTABLE_TOKEN;
 const API      = `https://api.airtable.com/v0/${BASE_ID}`;
 const SECRET   = process.env.MAKE_WEBHOOK_SECRET;
 const MG_SIGNING_KEY = process.env.MAILGUN_SIGNING_KEY;   // clé de signature webhook Mailgun (voie DIRECTE)
+const CLD_CLOUD  = process.env.CLOUDINARY_CLOUD_NAME;     // pièces jointes -> Cloudinary (URL permanente pour Airtable)
+const CLD_KEY    = process.env.CLOUDINARY_API_KEY;
+const CLD_SECRET = process.env.CLOUDINARY_API_SECRET;
 
 const CLIENTS  = 'tblQbF1OlE3uRxFra';
 const CONVOS   = 'tbl3KBgXthCPromxF';
@@ -62,6 +65,29 @@ function estAutoReponse(subject) {
   return /^(re:\s*)?(out of office|absence|automatic reply|réponse automatique|delivery status|undeliverable|mail delivery|échec de remise)/i.test(subject || '');
 }
 
+// Upload d'une pièce jointe sur Cloudinary (resource_type auto = tout type) -> URL permanente pour Airtable.
+// Best-effort : '' si non configuré / échec (on ne bloque jamais la capture du courriel).
+async function uploadPieceJointe(buffer, filename, contentType) {
+  if (!CLD_CLOUD || !CLD_KEY || !CLD_SECRET) return '';
+  try {
+    const ts = Math.floor(Date.now() / 1000);
+    const folder = 'cm_courriels';
+    const publicId = `pj_${ts}_${Math.random().toString(36).slice(2, 8)}`;
+    const toSign = `folder=${folder}&public_id=${publicId}&timestamp=${ts}`;
+    const signature = crypto.createHash('sha1').update(toSign + CLD_SECRET).digest('hex');
+    const form = new FormData();
+    form.append('file', new Blob([buffer], { type: contentType || 'application/octet-stream' }), filename || 'piece');
+    form.append('api_key', CLD_KEY);
+    form.append('timestamp', String(ts));
+    form.append('public_id', publicId);
+    form.append('folder', folder);
+    form.append('signature', signature);
+    const r = await fetch(`https://api.cloudinary.com/v1_1/${CLD_CLOUD}/auto/upload`, { method: 'POST', body: form });
+    const d = await r.json().catch(() => ({}));
+    return (r.ok && d.secure_url) ? d.secure_url : '';
+  } catch (_) { return ''; }
+}
+
 // Vérifie la signature d'un POST Mailgun entrant : HMAC-SHA256(timestamp+token) == signature.
 // Ferme l'endpoint à tout sauf Mailgun.
 function verifierMailgun(timestamp, token, signature) {
@@ -78,6 +104,7 @@ exports.handler = async (event) => {
 
   const ct = (event.headers['content-type'] || event.headers['Content-Type'] || '').toLowerCase();
   let from = '', subject = '', message = '', msgId = '', recipient = '';
+  let attachFiles = [];   // pièces jointes (voie Mailgun multipart seulement)
 
   if (ct.includes('application/json')) {
     if (!SECRET) { console.error('[courriel-entrant] MAKE_WEBHOOK_SECRET manquant'); return { statusCode: 500, body: '{}' }; }
@@ -105,6 +132,12 @@ exports.handler = async (event) => {
     message = (form.get('stripped-text') || form.get('body-plain') || '').toString().trim();   // texte sans l'historique cité
     msgId = (form.get('Message-Id') || form.get('message-id') || '').toString().trim();
     recipient = (form.get('recipient') || '').toString().trim();
+    // Pièces jointes Mailgun : champs attachment-1..N (+ attachment-count). On les retient pour upload Cloudinary.
+    const nAtt = parseInt(form.get('attachment-count') || '0', 10) || 0;
+    for (let i = 1; i <= nAtt; i++) {
+      const part = form.get(`attachment-${i}`);
+      if (part && typeof part.arrayBuffer === 'function') attachFiles.push(part);
+    }
   }
 
   if (!from) return { statusCode: 200, body: JSON.stringify({ ok: true, skipped: 'no_sender' }) };
@@ -153,6 +186,26 @@ exports.handler = async (event) => {
     const liensExistants = (existing && Array.isArray(existing.fields.Projet)) ? existing.fields.Projet : [];
     const liens = [...new Set([...liensExistants, ...projectIds])];
 
+    // Pièces jointes -> Cloudinary -> champ attachment (append aux existantes). Best-effort : un échec
+    // d'upload n'empêche jamais l'enregistrement du courriel.
+    let piecesJointes = null;
+    if (attachFiles.length) {
+      try {
+        const ajoutees = [];
+        for (const part of attachFiles) {
+          const buf = Buffer.from(await part.arrayBuffer());
+          const url = await uploadPieceJointe(buf, part.name, part.type);
+          if (url) ajoutees.push({ url, filename: part.name || 'piece-jointe' });
+        }
+        if (ajoutees.length) {
+          const existAtt = (existing && Array.isArray(existing.fields.pieces_jointes))
+            ? existing.fields.pieces_jointes.map(a => ({ url: a.url, filename: a.filename }))
+            : [];
+          piecesJointes = [...existAtt, ...ajoutees];
+        }
+      } catch (e) { console.error('[courriel-entrant] pieces jointes', e && e.message); }
+    }
+
     // 4. STORE — étape critique. PAS de brouillon ici (découplé -> brouillon-cron) : la capture ne dépend
     //    pas d'Anthropic. brouillon_ia vide + statut a_verifier => apparaît en file, le cron le rédige.
     const champs = {
@@ -166,6 +219,7 @@ exports.handler = async (event) => {
       thread_key: threadKey
     };
     if (liens.length) champs.Projet = liens;
+    if (piecesJointes) champs.pieces_jointes = piecesJointes;
     if (existing) {
       champs.brouillon_ia = '';   // nouveau message dans le fil -> le cron re-rédige sur le fil complet
       champs.resume_ia = '';      // fil rouvert -> le résumé sera régénéré à la prochaine clôture

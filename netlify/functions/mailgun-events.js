@@ -17,6 +17,8 @@ const AT   = process.env.AIRTABLE_TOKEN;
 const API  = `https://api.airtable.com/v0/${BASE}`;
 const SIGNING_KEY = process.env.MAILGUN_SIGNING_KEY;
 const COURRIELS = 'Courriels';
+const CONVOS = 'tbl3KBgXthCPromxF';
+const CONVO_LINK_FIELD = 'fldKyTLaRXbGoFitP';   // lien Conversation (réciproque) sur la ligne Courriels
 
 // Rang des statuts : on ne redescend jamais. 'rejeté' est terminal et l'emporte.
 const RANG = { 'envoyé': 1, 'livré': 2, 'ouvert': 3, 'cliqué': 4, 'rejeté': 9 };
@@ -48,6 +50,34 @@ function mapEvent(evt, isoNow, row) {
     case 'complained':return { statut: 'rejeté', fields: { bounced: true } };
     default:          return null;   // accepted / stored / unsubscribed... : ignorés
   }
+}
+
+// Conversation liée à une ligne Courriels (lue par ID de champ -> robuste au nom du réciproque auto-créé).
+async function conversationDuCourriel(courrielId) {
+  try {
+    const r = await fetch(`${API}/${COURRIELS}/${courrielId}?returnFieldsByFieldId=true`, { headers: { Authorization: `Bearer ${AT}` } });
+    if (!r.ok) return '';
+    const link = ((await r.json()).fields || {})[CONVO_LINK_FIELD];
+    return (Array.isArray(link) && link[0]) || '';
+  } catch (_) { return ''; }
+}
+
+// Propage le statut de livraison au fil lié (dernier_envoi_statut), même garde anti-régression. Best-effort.
+async function propagerAuFil(courrielId, statut) {
+  const convoId = await conversationDuCourriel(courrielId);
+  if (!convoId) return;
+  try {
+    const rc = await fetch(`${API}/${CONVOS}/${convoId}`, { headers: { Authorization: `Bearer ${AT}` } });
+    if (!rc.ok) return;
+    const actuel = ((await rc.json()).fields || {}).dernier_envoi_statut || 'envoyé';
+    if ((RANG[statut] || 0) >= (RANG[actuel] || 0)) {
+      await fetch(`${API}/${CONVOS}/${convoId}`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${AT}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ typecast: true, fields: { dernier_envoi_statut: statut } })
+      });
+    }
+  } catch (_) {}
 }
 
 async function trouverParMessageId(mid) {
@@ -93,6 +123,10 @@ exports.handler = async (event) => {
       headers: { Authorization: `Bearer ${AT}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ typecast: true, fields })
     });
+
+    // Reflète le statut sur le fil de support lié (vue inbox), si la ligne est rattachée à une conversation.
+    await propagerAuFil(row.id, m.statut);
+
     return { statusCode: 200, body: '{}' };
   } catch (err) {
     console.error('[mailgun-events]', err && err.message);
