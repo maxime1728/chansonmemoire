@@ -23,7 +23,7 @@
 .cmm-sub{font-size:14px;line-height:1.5;color:var(--cm-text-sub,#7A6070);margin-bottom:8px;}\
 .cmm-chips{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 4px;}\
 .cmm-chip{font:600 13px/1 "Mulish",sans-serif;padding:8px 13px;border-radius:999px;border:1.5px solid var(--cm-mauve,#C98BB0);background:var(--cm-white,#fff);color:var(--cm-plum-mid,#8B4A6E);cursor:pointer;}\
-.cmm-textarea{width:100%;padding:12px 14px;border-radius:12px;border:1.5px solid var(--cm-mauve,#C98BB0);background:var(--cm-white,#fff);font-family:"Mulish",sans-serif;font-size:14px;color:var(--cm-text,#2E1A28);resize:vertical;margin-top:10px;}\
+.cmm-textarea{width:100%;padding:12px 14px;border-radius:12px;border:1.5px solid var(--cm-mauve,#C98BB0);background:var(--cm-white,#fff);font-family:"Mulish",sans-serif;font-size:16px;color:var(--cm-text,#2E1A28);resize:vertical;margin-top:10px;}\
 .cmm-textarea:focus{outline:none;border-color:var(--cm-plum-mid,#8B4A6E);}\
 .cmm-hint{font-size:12px;line-height:1.5;color:var(--cm-text-sub,#7A6070);margin:8px 0 0;}\
 .cmm-actions{display:flex;gap:12px;margin-top:22px;}\
@@ -171,10 +171,58 @@
     lastFocus = null;
   }
 
+  function showDone() {
+    els.form.style.display = 'none';
+    els.done.innerHTML = cfg.done;
+    els.done.style.display = 'block';
+    els.note.textContent = '';
+  }
+  function showErr() {
+    els.send.disabled = false;
+    els.note.textContent = 'Un souci est survenu. Réessaie dans un instant.';
+  }
+  // Capture la demande dans le cockpit (style/prononciation/cas limite), comme avant -> rien n'est perdu.
+  function captureFallback(texte) {
+    try {
+      fetch('/api/decortique', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: cfg.token, demande: texte }) });
+    } catch (_) {}
+  }
+
+  // Mode SELF-SERVE post-achat (locké avec Maxime 2026-06-30) : on route via demander-modif-client.
+  // Une demande de PAROLES (route 'cover') part en acceptation INLINE sur /revision, comme l'aperçu,
+  // au lieu du « on te revient par courriel ». Style/prononciation restent capturés au cockpit (decortique).
+  function submitSelfServe(texte) {
+    fetch('/api/demander-modif-client', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: cfg.token, action: 'analyser', texte: texte })
+    })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (res) {
+        if (!res || !res.ok) { captureFallback(texte); showDone(); return; }
+        if (res.route === 'cover') {
+          try { sessionStorage.setItem('cm_cover_' + cfg.token, JSON.stringify({ lyrics: res.lyrics || '', titre: res.titre || '' })); } catch (_) {}
+          window.location.href = '/revision?id=' + encodeURIComponent(cfg.token) + '&mode=cover';
+          return;   // on navigue vers /revision : pas de message « done »
+        }
+        if (res.route === 'busy') {
+          els.send.disabled = false;
+          els.note.textContent = 'Une version est déjà en préparation. Laisse-nous finir celle-là, puis réessaie.';
+          return;
+        }
+        // route 'regen' / 'prononciation' / cas inexploitable -> capture cockpit + message « on te revient ».
+        captureFallback(texte);
+        showDone();
+      })
+      .catch(function () { captureFallback(texte); showDone(); });
+  }
+
   function submit() {
     var texte = (els.ta.value || '').trim();
     if (texte.length < 4) { els.note.textContent = 'Décris en quelques mots ce que tu veux ajuster.'; els.ta.focus(); return; }
-    els.send.disabled = true; els.note.textContent = 'Un instant, on enregistre ta demande…';
+    els.send.disabled = true; els.note.textContent = 'Un instant, on regarde ta demande…';
+
+    if (cfg.selfServe) { submitSelfServe(texte); return; }
 
     var payload = { token: cfg.token };
     payload[cfg.champ] = texte;
@@ -182,12 +230,9 @@
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (res) {
         if (!res || !res.ok) throw new Error('ko');
-        els.form.style.display = 'none';
-        els.done.innerHTML = cfg.done;
-        els.done.style.display = 'block';
-        els.note.textContent = '';
+        showDone();
       })
-      .catch(function () { els.send.disabled = false; els.note.textContent = 'Un souci est survenu. Réessaie dans un instant.'; });
+      .catch(showErr);
   }
 
   window.cmModifModal = {
@@ -197,6 +242,7 @@
         token:    options.token || '',
         endpoint: options.endpoint || DEFAULTS.endpoint,
         champ:    options.champ || DEFAULTS.champ,
+        selfServe: !!options.selfServe,   // post-achat : route paroles -> /revision (accept inline)
         title:    options.title || DEFAULTS.title,
         sub:      options.sub || DEFAULTS.sub,
         hint:     options.hint || DEFAULTS.hint,

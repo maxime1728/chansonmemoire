@@ -356,9 +356,10 @@
     }).catch(function(){ b.disabled=false; b.textContent='Obtenir le PDF · 7,99 $'; cmToast("Une erreur est survenue."); });
   });
 
-  /* ── Demande de modification (decortique : Claude analyse + prépare l'approbation) ──
-     Modale unifiée partagée (même composant que page-chanson / l'aperçu). Endpoint /api/decortique. */
-  if(window.cmModifModal) window.cmModifModal.init({ token: token, trigger: document.getElementById('btnCorrection') });
+  /* ── Demande de modification ── Modale unifiée partagée (même composant que page-chanson).
+     Self-serve : une demande de PAROLES part en acceptation inline sur /revision (route 'cover') ;
+     style/prononciation restent capturés au cockpit (decortique). */
+  if(window.cmModifModal) window.cmModifModal.init({ token: token, trigger: document.getElementById('btnCorrection'), selfServe: true });
 
   /* ── Waitlists (mémoire vivante / vidéo) ── */
   function waitlist(btnId, msgId, payload, doneTxt){

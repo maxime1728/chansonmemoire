@@ -15,7 +15,7 @@
 const { rehost } = require('./_lib/cloudinary-rehost');
 const { styleFor } = require('./_lib/style');
 const { recomputerProjet } = require('./_lib/comptage');
-const { livrerCover } = require('./_lib/cover');
+const { livrerCover, versionPlusRecenteAPublier } = require('./_lib/cover');
 const { alerte } = require('./_lib/alerte');
 
 const BASE_ID  = process.env.AIRTABLE_BASE_ID;
@@ -53,6 +53,38 @@ exports.handler = async () => {
   let rescued = 0, regenerated = 0, waiting = 0, escalated = 0;
 
   try {
+    // RÉCONCILIATION (anti-version-fantôme) : une correction post-achat peut avoir été livrée (cover
+    // audio_generated) sans que la version active du Projet (purchased_generation_no) ait basculé
+    // (livraison interrompue, ou correction faite AVANT l'achat puis achat sur l'ancienne version).
+    // On rattrape : si une version cover livrée est plus récente que la version active d'un projet
+    // ACHETÉ, on la publie. Idempotent. Best-effort (ne casse jamais le reste du cron).
+    let reconciled = 0;
+    try {
+      const orphans = await atList(
+        `AND({type}="cover", {generation_status}="audio_generated", {version_status}!="remplacée", ` +
+        `IS_AFTER({created_date}, DATEADD(NOW(),-10080,'minutes')))`
+      );
+      for (const rec of orphans) {
+        const g = rec.fields;
+        const pid = Array.isArray(g.project) ? g.project[0] : null;
+        const no  = Number(g.generation_no);
+        if (!pid || !Number.isInteger(no)) continue;
+        try {
+          const rp = await fetch(`${API}/Projects/${pid}`, { headers: { Authorization: `Bearer ${AT_TOKEN}` } });
+          if (!rp.ok) continue;
+          const pf = (await rp.json()).fields || {};
+          // Post-achat + version livrée strictement plus récente que la version active -> on publie.
+          if (!versionPlusRecenteAPublier({ commercialStatus: pf.commercial_status, activeNo: pf.purchased_generation_no, deliveredNo: no })) continue;
+          await fetch(`${API}/Projects/${pid}`, {
+            method: 'PATCH', headers: { Authorization: `Bearer ${AT_TOKEN}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fields: { purchased_generation_no: no, purchased_song_title: g.song_title || '', approval_status: 'published' } })
+          });
+          if ((g.version_status || '') !== 'publiée') { try { await atPatch(rec.id, { version_status: 'publiée' }); } catch (_) {} }
+          reconciled++;
+        } catch (_) {}
+      }
+    } catch (_) {}
+
     // Chansons en attente d'audio : 10 min à 24 h après création, avec un task_id à interroger.
     const recs = await atList(
       `AND({generation_status}="audio_pending", {cloudinary_audio_url}="", {suno_task_id}!="", ` +
@@ -183,7 +215,7 @@ exports.handler = async () => {
       } catch (_) {}
     }
 
-    return { statusCode: 200, body: JSON.stringify({ ok: true, found: recs.length, rescued, regenerated, waiting, escalated }) };
+    return { statusCode: 200, body: JSON.stringify({ ok: true, found: recs.length, rescued, regenerated, waiting, escalated, reconciled }) };
   } catch (err) {
     console.error('[sentinelle-cron]', err && err.message);
     return { statusCode: 200, body: JSON.stringify({ ok: false }) };
