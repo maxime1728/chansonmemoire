@@ -18,7 +18,27 @@ const API  = `https://api.airtable.com/v0/${BASE}`;
 const SIGNING_KEY = process.env.MAILGUN_SIGNING_KEY;
 const COURRIELS = 'Courriels';
 const CONVOS = 'tbl3KBgXthCPromxF';
+const CLIENTS = 'tblQbF1OlE3uRxFra';
 const CONVO_LINK_FIELD = 'fldKyTLaRXbGoFitP';   // lien Conversation (réciproque) sur la ligne Courriels
+
+// Hygiène de liste : marque l'adresse morte (email_invalide) sur le Client, sur rejet permanent / plainte.
+// Les flux répétables (nurture/séquences/recovery) la sauteront ensuite (voir _lib/courriel). Best-effort.
+async function marquerEmailInvalide(email, raison) {
+  const lit = formulaLiteral(email);
+  if (!email || lit === null) return;
+  try {
+    const f = encodeURIComponent(`LOWER({email})=LOWER(${lit})`);
+    const r = await fetch(`${API}/${CLIENTS}?filterByFormula=${f}&maxRecords=1`, { headers: { Authorization: `Bearer ${AT}` } });
+    if (!r.ok) return;
+    const rec = (((await r.json()).records) || [])[0];
+    if (!rec) return;
+    await fetch(`${API}/${CLIENTS}/${rec.id}`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${AT}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fields: { email_invalide: true, email_invalide_raison: raison || '', email_invalide_le: new Date().toISOString() } })
+    });
+  } catch (_) {}
+}
 
 // Rang des statuts : on ne redescend jamais. 'rejeté' est terminal et l'emporte.
 const RANG = { 'envoyé': 1, 'livré': 2, 'ouvert': 3, 'cliqué': 4, 'rejeté': 9 };
@@ -129,6 +149,11 @@ exports.handler = async (event) => {
 
     // Reflète le statut sur le fil de support lié (vue inbox), si la ligne est rattachée à une conversation.
     await propagerAuFil(row.id, m.statut);
+
+    // Hygiène de liste : rejet permanent / plainte -> marque l'adresse morte sur le Client (auto-suppression).
+    if (m.statut === 'rejeté') {
+      await marquerEmailInvalide((row.fields && row.fields.destinataire) || '', `${evt}${severity ? '-' + severity : ''}`);
+    }
 
     return { statusCode: 200, body: '{}' };
   } catch (err) {

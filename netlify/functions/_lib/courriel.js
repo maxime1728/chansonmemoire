@@ -14,6 +14,8 @@
 // Env : MAILGUN_API_KEY, MAILGUN_DOMAIN, MAILGUN_FROM, AIRTABLE_TOKEN, AIRTABLE_BASE_ID.
 
 const COURRIELS = 'Courriels';   // table de journalisation (créée côté Airtable, schéma additif)
+const CLIENTS   = 'tblQbF1OlE3uRxFra';
+const TYPES_SUPPRIMABLES = new Set(['nurture', 'sequence', 'recovery']);   // flux RÉPÉTABLES : on saute les adresses mortes
 
 function formulaLiteral(v) {
   const s = String(v);
@@ -36,6 +38,20 @@ async function projetIdParToken(token) {
     const rec = (((await r.json()).records) || [])[0];
     return (rec && rec.id) || '';
   } catch (_) { return ''; }
+}
+
+// L'adresse est-elle marquée morte (email_invalide sur un Client) ? Pour sauter les envois répétables.
+// Best-effort : false si indisponible (on n'empêche jamais un envoi par excès de prudence).
+async function estSupprime(to) {
+  const BASE = process.env.AIRTABLE_BASE_ID, AT = process.env.AIRTABLE_TOKEN;
+  const lit = formulaLiteral(to);
+  if (!BASE || !AT || !to || lit === null) return false;
+  try {
+    const f = encodeURIComponent(`AND(LOWER({email})=LOWER(${lit}), {email_invalide}=1)`);
+    const r = await fetch(`https://api.airtable.com/v0/${BASE}/${CLIENTS}?filterByFormula=${f}&maxRecords=1`, { headers: { Authorization: `Bearer ${AT}` } });
+    if (!r.ok) return false;
+    return (((await r.json()).records) || []).length > 0;
+  } catch (_) { return false; }
 }
 
 // Crée la ligne Courriels. Best-effort : ne lève jamais. messageId peut être vide (Mailgun n'a pas renvoyé
@@ -82,6 +98,12 @@ async function envoyerCourriel(opts) {
   const from   = opts.from   || process.env.MAILGUN_FROM || 'Chanson Mémoire <info@chansonmemoire.ca>';
   const to     = opts.to;
   if (!apiKey || !domain || !to || !String(to).includes('@')) return { ok: false, id: '' };
+
+  // Hygiène de liste : pour les flux RÉPÉTABLES, on ne ré-écrit jamais à une adresse morte (bounce/plainte).
+  // Le transactionnel et le support ne sont PAS suppressés ici (on tente toujours un reçu / une réponse).
+  if (TYPES_SUPPRIMABLES.has(opts.type) && await estSupprime(to)) {
+    return { ok: false, id: '', skipped: 'supprime' };
+  }
 
   const form = new FormData();
   form.append('from', from);
