@@ -65,7 +65,7 @@ async function chansonPrete(projPrimary) {
   return ((((await r.json()).records) || []).length > 0);
 }
 
-const wrap   = (inner) => `<div style="font-family:Georgia,serif;color:#2E1A28;line-height:1.7;max-width:560px;">${inner}<p style="color:#7A6070;margin-top:18px;">— L'équipe Chanson Mémoire</p></div>`;
+const wrap   = (inner) => `<div style="font-family:Georgia,serif;color:#2E1A28;line-height:1.7;max-width:560px;">${inner}<p style="color:#7A6070;margin-top:18px;">L'équipe Chanson Mémoire</p></div>`;
 const bouton = (href, txt) => `<p style="margin:22px 0;"><a href="${href}" style="background:#5C2D4A;color:#F5F0EA;text-decoration:none;padding:12px 22px;border-radius:8px;display:inline-block;">${txt}</a></p>`;
 
 exports.handler = async () => {
@@ -97,8 +97,8 @@ exports.handler = async () => {
         }
         if (pret) {
           const to = await emailDuClient(p);
-          const ok = await envoyerCourriel(to, 'Tes paroles sont prêtes',
-            wrap(`<p>Bonne nouvelle : les paroles de ta chanson sont prêtes !</p><p>Tu peux les relire, les ajuster si tu veux, puis lancer la création de la chanson.</p>${bouton(`${SITE}/revision?id=${encodeURIComponent(token)}`, 'Voir mes paroles')}`), rec.id);
+          const ok = await envoyerCourriel(to, 'Vos paroles sont prêtes',
+            wrap(`<p>Bonne nouvelle : les paroles de votre chanson sont prêtes !</p><p>Vous pouvez les relire, les ajuster si vous le souhaitez, puis lancer la création de la chanson.</p>${bouton(`${SITE}/revision?id=${encodeURIComponent(token)}`, 'Voir mes paroles')}`), rec.id);
           if (ok) { await patchProjet(rec.id, { recovery_email_sent_at: now, recovery_pending: null }); sent++; } else { waiting++; }
         } else { waiting++; }
       }
