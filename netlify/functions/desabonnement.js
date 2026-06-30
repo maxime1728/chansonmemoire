@@ -3,7 +3,8 @@
 // DÉSABONNEMENT de la séquence marketing (exigé par la LCAP). Lien dans chaque courriel :
 //   GET  /api/desabonnement?id=TOKEN   -> désabonne + page de confirmation (clic humain)
 //   POST /api/desabonnement?id=TOKEN   -> 1-clic Gmail/Outlook (en-tête List-Unsubscribe-Post)
-// Pose nurture_status='unsubscribed' (le cron ne lui enverra plus rien). Frictionless : aucun autre
+// Pose nurture_status='unsubscribed' sur le projet ET nurture_optout=true sur le CLIENT (LCAP : le
+// désabonnement suit le client sur TOUS ses projets, présents et futurs). Frictionless : aucun autre
 // garde-fou que le token UUID (un désabonnement doit toujours aboutir).
 
 const BASE_ID  = process.env.AIRTABLE_BASE_ID;
@@ -37,11 +38,24 @@ async function unsubscribe(token) {
   const d = await r.json();
   const projet = d.records && d.records[0];
   if (!projet) return false;
+  // 1) Statut projet : le cron rattrapage s'arrête pour CE projet.
   await fetch(`${API}/Projects/${projet.id}`, {
     method: 'PATCH',
     headers: { ...headers, 'Content-Type': 'application/json' },
     body: JSON.stringify({ fields: { nurture_status: 'unsubscribed' } })
   });
+  // 2) Désabonnement au niveau CLIENT (LCAP) : nurture_optout suit le client sur TOUS ses projets,
+  //    présents et futurs -> bloque tout ré-enrôlement (#13) et tout envoi marketing (via _lib/courriel).
+  const clientId = Array.isArray(projet.fields && projet.fields.Client) ? projet.fields.Client[0] : null;
+  if (clientId) {
+    try {
+      await fetch(`${API}/Clients/${clientId}`, {
+        method: 'PATCH',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fields: { nurture_optout: true } })
+      });
+    } catch (_) {}   // best-effort : le statut projet suffit déjà à stopper l'envoi en cours
+  }
   return true;
 }
 

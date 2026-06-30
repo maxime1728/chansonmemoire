@@ -16,6 +16,7 @@
 const COURRIELS = 'Courriels';   // table de journalisation (créée côté Airtable, schéma additif)
 const CLIENTS   = 'tblQbF1OlE3uRxFra';
 const TYPES_SUPPRIMABLES = new Set(['nurture', 'sequence', 'recovery']);   // flux RÉPÉTABLES : on saute les adresses mortes
+const TYPES_MARKETING    = new Set(['nurture', 'sequence']);               // marketing : on saute AUSSI les clients désabonnés (nurture_optout, LCAP)
 
 function formulaLiteral(v) {
   const s = String(v);
@@ -40,17 +41,23 @@ async function projetIdParToken(token) {
   } catch (_) { return ''; }
 }
 
-// L'adresse est-elle marquée morte (email_invalide sur un Client) ? Pour sauter les envois répétables.
-// Best-effort : false si indisponible (on n'empêche jamais un envoi par excès de prudence).
-async function estSupprime(to) {
+// Faut-il sauter cet envoi répétable pour `to` ? Adresse morte (email_invalide) -> on saute tous les
+// répétables (nurture/séquences/recovery). Désabonnement marketing (nurture_optout) -> on saute en plus
+// nurture/séquences, mais PAS recovery (la récupération est un dû au client, pas du marketing).
+// Best-effort : false si Airtable indisponible (on n'empêche jamais un envoi par excès de prudence).
+async function estSupprime(to, type) {
   const BASE = process.env.AIRTABLE_BASE_ID, AT = process.env.AIRTABLE_TOKEN;
   const lit = formulaLiteral(to);
   if (!BASE || !AT || !to || lit === null) return false;
   try {
-    const f = encodeURIComponent(`AND(LOWER({email})=LOWER(${lit}), {email_invalide}=1)`);
+    const f = encodeURIComponent(`LOWER({email})=LOWER(${lit})`);
     const r = await fetch(`https://api.airtable.com/v0/${BASE}/${CLIENTS}?filterByFormula=${f}&maxRecords=1`, { headers: { Authorization: `Bearer ${AT}` } });
     if (!r.ok) return false;
-    return (((await r.json()).records) || []).length > 0;
+    const c = (((await r.json()).records) || [])[0];
+    if (!c || !c.fields) return false;
+    if (c.fields.email_invalide) return true;                               // adresse morte (bounce/plainte)
+    if (TYPES_MARKETING.has(type) && c.fields.nurture_optout) return true;  // désabonné du marketing (LCAP)
+    return false;
   } catch (_) { return false; }
 }
 
@@ -99,9 +106,10 @@ async function envoyerCourriel(opts) {
   const to     = opts.to;
   if (!apiKey || !domain || !to || !String(to).includes('@')) return { ok: false, id: '' };
 
-  // Hygiène de liste : pour les flux RÉPÉTABLES, on ne ré-écrit jamais à une adresse morte (bounce/plainte).
+  // Hygiène de liste + consentement (LCAP) : pour les flux RÉPÉTABLES, on ne ré-écrit jamais à une adresse
+  // morte (bounce/plainte) ; pour le marketing (nurture/séquences), on saute aussi les clients désabonnés.
   // Le transactionnel et le support ne sont PAS suppressés ici (on tente toujours un reçu / une réponse).
-  if (TYPES_SUPPRIMABLES.has(opts.type) && await estSupprime(to)) {
+  if (TYPES_SUPPRIMABLES.has(opts.type) && await estSupprime(to, opts.type)) {
     return { ok: false, id: '', skipped: 'supprime' };
   }
 

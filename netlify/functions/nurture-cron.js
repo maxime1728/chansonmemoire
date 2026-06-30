@@ -3,9 +3,10 @@
 // MOTEUR de la séquence marketing « rattrapage » (non-acheteurs). Fonction PLANIFIÉE (cron horaire,
 // déclarée dans netlify.toml). À chaque passage :
 //   1. INSCRIT les nouveaux leads (Project sans nurture_status, non acheté, créé < 48 h) -> step 0,
-//      1er courriel dû à created_date + 1 h.
+//      1er courriel dû à created_date + 1 h. JAMAIS un client désabonné (nurture_optout, #13).
 //   2. ENVOIE le courriel dû (nurture_next_at <= maintenant) via Mailgun MARKETING, avance l'étape.
-//   3. ARRÊTE ceux qui ont acheté (-> converted) — le désabonnement est géré par desabonnement.js.
+//   3. SORT ceux pour qui la relance n'a plus de sens : achat (-> converted), remboursement (-> done),
+//      désabonnement client (-> unsubscribed, #13). Le désabonnement est posé par desabonnement.js.
 //
 // Sécurité/UX : best-effort, jamais d'exception qui casse le cron. On n'avance l'étape QUE si l'envoi
 //   a réussi (si Mailgun marketing pas configuré -> on réessaie au prochain passage). Plafond par run.
@@ -14,6 +15,7 @@
 //       + CM_POSTAL_ADDRESS (adresse postale, exigée par la LCAP).
 
 const { ENROLL_DELAY_H, GAP_AFTER_H, TOTAL, build } = require('./_lib/nurture-emails');
+const { dejaClientAchete, clientDesabonne } = require('./_lib/nurture-state');
 
 const BASE_ID  = process.env.AIRTABLE_BASE_ID;
 const AT_TOKEN = process.env.AIRTABLE_TOKEN;
@@ -27,6 +29,10 @@ const { envoyerCourriel: mgEnvoyer } = require('./_lib/courriel');
 const POSTAL    = process.env.CM_POSTAL_ADDRESS || '';
 
 const MAX_PER_RUN = 40;
+// #11 (option stricte) : si activé, un client DÉJÀ acheteur (sur n'importe quel projet) n'est jamais
+// (ré)inscrit à la relance non-acheteurs. Défaut OFF = un nouveau projet est relancé selon SON propre
+// stade (honore la ré-entrée #13). Le désabonnement client reste bloquant dans les deux cas.
+const EXCLURE_CLIENTS = process.env.RATTRAPAGE_EXCLURE_CLIENTS === '1';
 const hoursFromNow = (h) => new Date(Date.now() + h * 3600 * 1000).toISOString();
 
 async function atList(formula, max) {
@@ -43,16 +49,17 @@ async function atPatch(id, fields) {
     body: JSON.stringify({ fields })
   });
 }
-async function emailOf(projet) {
+// Email + désabonnement marketing du client lié (1 GET). Best-effort : valeurs vides si indisponible.
+async function clientInfo(projet) {
   try {
     const link = projet.fields.Client;
     const recId = Array.isArray(link) ? link[0] : null;
-    if (!recId) return '';
+    if (!recId) return { email: '', optout: false };
     const r = await fetch(`${API}/Clients/${recId}`, { headers: { Authorization: `Bearer ${AT_TOKEN}` } });
-    if (!r.ok) return '';
-    const d = await r.json();
-    return (d.fields && d.fields.email) || '';
-  } catch (_) { return ''; }
+    if (!r.ok) return { email: '', optout: false };
+    const f = (await r.json()).fields || {};
+    return { email: f.email || '', optout: clientDesabonne(f) };
+  } catch (_) { return { email: '', optout: false }; }
 }
 
 // Envoi Mailgun marketing via le wrapper central (_lib/courriel) : POST + journalisation Courriels
@@ -72,10 +79,16 @@ exports.handler = async () => {
       `AND({nurture_status}=BLANK(), {commercial_status}!='purchased', {commercial_status}!='refunded', IS_AFTER({created_date}, DATEADD(NOW(),-48,'hours')))`,
       MAX_PER_RUN
     );
+    let enrolled = 0;
     for (const p of aEnroler) {
+      // #13 LCAP : un client désabonné n'est JAMAIS (ré)inscrit, même sur un nouveau projet.
+      const { optout } = await clientInfo(p);
+      if (optout) continue;
+      // #11 (option stricte, env) : exclure les clients déjà acheteurs.
+      if (EXCLURE_CLIENTS && dejaClientAchete(p.fields)) continue;
       const created = p.fields.created_date ? new Date(p.fields.created_date).getTime() : Date.now();
       const nextAt = new Date(created + ENROLL_DELAY_H * 3600 * 1000).toISOString();
-      try { await atPatch(p.id, { nurture_status: 'active', nurture_step: 0, nurture_next_at: nextAt }); } catch (_) {}
+      try { await atPatch(p.id, { nurture_status: 'active', nurture_step: 0, nurture_next_at: nextAt }); enrolled++; } catch (_) {}
     }
 
     // 2. ARRÊT de ceux pour qui la relance n'a plus de sens : achat -> converted ; remboursement -> done.
@@ -95,7 +108,9 @@ exports.handler = async () => {
       const n = step + 1;
       if (n > TOTAL) { try { await atPatch(p.id, { nurture_status: 'done' }); } catch (_) {} continue; }
 
-      const to = await emailOf(p);
+      const { email: to, optout } = await clientInfo(p);
+      // #13 LCAP : désabonnement client -> on sort de la relance (et on n'envoie rien).
+      if (optout) { try { await atPatch(p.id, { nurture_status: 'unsubscribed' }); } catch (_) {} continue; }
       if (!to) { try { await atPatch(p.id, { nurture_status: 'done' }); } catch (_) {} continue; }  // pas d'email -> on arrête
 
       const token = p.fields.token || '';
@@ -113,7 +128,7 @@ exports.handler = async () => {
       try { await atPatch(p.id, fields); } catch (_) {}
     }
 
-    return { statusCode: 200, body: JSON.stringify({ ok: true, enrolled: aEnroler.length, converted: aConvertir.length, sent }) };
+    return { statusCode: 200, body: JSON.stringify({ ok: true, enrolled, converted: aConvertir.length, sent }) };
   } catch (err) {
     console.error('[nurture-cron]', err && err.message);
     return { statusCode: 200, body: JSON.stringify({ ok: false }) };
