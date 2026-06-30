@@ -92,6 +92,18 @@ async function prochainNo(api, headers, projectPrimary) {
   return max + 1;
 }
 
+// Email « votre nouvelle version est prête » (voix de marque, sans tiret cadratin). Pur -> réutilisé par
+// livrerCover (livraison directe) et annoncerVersionPrete (watchdog #19).
+function htmlNouvelleVersion(p, site) {
+  const lien = p.page_url || ((site || SITE) + '/page-memoire?id=' + encodeURIComponent(p.token));
+  return `<div style="font-family:Georgia,serif;color:#2E1A28;line-height:1.7;max-width:560px;">` +
+    `<p style="font-size:18px;color:#5C2D4A;">Votre nouvelle version est prête.</p>` +
+    `<p>On a appliqué votre demande de modification. Écoutez et téléchargez la version mise à jour sur votre page :</p>` +
+    `<p style="margin:22px 0;"><a href="${lien}" style="background:#5C2D4A;color:#F5F0EA;text-decoration:none;padding:12px 22px;border-radius:8px;display:inline-block;">Écouter ma nouvelle version</a></p>` +
+    `<p style="color:#7A6070;">Pensez à vérifier vos courriels indésirables si vous ne le voyez pas.</p>` +
+    `<p style="color:#7A6070;">L'équipe Chanson Mémoire</p></div>`;
+}
+
 // LIVRE un cover terminé : ré-héberge l'audio, passe la Generation cover en audio_generated, bascule la
 // version achetée si post-achat, vide les champs cover du Projet, envoie le courriel client. Idempotent
 // (le gen passe à audio_generated). Renvoie { ok, generation_no }.
@@ -99,6 +111,11 @@ async function livrerCover({ api, headers, projet, coverGen, audioUrl, songId })
   const p = projet.fields;
   const g = coverGen.fields || {};
   const newNo = g.generation_no;
+  const purchasedNo = parseInt(p.purchased_generation_no, 10);
+  // #19 REVUE_AVANT_ENVOI (post-achat) : on LIVRE en `prête` (audio prêt mais NI promu NI annoncé au
+  // client). L'équipe revoit dans le cockpit, puis l'envoi de la réponse publie (publierVersionPrete).
+  // Flag OFF -> livraison directe (publiée + bascule + courriel), comportement strictement inchangé.
+  const revue = process.env.REVUE_AVANT_ENVOI === '1' && Number.isInteger(purchasedNo);
 
   // 1. Ré-héberge l'audio (permanent). Repli sur l'URL source si Cloudinary échoue.
   const hosted = await rehost(audioUrl, { folder: 'covers', publicId: `cover_${p.token}_${newNo}`, resourceType: 'video' }) || audioUrl;
@@ -111,15 +128,15 @@ async function livrerCover({ api, headers, projet, coverGen, audioUrl, songId })
       song_id: songId || g.song_id || '',
       generation_status: 'audio_generated',
       incident_status: 'résolu',
-      version_status: 'publiée'
+      version_status: revue ? 'prête' : 'publiée',
+      ...(revue ? { prete_at: new Date().toISOString() } : {})
     } })
   });
 
   // 3. Ferme la boucle côté Projet (prêt pour un éventuel tour suivant). purchased_generation_no n'est
   //    basculé qu'en POST-achat ; en pré-achat la nouvelle génération devient simplement la plus récente.
-  const purchasedNo = parseInt(p.purchased_generation_no, 10);
   const projPatch = { approval_status: 'published', cover_task_id: null, cover_launched_at: null, pending_cover_style: null };
-  if (Number.isInteger(purchasedNo)) { projPatch.purchased_generation_no = newNo; projPatch.purchased_song_title = g.song_title || ''; }
+  if (Number.isInteger(purchasedNo) && !revue) { projPatch.purchased_generation_no = newNo; projPatch.purchased_song_title = g.song_title || ''; }
   await fetch(`${api}/Projects/${projet.id}`, {
     method: 'PATCH', headers: { ...headers, 'Content-Type': 'application/json' },
     body: JSON.stringify({ fields: projPatch })
@@ -127,7 +144,7 @@ async function livrerCover({ api, headers, projet, coverGen, audioUrl, songId })
 
   // 3b. Post-achat : l'ancienne version active devient « remplacée » (le cockpit voit clair quelle
   //     version est en ligne). Best-effort : ne bloque jamais la livraison.
-  if (Number.isInteger(purchasedNo) && purchasedNo !== newNo) {
+  if (Number.isInteger(purchasedNo) && !revue && purchasedNo !== newNo) {
     try {
       const litOld = formulaLiteral(p.project);
       if (litOld !== null) {
@@ -143,19 +160,15 @@ async function livrerCover({ api, headers, projet, coverGen, audioUrl, songId })
     } catch (_) { /* la rétrogradation de l'ancienne version ne bloque jamais */ }
   }
 
-  // 4. Courriel « nouvelle version prête » (best-effort, voix de marque).
-  try {
+  // 4. Courriel « nouvelle version prête » (best-effort, voix de marque). En REVUE (#19) : PAS d'envoi ici,
+  //    c'est l'envoi de la réponse par l'équipe (ou le watchdog après délai) qui publie + annonce au client.
+  if (!revue) try {
     const to = await emailClient(api, headers, projet);
-    const html = `<div style="font-family:Georgia,serif;color:#2E1A28;line-height:1.7;max-width:560px;">` +
-      `<p style="font-size:18px;color:#5C2D4A;">Votre nouvelle version est prête.</p>` +
-      `<p>On a appliqué votre demande de modification. Écoutez et téléchargez la version mise à jour sur votre page :</p>` +
-      `<p style="margin:22px 0;"><a href="${p.page_url || (SITE + '/page-memoire?id=' + encodeURIComponent(p.token))}" style="background:#5C2D4A;color:#F5F0EA;text-decoration:none;padding:12px 22px;border-radius:8px;display:inline-block;">Écouter ma nouvelle version</a></p>` +
-      `<p style="color:#7A6070;">Pensez à vérifier vos courriels indésirables si vous ne le voyez pas.</p>` +
-      `<p style="color:#7A6070;">— L'équipe Chanson Mémoire</p></div>`;
+    const html = htmlNouvelleVersion(p, SITE);
     await envoyerCourriel(to, 'Votre nouvelle version est prête', html, projet.id);
   } catch (_) { /* le courriel ne bloque pas la livraison */ }
 
-  return { ok: true, generation_no: newNo };
+  return { ok: true, generation_no: newNo, prete: revue };
 }
 
 // Un cover est-il DÉJÀ en vol pour ce projet ? (Generation cover en audio_pending, récente.) Sert de
@@ -173,4 +186,93 @@ async function coverEnVol(api, headers, projectPrimary, maxAgeMin = 15) {
   } catch (_) { return false; }   // en cas de doute, on ne bloque pas
 }
 
-module.exports = { parseCloudinary, fullAudioUrl, coverGenEnAttente, prochainNo, livrerCover, coverEnVol, versionPlusRecenteAPublier };
+// ── STATE-MOVE Lot 4 (modèle Generation-level) ──────────────────────────────────────────────────────
+// Une correction PROPOSEE mais pas encore lancée = une Generation `version_status='proposée'`. Elle
+// remplace à terme le slot transitoire Projet.adjusted_lyrics. Elle NE porte PAS de generation_status
+// (le sentinelle ne surveille que audio_pending) ; lancer-cover la PROMEUT (proposée -> en_production)
+// au lancement (Bloc C2). type 'cover' par défaut (mélodie préservée). Pur -> testé.
+function champsGenProposee({ projetId, genNo, type = 'cover', lyrics = '', style = '', voice, musicStyle, mood, songTitle, convoId, postPurchase = true } = {}) {
+  const fields = {
+    project: [projetId],
+    generation_no: genNo,
+    type: type === 'regeneration' ? 'regeneration' : 'cover',
+    version_status: 'proposée',
+    post_purchase: !!postPurchase,
+    lyrics: String(lyrics || '').slice(0, 6000),
+    song_title: songTitle || 'Pour toujours'
+  };
+  if (style)      fields.gen_style_prompt = style;
+  if (musicStyle) fields.gen_music_style  = musicStyle;
+  if (mood)       fields.gen_mood         = mood;
+  if (voice)      fields.gen_voice        = voice;
+  if (convoId)    fields.Conversations    = [convoId];
+  return fields;
+}
+
+// Generation `proposée` la plus récente d'un projet (idempotence côté appliquer + future consommation
+// par lancer-cover en C2). Renvoie le record ({id, fields}) ou null.
+async function trouverGenProposee(api, headers, projectPrimary) {
+  const lit = formulaLiteral(projectPrimary);
+  if (lit === null) return null;
+  const f = encodeURIComponent(`AND({project}=${lit}, {version_status}="proposée")`);
+  const r = await fetch(`${api}/${GENERATIONS}?filterByFormula=${f}&sort%5B0%5D%5Bfield%5D=generation_no&sort%5B0%5D%5Bdirection%5D=desc&maxRecords=1`, { headers });
+  const d = await r.json().catch(() => ({}));
+  return (d.records && d.records[0]) || null;
+}
+
+// ── #19 REVUE_AVANT_ENVOI : publication différée d'une version `prête` ───────────────────────────────
+// Sous revue, livrerCover livre en `prête` (audio prêt mais NI promu NI annoncé). Cette fonction PUBLIE
+// la version prête la plus récente d'un projet : Gen -> publiée + version active du Projet, l'ancienne ->
+// remplacée. Appelée à l'ENVOI de la réponse (repondre-courriel) ou par le watchdog (délai). Best-effort.
+async function publierVersionPrete({ api, headers, projetId }) {
+  if (!projetId) return { ok: false };
+  const rP = await fetch(`${api}/Projects/${projetId}`, { headers });
+  if (!rP.ok) return { ok: false };
+  const projet = await rP.json();
+  const p = projet.fields || {};
+  const projLit = formulaLiteral(p.project);
+  if (projLit === null) return { ok: false };
+  const f = encodeURIComponent(`AND({project}=${projLit}, {version_status}="prête")`);
+  const r = await fetch(`${api}/${GENERATIONS}?filterByFormula=${f}&sort%5B0%5D%5Bfield%5D=generation_no&sort%5B0%5D%5Bdirection%5D=desc&maxRecords=1`, { headers });
+  const gen = (((await r.json().catch(() => ({}))).records) || [])[0];
+  if (!gen) return { ok: false };
+  const g = gen.fields || {};
+  const newNo = g.generation_no;
+  const oldNo = parseInt(p.purchased_generation_no, 10);
+
+  await fetch(`${api}/${GENERATIONS}/${gen.id}`, {
+    method: 'PATCH', headers: { ...headers, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fields: { version_status: 'publiée' } })
+  });
+  await fetch(`${api}/Projects/${projet.id}`, {
+    method: 'PATCH', headers: { ...headers, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fields: { purchased_generation_no: newNo, purchased_song_title: g.song_title || '' } })
+  });
+  if (Number.isInteger(oldNo) && oldNo !== newNo) {
+    try {
+      const fOld = encodeURIComponent(`AND({project}=${projLit},{generation_no}=${oldNo})`);
+      const rOld = await fetch(`${api}/${GENERATIONS}?filterByFormula=${fOld}&maxRecords=1`, { headers });
+      const oldGen = (((await rOld.json().catch(() => ({}))).records) || [])[0];
+      if (oldGen) await fetch(`${api}/${GENERATIONS}/${oldGen.id}`, {
+        method: 'PATCH', headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fields: { version_status: 'remplacée' } })
+      });
+    } catch (_) { /* la rétrogradation de l'ancienne version ne bloque jamais la publication */ }
+  }
+  return { ok: true, generation_no: newNo };
+}
+
+// #19 watchdog : annonce au client que sa version (auto-publiée après délai) est prête. Best-effort.
+async function annoncerVersionPrete({ api, headers, projetId }) {
+  if (!projetId) return false;
+  try {
+    const rP = await fetch(`${api}/Projects/${projetId}`, { headers });
+    if (!rP.ok) return false;
+    const projet = await rP.json();
+    const to = await emailClient(api, headers, projet);
+    if (!to) return false;
+    return await envoyerCourriel(to, 'Votre nouvelle version est prête', htmlNouvelleVersion(projet.fields || {}, SITE), projet.id);
+  } catch (_) { return false; }
+}
+
+module.exports = { parseCloudinary, fullAudioUrl, coverGenEnAttente, prochainNo, livrerCover, coverEnVol, versionPlusRecenteAPublier, champsGenProposee, trouverGenProposee, publierVersionPrete, annoncerVersionPrete, htmlNouvelleVersion };

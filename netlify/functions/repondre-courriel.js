@@ -25,6 +25,7 @@ const MG_KEY    = process.env.MAILGUN_API_KEY;
 const MG_DOMAIN = process.env.MAILGUN_DOMAIN_SUPPORT || 'support.chansonmemoire.ca';  // sous-domaine d'ENVOI (protège la racine)
 const MG_FROM   = process.env.MAILGUN_FROM_SUPPORT || 'Chanson Mémoire <nathalie@chansonmemoire.ca>';
 const { logCourriel } = require('./_lib/courriel');
+const { publierVersionPrete } = require('./_lib/cover');
 
 const CONVOS = 'tbl3KBgXthCPromxF';
 const REC_ID = /^rec[A-Za-z0-9]{14}$/;
@@ -142,6 +143,16 @@ exports.handler = async (event) => {
       method: 'PATCH', headers: { ...headers, 'Content-Type': 'application/json' },
       body: JSON.stringify({ typecast: true, fields: champs })
     });
+
+    // #19 REVUE_AVANT_ENVOI : l'envoi de la réponse PUBLIE la version `prête` revue par l'équipe
+    // (Gen prête -> publiée + version active du Projet). Le client est notifié par CETTE réponse. Best-effort.
+    if (process.env.REVUE_AVANT_ENVOI === '1') {
+      try {
+        const pubPid = (Array.isArray(f.projet_a_travailler) && f.projet_a_travailler[0])
+                    || (Array.isArray(f.Projet) && f.Projet[0]) || '';
+        if (pubPid) await publierVersionPrete({ api: API, headers, projetId: pubPid });
+      } catch (_) { /* la publication ne bloque jamais la réponse au client */ }
+    }
 
     return { statusCode: 200, body: JSON.stringify({ ok: true, to }) };
   } catch (err) {
