@@ -92,6 +92,18 @@ async function prochainNo(api, headers, projectPrimary) {
   return max + 1;
 }
 
+// Email « votre nouvelle version est prête » (voix de marque, sans tiret cadratin). Pur -> réutilisé par
+// livrerCover (livraison directe) et annoncerVersionPrete (watchdog #19).
+function htmlNouvelleVersion(p, site) {
+  const lien = p.page_url || ((site || SITE) + '/page-memoire?id=' + encodeURIComponent(p.token));
+  return `<div style="font-family:Georgia,serif;color:#2E1A28;line-height:1.7;max-width:560px;">` +
+    `<p style="font-size:18px;color:#5C2D4A;">Votre nouvelle version est prête.</p>` +
+    `<p>On a appliqué votre demande de modification. Écoutez et téléchargez la version mise à jour sur votre page :</p>` +
+    `<p style="margin:22px 0;"><a href="${lien}" style="background:#5C2D4A;color:#F5F0EA;text-decoration:none;padding:12px 22px;border-radius:8px;display:inline-block;">Écouter ma nouvelle version</a></p>` +
+    `<p style="color:#7A6070;">Pensez à vérifier vos courriels indésirables si vous ne le voyez pas.</p>` +
+    `<p style="color:#7A6070;">L'équipe Chanson Mémoire</p></div>`;
+}
+
 // LIVRE un cover terminé : ré-héberge l'audio, passe la Generation cover en audio_generated, bascule la
 // version achetée si post-achat, vide les champs cover du Projet, envoie le courriel client. Idempotent
 // (le gen passe à audio_generated). Renvoie { ok, generation_no }.
@@ -152,12 +164,7 @@ async function livrerCover({ api, headers, projet, coverGen, audioUrl, songId })
   //    c'est l'envoi de la réponse par l'équipe (ou le watchdog après délai) qui publie + annonce au client.
   if (!revue) try {
     const to = await emailClient(api, headers, projet);
-    const html = `<div style="font-family:Georgia,serif;color:#2E1A28;line-height:1.7;max-width:560px;">` +
-      `<p style="font-size:18px;color:#5C2D4A;">Votre nouvelle version est prête.</p>` +
-      `<p>On a appliqué votre demande de modification. Écoutez et téléchargez la version mise à jour sur votre page :</p>` +
-      `<p style="margin:22px 0;"><a href="${p.page_url || (SITE + '/page-memoire?id=' + encodeURIComponent(p.token))}" style="background:#5C2D4A;color:#F5F0EA;text-decoration:none;padding:12px 22px;border-radius:8px;display:inline-block;">Écouter ma nouvelle version</a></p>` +
-      `<p style="color:#7A6070;">Pensez à vérifier vos courriels indésirables si vous ne le voyez pas.</p>` +
-      `<p style="color:#7A6070;">— L'équipe Chanson Mémoire</p></div>`;
+    const html = htmlNouvelleVersion(p, SITE);
     await envoyerCourriel(to, 'Votre nouvelle version est prête', html, projet.id);
   } catch (_) { /* le courriel ne bloque pas la livraison */ }
 
@@ -255,4 +262,17 @@ async function publierVersionPrete({ api, headers, projetId }) {
   return { ok: true, generation_no: newNo };
 }
 
-module.exports = { parseCloudinary, fullAudioUrl, coverGenEnAttente, prochainNo, livrerCover, coverEnVol, versionPlusRecenteAPublier, champsGenProposee, trouverGenProposee, publierVersionPrete };
+// #19 watchdog : annonce au client que sa version (auto-publiée après délai) est prête. Best-effort.
+async function annoncerVersionPrete({ api, headers, projetId }) {
+  if (!projetId) return false;
+  try {
+    const rP = await fetch(`${api}/Projects/${projetId}`, { headers });
+    if (!rP.ok) return false;
+    const projet = await rP.json();
+    const to = await emailClient(api, headers, projet);
+    if (!to) return false;
+    return await envoyerCourriel(to, 'Votre nouvelle version est prête', htmlNouvelleVersion(projet.fields || {}, SITE), projet.id);
+  } catch (_) { return false; }
+}
+
+module.exports = { parseCloudinary, fullAudioUrl, coverGenEnAttente, prochainNo, livrerCover, coverEnVol, versionPlusRecenteAPublier, champsGenProposee, trouverGenProposee, publierVersionPrete, annoncerVersionPrete, htmlNouvelleVersion };

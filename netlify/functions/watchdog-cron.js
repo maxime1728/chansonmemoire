@@ -17,6 +17,7 @@
 
 const { rehost } = require('./_lib/cloudinary-rehost');
 const { alerte } = require('./_lib/alerte');
+const { publierVersionPrete, annoncerVersionPrete } = require('./_lib/cover');
 
 const BASE_ID  = process.env.AIRTABLE_BASE_ID;
 const AT_TOKEN = process.env.AIRTABLE_TOKEN;
@@ -178,6 +179,28 @@ exports.handler = async () => {
       try { await alerte('watchdog', `Paroles vivantes bloquées (Creatomate ${s.status || 'échec'}). Relance manuelle requise.`, { generation: rec.id, renderId, token: await tokenDe(g) }); alerted++; } catch (_) {}
     }
   } catch (e) { console.error('[watchdog] paroles-vivantes', e && e.message); }
+
+  // ════ D. #19 REVUE_AVANT_ENVOI — version restée `prête` trop longtemps : auto-publie + annonce (garde-fou) ════
+  // Si l'équipe oublie de revoir/envoyer, le client n'est jamais privé de sa version payée.
+  if (process.env.REVUE_AVANT_ENVOI === '1') {
+    try {
+      const PRETE_MAX_H = parseInt(process.env.PRETE_MAX_HOURS, 10) || 24;
+      const headers = { Authorization: `Bearer ${AT_TOKEN}` };
+      const recs = await atList(`AND({version_status}="prête", {prete_at}!="", IS_BEFORE({prete_at}, DATEADD(NOW(),-${PRETE_MAX_H},'hours')))`);
+      for (const rec of recs) {
+        const projetId = Array.isArray(rec.fields.project) ? rec.fields.project[0] : null;
+        if (!projetId) continue;
+        try {
+          const pub = await publierVersionPrete({ api: API, headers, projetId });
+          if (pub && pub.ok) {
+            await annoncerVersionPrete({ api: API, headers, projetId });
+            await alerte('watchdog', `Version restée « prête » > ${PRETE_MAX_H} h : auto-publiée + envoyée au client (revue non faite à temps).`, { generation: rec.id, projet: projetId });
+            alerted++;
+          }
+        } catch (_) {}
+      }
+    } catch (e) { console.error('[watchdog] prete-revue', e && e.message); }
+  }
 
   return { statusCode: 200, body: JSON.stringify({ ok: true, rescued, relaunched, alerted, waiting, releve }) };
 };
