@@ -77,6 +77,9 @@ exports.handler = async (event) => {
     const champs = { refaire, cover_source_no: Number.isInteger(vno) ? vno : null };
     if (paroles) champs.adjusted_lyrics = paroles;
     if (style)   champs.adjusted_style_prompt = style;
+    // Plafond v2 : cette régé est déclenchée par l'ÉQUIPE (cockpit) -> marqueur lu par lancer-cover pour
+    // poser admin_triggered (ne compte pas dans le plafond). Flag OFF -> rien (comportement inchangé).
+    if (process.env.PLAFOND_V2 === '1') champs.cover_admin = true;
     const rPatch = await fetch(`${API}/${PROJECTS}/${projetId}`, {
       method: 'PATCH', headers: { ...headers, 'Content-Type': 'application/json' },
       body: JSON.stringify({ typecast: true, fields: champs })   // typecast : `refaire` est un singleSelect, valeurs exactes existantes

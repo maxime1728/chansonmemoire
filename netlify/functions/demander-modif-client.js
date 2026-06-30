@@ -24,6 +24,7 @@
 const { analyserModif, typeCorrection } = require('./_lib/analyse-modif');
 const { styleFor, cataloguePourAmbiance } = require('./_lib/style');
 const { coverEnVol } = require('./_lib/cover');
+const { nbAppelsSuno, PLAFOND_SUNO } = require('./_lib/comptage');
 
 const BASE_ID = process.env.AIRTABLE_BASE_ID;
 const TOKEN   = process.env.AIRTABLE_TOKEN;
@@ -95,6 +96,33 @@ exports.handler = async (event) => {
     }
 
     if (action === 'analyser' && await coverEnVol(API, headers, p.project)) return busy;
+
+    // Plafond v2 (flag PLAFOND_V2, OFF par défaut) : tout appel Suno (cover OU régé) compte ; les paroles
+    // texte restent illimitées. Au cap, le client ne peut PLUS générer dans ce projet : on enregistre la
+    // demande pour Maxime (IMPÉRATIVEMENT reçue, même sans détail) + route 'plafond' (le front montre « on a
+    // reçu ta demande, on te revient »). Tes applies cockpit (équipe/admin) ne passent jamais par ici.
+    if (action === 'analyser' && process.env.PLAFOND_V2 === '1' && (body.texte || '').toString().trim()) {
+      const post = p.commercial_status === 'purchased';
+      if (await nbAppelsSuno(API, headers, p.project, post) >= PLAFOND_SUNO) {
+        try {
+          const to = await emailClient(projet, headers);
+          await fetch(`${API}/${CONVOS}`, {
+            method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ typecast: true, fields: {
+              expediteur:   to || '',
+              sujet:        `Demande (plafond atteint)${p.deceased_name ? ' : ' + p.deceased_name : ''}`,
+              message:      (body.texte || '').toString().trim().slice(0, 4000),
+              recu_le:      new Date().toISOString(),
+              statut:       'a_verifier',
+              categorie_ia: 'modification',
+              phase_achat:  post ? 'apres_achat' : 'avant_achat',
+              Projet:       [projet.id]
+            } })
+          });
+        } catch (_) { /* la trace ne bloque jamais la réponse */ }
+        return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ok: true, route: 'plafond' }) };
+      }
+    }
 
     // 2. Dernière Generation : contexte pour l'analyse + style de référence.
     let gen = {}, genRec = null, lyrics = '';

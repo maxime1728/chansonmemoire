@@ -14,7 +14,7 @@
 // Sécurité : POST, UUID v4 strict, formule échappée, secrets en env (SUNO_API_KEY, AIRTABLE_*).
 
 const { styleFor } = require('./_lib/style');
-const { compteAvantAchat } = require('./_lib/comptage');
+const { compteAvantAchat, nbAppelsSuno, PLAFOND_SUNO } = require('./_lib/comptage');
 
 const BASE_ID  = process.env.AIRTABLE_BASE_ID;
 const AT_TOKEN = process.env.AIRTABLE_TOKEN;
@@ -146,6 +146,19 @@ exports.handler = async (event) => {
         return {
           statusCode: 200, headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ status: 'plafond', message: "Tu as atteint le maximum de chansons gratuites pour cette demande. Écris-nous et on va t'aider avec plaisir." })
+        };
+      }
+    }
+
+    // 2c. Plafond POST-achat (flag PLAFOND_V2, OFF par défaut) : max 4 appels Suno (cover OU régé) après
+    //     achat ; les paroles texte restent illimitées. Au cap, la demande t'arrive pour approbation
+    //     (tes relances équipe = admin_triggered, ne comptent pas). Acheté requis + body.post_purchase.
+    if (process.env.PLAFOND_V2 === '1' && p.commercial_status === 'purchased' && body.post_purchase) {
+      const nbPost = await nbAppelsSuno(API, headers, p.project, true);
+      if (nbPost >= PLAFOND_SUNO) {
+        return {
+          statusCode: 200, headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'plafond', phase: 'apres_achat', message: "On a bien reçu ta demande. Notre équipe la traite et te revient rapidement." })
         };
       }
     }

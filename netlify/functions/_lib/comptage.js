@@ -26,8 +26,40 @@ function compteAvantAchat(g) {
 
 // Compte APRÈS achat (plafond 4/projet) : chanson livrée, client, post-achat, hors « paroles seules ».
 // (correction_paroles_seules = cover déclenché par une demande de PAROLES uniquement -> exempté.)
+// LEGACY : gardé pour le comportement flag-OFF. La règle v2 (compteAppelSuno) RETIRE cette exemption.
 function compteApresAchat(g) {
   return estChansonLivree(g) && !!g.post_purchase && !g.correction_paroles_seules;
+}
+
+// ── PLAFOND v2 (flag PLAFOND_V2) — règle tranchée par Maxime 2026-06-30 ───────────────────────────────
+// « Les paroles (texte) sont TOUJOURS illimitées ; dès qu'il y a un APPEL SUNO (cover OU régé) ça compte
+//   comme 1, SAUF si déclenché par admin. » -> PAS d'exemption paroles-seules : un cover EST un appel Suno.
+// Pré-achat = compteAvantAchat (déjà sans exemption). Post-achat = livré + post_purchase, exemption RETIRÉE.
+const PLAFOND_SUNO = 4;
+
+function formulaLiteral(v) {
+  const s = String(v);
+  if (!s.includes('"')) return `"${s}"`;
+  if (!s.includes("'")) return `'${s}'`;
+  return null;
+}
+
+// Une Generation compte-t-elle comme 1 appel Suno du côté demandé (pré ou post achat) ?
+function compteAppelSuno(g, postPurchase) {
+  return estChansonLivree(g) && (!!g.post_purchase === !!postPurchase);
+}
+
+// Nombre d'appels Suno comptables d'un projet, du côté demandé. Best-effort (0 si pépin réseau).
+async function nbAppelsSuno(api, headers, projectPrimary, postPurchase) {
+  const lit = formulaLiteral(projectPrimary);
+  if (lit === null) return 0;
+  try {
+    const f = encodeURIComponent(`{project}=${lit}`);
+    const r = await fetch(`${api}/Generations?filterByFormula=${f}`, { headers });
+    if (!r.ok) return 0;
+    const recs = ((await r.json()).records) || [];
+    return recs.reduce((n, rec) => n + (compteAppelSuno(rec.fields, postPurchase) ? 1 : 0), 0);
+  } catch (_) { return 0; }
 }
 
 // Recalcule les compteurs d'un projet à partir de SES Generations, et les écrit (best-effort).
@@ -53,4 +85,4 @@ async function recomputerProjet(api, headers, projetId, projetPrimary) {
   return out;
 }
 
-module.exports = { SONG_TYPES, estChansonLivree, compteAvantAchat, compteApresAchat, recomputerProjet };
+module.exports = { SONG_TYPES, estChansonLivree, compteAvantAchat, compteApresAchat, recomputerProjet, PLAFOND_SUNO, compteAppelSuno, nbAppelsSuno };
