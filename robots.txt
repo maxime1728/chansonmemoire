@@ -1,0 +1,11 @@
+# https://chansonmemoire.ca/ - robots.txt
+# Tout est ouvert au crawl (l'indexation est gérée page par page via la balise meta robots).
+# Les robots IA (GPTBot, ClaudeBot, PerplexityBot, etc.) sont volontairement autorisés : visibilité AEO.
+
+User-agent: *
+Allow: /
+
+# Endpoints applicatifs (fonctions Netlify) : aucune valeur d'indexation.
+Disallow: /api/
+
+Sitemap: https://chansonmemoire.ca/sitemap.xml
