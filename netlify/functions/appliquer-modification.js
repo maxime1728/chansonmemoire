@@ -22,6 +22,8 @@ const CONVOS   = 'tbl3KBgXthCPromxF';
 const PROJECTS = 'tblh7O8eoog7RyTMJ';
 const REC_ID   = /^rec[A-Za-z0-9]{14}$/;
 
+const { prochainNo, trouverGenProposee, champsGenProposee } = require('./_lib/cover');
+
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') return { statusCode: 405, body: JSON.stringify({ error: 'Méthode non permise' }) };
   if (!SECRET) { console.error('[appliquer-modification] MAKE_WEBHOOK_SECRET manquant'); return { statusCode: 500, body: JSON.stringify({ error: 'Configuration manquante' }) }; }
@@ -50,11 +52,12 @@ exports.handler = async (event) => {
     const style   = (f.prompt_style || '').toString().trim();
     // Version source : la generation liee (generation_a_travailler) en priorite, sinon le nombre version_a_travailler.
     let vno = parseInt(f.version_a_travailler, 10);
+    let srcGenFields = {};   // champs de la version source (voix/style/titre) pour la Gen proposée (state-move)
     const genLink = (Array.isArray(f.generation_a_travailler) && f.generation_a_travailler[0]) || null;
     if (genLink) {
       try {
         const rGen = await fetch(`${API}/Generations/${genLink}`, { headers });
-        if (rGen.ok) { const gno = parseInt(((await rGen.json()).fields || {}).generation_no, 10); if (Number.isInteger(gno)) vno = gno; }
+        if (rGen.ok) { srcGenFields = (await rGen.json()).fields || {}; const gno = parseInt(srcGenFields.generation_no, 10); if (Number.isInteger(gno)) vno = gno; }
       } catch (_) {}
     }
 
@@ -82,6 +85,28 @@ exports.handler = async (event) => {
       const detail = await rPatch.text().catch(() => '');
       console.error('[appliquer-modification] patch projet', rPatch.status, detail);
       return { statusCode: 502, body: JSON.stringify({ error: 'Mise à jour du projet échouée', detail }) };
+    }
+
+    // 3b. STATE-MOVE Lot 4 (C1, flag-gated, ADDITIF) : matérialise la proposition en Generation `proposée`
+    //     (paroles/style édités du cockpit), EN PLUS du slot Projet adjusted_lyrics. Pas encore consommée
+    //     par lancer-cover (C2). Flag OFF -> comportement strictement inchangé. Best-effort : ne bloque jamais.
+    if (process.env.STATE_MOVE_PROPOSEE === '1' && refaire === 'Refaire le cover' && paroles) {
+      try {
+        const projectPrimary = pf.project;
+        if (projectPrimary && !(await trouverGenProposee(API, headers, projectPrimary))) {
+          const genNo = await prochainNo(API, headers, projectPrimary);
+          const fieldsGen = champsGenProposee({
+            projetId, genNo, type: 'cover',
+            lyrics: paroles, style: style || srcGenFields.gen_style_prompt || '',
+            voice: srcGenFields.gen_voice, musicStyle: srcGenFields.gen_music_style,
+            mood: srcGenFields.gen_mood, songTitle: srcGenFields.song_title, convoId: id, postPurchase: true
+          });
+          await fetch(`${API}/Generations`, {
+            method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fields: fieldsGen })
+          });
+        }
+      } catch (_) { /* la matérialisation proposée ne bloque jamais l'application */ }
     }
 
     // 4. Pose « Appliquée ✓ » sur le menu (idempotence : ne re-déclenche pas ; état visible dans le cockpit).

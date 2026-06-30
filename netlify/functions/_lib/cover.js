@@ -173,4 +173,38 @@ async function coverEnVol(api, headers, projectPrimary, maxAgeMin = 15) {
   } catch (_) { return false; }   // en cas de doute, on ne bloque pas
 }
 
-module.exports = { parseCloudinary, fullAudioUrl, coverGenEnAttente, prochainNo, livrerCover, coverEnVol, versionPlusRecenteAPublier };
+// ── STATE-MOVE Lot 4 (modèle Generation-level) ──────────────────────────────────────────────────────
+// Une correction PROPOSEE mais pas encore lancée = une Generation `version_status='proposée'`. Elle
+// remplace à terme le slot transitoire Projet.adjusted_lyrics. Elle NE porte PAS de generation_status
+// (le sentinelle ne surveille que audio_pending) ; lancer-cover la PROMEUT (proposée -> en_production)
+// au lancement (Bloc C2). type 'cover' par défaut (mélodie préservée). Pur -> testé.
+function champsGenProposee({ projetId, genNo, type = 'cover', lyrics = '', style = '', voice, musicStyle, mood, songTitle, convoId, postPurchase = true } = {}) {
+  const fields = {
+    project: [projetId],
+    generation_no: genNo,
+    type: type === 'regeneration' ? 'regeneration' : 'cover',
+    version_status: 'proposée',
+    post_purchase: !!postPurchase,
+    lyrics: String(lyrics || '').slice(0, 6000),
+    song_title: songTitle || 'Pour toujours'
+  };
+  if (style)      fields.gen_style_prompt = style;
+  if (musicStyle) fields.gen_music_style  = musicStyle;
+  if (mood)       fields.gen_mood         = mood;
+  if (voice)      fields.gen_voice        = voice;
+  if (convoId)    fields.Conversations    = [convoId];
+  return fields;
+}
+
+// Generation `proposée` la plus récente d'un projet (idempotence côté appliquer + future consommation
+// par lancer-cover en C2). Renvoie le record ({id, fields}) ou null.
+async function trouverGenProposee(api, headers, projectPrimary) {
+  const lit = formulaLiteral(projectPrimary);
+  if (lit === null) return null;
+  const f = encodeURIComponent(`AND({project}=${lit}, {version_status}="proposée")`);
+  const r = await fetch(`${api}/${GENERATIONS}?filterByFormula=${f}&sort%5B0%5D%5Bfield%5D=generation_no&sort%5B0%5D%5Bdirection%5D=desc&maxRecords=1`, { headers });
+  const d = await r.json().catch(() => ({}));
+  return (d.records && d.records[0]) || null;
+}
+
+module.exports = { parseCloudinary, fullAudioUrl, coverGenEnAttente, prochainNo, livrerCover, coverEnVol, versionPlusRecenteAPublier, champsGenProposee, trouverGenProposee };
