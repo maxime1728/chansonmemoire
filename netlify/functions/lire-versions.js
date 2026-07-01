@@ -20,6 +20,7 @@ function formulaLiteral(v) {
 }
 
 const crypto = require('crypto');
+const { stripSectionTags } = require('./_lib/lyrics');   // balises [Verse]/[Chorus] masquées au client
 
 // Identique à lire-projet.js : extrait {cloud,type,publicId,ext} (gère /upload/ public ET /authenticated/ signée).
 function parseCloudinary(url) {
@@ -107,6 +108,14 @@ exports.handler = async (event) => {
         style:    g.gen_music_style || styleP,
         ambiance: g.gen_mood        || ambianceP,
         voix:     g.gen_voice       || voixP,
+        // post_purchase : true pour une version régénérée APRÈS l'achat (posé par callback-cover).
+        // Sert à la page d'acceptation post-achat à ne montrer QUE les régénérations post-achat.
+        post_purchase: g.post_purchase === true,
+        // Date de création (horodatage Airtable) pour dater les versions dans le sélecteur.
+        date:     rec.createdTime || '',
+        // Paroles nettoyées, exposées UNIQUEMENT après achat (le client possède ses versions).
+        // Avant achat, jamais (l'aperçu n'en a pas besoin) -> périmètre minimal conservé.
+        lyrics:   isPaid ? stripSectionTags(g.lyrics || '') : '',
         // Preview signé (du_60) tant que non payé ; complet si payé. Jamais l'URL brute avant achat.
         audio_url: buildAudioUrl(g.cloudinary_audio_url, isPaid ? '' : 'du_60')
       });
@@ -120,6 +129,8 @@ exports.handler = async (event) => {
         versions:          versions,
         commercial_status: projet.fields.commercial_status || 'preview_only',
         accepted:          projet.fields.funnel_step === 'delivery_accepted',   // étape courante : apercu redirige un acheteur vers page-chanson/page-memoire (anti-rachat)
+        // Version « actuelle » (achetée / dernière livrée) -> la page d'acceptation la marque « actuelle ».
+        purchased_generation_no: parseInt(projet.fields.purchased_generation_no, 10) || null,
         song_type:         projet.fields.song_type || 'hommage'   // hommage|cadeau -> adapte le copy de l'aperçu (non-PII)
         // PAS d'email, PAS de stripe_*, PAS d'attribution. Volontaire (§6).
       })

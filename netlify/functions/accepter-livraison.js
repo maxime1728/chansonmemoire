@@ -31,6 +31,7 @@ exports.handler = async (event) => {
   const token         = (body.token || '').trim();
   const signatureName = (body.signature_name || '').trim();
   const textVersion   = (body.text_version || '').trim();
+  const chosenNo      = parseInt(body.generation_no, 10);   // version finale choisie (optionnel, post-achat)
 
   if (!token)         return { statusCode: 400, body: JSON.stringify({ error: 'Token manquant' }) };
   if (!UUID_V4.test(token)) return { statusCode: 400, body: JSON.stringify({ error: 'Token invalide' }) };
@@ -61,6 +62,21 @@ exports.handler = async (event) => {
       return { statusCode: 403, body: JSON.stringify({ error: 'Non autorisé' }) };
     }
 
+    // 2b. Version finale choisie (post-achat) : le client peut accepter comme finale une version
+    //     POST-ACHAT autre que la dernière livrée. On valide qu'elle appartient au projet ET a un
+    //     audio avant de basculer purchased_generation_no dessus. Sans generation_no -> inchangé.
+    let finalNo = null;
+    if (Number.isInteger(chosenNo)) {
+      const projLit = formulaLiteral(projet.fields.project);
+      if (projLit !== null) {
+        const fG = encodeURIComponent(`AND({project}=${projLit},{generation_no}=${chosenNo})`);
+        const rG = await fetch(`${API}/Generations?filterByFormula=${fG}&maxRecords=1`, { headers });
+        const dG = await rG.json();
+        const gen = (dG.records && dG.records[0]) ? dG.records[0].fields : null;
+        if (gen && gen.cloudinary_audio_url) finalNo = chosenNo;   // valide (existe + audio jouable)
+      }
+    }
+
     // 3. Écrire la preuve sur le Project (PATCH).
     const fields = {
       delivery_signature_name:         signatureName,
@@ -72,8 +88,9 @@ exports.handler = async (event) => {
     };
     // recevoir_clicked_at : ne pas écraser si déjà posé (1re intention).
     if (!projet.fields.recevoir_clicked_at) fields.recevoir_clicked_at = now;
-    // La version livrée = celle ACHETÉE (purchased_generation_no, posé par MAKE D à l'achat).
-    // Pas de sélection de version ici : le client a choisi sa version au paiement Stripe.
+    // La version livrée = purchased_generation_no. Si le client a choisi une autre version post-achat
+    // comme finale, on bascule dessus ici (validée en 2b). Sinon, on garde la dernière livrée.
+    if (finalNo !== null) fields.purchased_generation_no = finalNo;
 
     const rPatch = await fetch(`${API}/Projects/${projet.id}`, {
       method: 'PATCH',
