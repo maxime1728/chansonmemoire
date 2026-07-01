@@ -30,10 +30,21 @@
   .cm-ic{width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;}
   html,body{overflow-x:hidden;}
   body{background:#EDE8E1;color:var(--ink);font:400 15px/1.6 'Work Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
+  /* iOS Safari : un champ de saisie <16px provoque un zoom auto au focus -> 16px mini sur tous les champs. */
+  input,textarea,select{font-family:inherit;font-size:16px;}
   @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 
   .page{min-height:100vh;background:radial-gradient(120% 55% at 50% 0%, #F3ECF4 0%, var(--bg) 44%);display:flex;justify-content:center;}
   .col{width:100%;max-width:440px;min-height:100vh;display:flex;flex-direction:column;position:relative;}
+
+  /* DESKTOP : le mobile-first est conservé; sur grand écran la colonne devient un panneau centré, encadré,
+     pour que la page s'affiche proprement (et pas comme une bande perdue sur fond vide). */
+  @media (min-width:640px){
+    .page{background:#E7E1D9;padding:44px 20px;align-items:flex-start;}
+    .col{max-width:452px;min-height:auto;border-radius:26px;box-shadow:0 30px 80px rgba(74,56,69,.16),0 4px 12px rgba(74,56,69,.06);background:radial-gradient(120% 42% at 50% 0%, #F3ECF4 0%, var(--bg) 46%);}
+    .hdr{position:static;border-radius:26px 26px 0 0;}
+    .wrap{padding-bottom:36px;}
+  }
 
   /* Header collant */
   .hdr{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;}
