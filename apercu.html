@@ -1313,7 +1313,9 @@ body {
 
     <!-- Popup au cap (plafond serveur atteint) : message chaleureux + box courriel + alerte -->
     <div id="cm-cap-help" style="display:none;">
-      <p class="cm-modal-hint" id="cm-cap-msg">Tu as exploré plusieurs versions pour cette personne, c'est la limite ici. On aimerait t'aider à créer LA version qui lui ressemble : laisse-nous ton courriel et on t'accompagne avec plaisir.</p>
+      <p class="cm-modal-hint" id="cm-cap-msg">Tu as exploré plusieurs versions pour cette personne, c'est la limite ici. On aimerait t'aider à créer LA version qui lui ressemble : laisse-nous ton courriel et ce que tu voudrais, on t'accompagne avec plaisir.</p>
+      <label class="cm-modal-label" for="cm-cap-details">Ce que tu aimerais, en quelques mots <span class="cm-modal-opt">(optionnel)</span></label>
+      <textarea class="cm-modal-textarea" id="cm-cap-details" rows="3" placeholder="Dis-nous ce que tu voudrais ajuster ou ajouter, on s'en occupe."></textarea>
       <label class="cm-modal-label" for="cm-cap-email">Ton courriel</label>
       <input class="cm-modal-input" id="cm-cap-email" type="email" inputmode="email" placeholder="toi@exemple.ca">
       <div class="cm-modal-actions">
@@ -1883,15 +1885,22 @@ setTimeout(function(){ if (window.cmReady) window.cmReady(); }, 3000);  /* filet
     if (msg){ var m=document.getElementById('cm-cap-msg'); if(m) m.textContent=msg; }
     var c=document.getElementById('cm-cap-help'); if(c) c.style.display='block';
   }
-  var capSend=document.getElementById('cm-cap-send'), capEmail=document.getElementById('cm-cap-email'), capStatus=document.getElementById('cm-cap-status');
+  var capSend=document.getElementById('cm-cap-send'), capEmail=document.getElementById('cm-cap-email'), capDetails=document.getElementById('cm-cap-details'), capStatus=document.getElementById('cm-cap-status');
   if (capSend) capSend.addEventListener('click', function(){
     var email=(capEmail && capEmail.value || '').trim();
     if (!email || email.indexOf('@') < 1){ if(capStatus) capStatus.textContent='Entrez un courriel valide.'; return; }
+    var details=(capDetails && capDetails.value || '').trim();
     capSend.disabled=true; if(capStatus) capStatus.textContent='Un instant…';
-    fetch('/api/aide-plafond', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ token: token, email: email }) })
+    fetch('/api/aide-plafond', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ token: token, email: email, details: details }) })
       .then(function(r){ return r.ok ? r.json() : null; })
       .then(function(res){
-        if (res && res.ok){ if(capEmail) capEmail.style.display='none'; capSend.style.display='none'; if(capStatus) capStatus.textContent='Merci ✓ On t’écrit très bientôt pour t’aider à créer ta version.'; }
+        if (res && res.ok){
+          if(capEmail) capEmail.style.display='none';
+          if(capDetails) capDetails.style.display='none';
+          capSend.style.display='none';
+          var labs=document.querySelectorAll('#cm-cap-help .cm-modal-label'); for(var i=0;i<labs.length;i++) labs[i].style.display='none';
+          if(capStatus) capStatus.textContent='Merci ✓ On a bien reçu ta demande. On t’écrit très bientôt pour t’aider à créer ta version.';
+        }
         else { capSend.disabled=false; if(capStatus) capStatus.textContent='Un souci est survenu. Réessayez.'; }
       })
       .catch(function(){ capSend.disabled=false; if(capStatus) capStatus.textContent='Un souci est survenu. Réessayez.'; });
