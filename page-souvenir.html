@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="fr-CA">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<script src="/js/cm-token.js"></script>
+<title>Sa page souvenir · Chanson Mémoire</title>
+<!-- Page SOUVENIR (aperçu de la « Page Vivante », post-achat, visible du seul propriétaire du lien).
+     Design : funnel post-achat, page-3 « aperçu page vivante » (Newsreader + Work Sans, accent prune).
+     Deviendra page-memoire.html quand la livraison actuelle sera passée à l'espace client. Domaine .ca,
+     chemins relatifs. Données via token -> /api/lire-projet. Liste d'attente -> /api/choix-memoire. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Work+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F7F3EE; --surface:#FDFBF8; --ink:#2B2530; --muted:#8A7F88; --line:#EAE2E6;
+    --accent:#7C6591; --accent-deep:#4A3855; --soft:#EFE7F0; --gold:#C79A4B; --green:#3E9B6C;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  html,body{overflow-x:hidden;}
+  body{background:#EDE8E1;color:var(--ink);font-family:'Work Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
+  .serif{font-family:'Newsreader',Georgia,serif;}
+  /* >=16px sur les champs : empeche le zoom automatique d'iOS Safari au focus (« probleme du 16px »). */
+  input,textarea,select{font-family:inherit;font-size:16px;}
+
+  /* Mobile first : la colonne (max 440px) est la base. Sur desktop elle se centre sur un fond
+     doux pour un affichage intentionnel (au lieu d'une colonne perdue sur grand ecran). */
+  .page{min-height:100vh;background:radial-gradient(125% 55% at 50% 0%, #F3ECF4 0%, var(--bg) 46%);display:flex;justify-content:center;}
+  .frame{width:100%;max-width:440px;min-height:100vh;display:flex;flex-direction:column;position:relative;}
+
+  /* Bandeau aperçu */
+  .banner{position:sticky;top:0;z-index:20;background:var(--accent-deep);color:#fff;padding:10px 18px;display:flex;align-items:center;justify-content:space-between;}
+  .banner .lbl{display:flex;align-items:center;gap:8px;font-weight:600;font-size:11px;}
+  .banner .lbl .eye{font-size:13px;}
+  .banner .back{color:#fff;text-decoration:none;font-weight:600;font-size:11px;opacity:.8;cursor:pointer;background:none;border:none;font-family:inherit;}
+  @media(hover:hover){.banner .back:hover{opacity:1;}}
+
+  .body{flex:1;display:flex;flex-direction:column;gap:16px;padding-bottom:40px;}
+  .pad{padding:0 18px;display:flex;flex-direction:column;gap:16px;}
+
+  /* Cover */
+  .cover{position:relative;min-height:280px;background:linear-gradient(165deg,#E6DCF1 0%,#EFE3D9 60%,#E9DCC9 100%);display:flex;flex-direction:column;justify-content:flex-end;padding:22px;overflow:hidden;}
+  .cover .glow{position:absolute;inset:0;background:radial-gradient(80% 60% at 50% 30%, rgba(255,255,255,.35), transparent);}
+  .cover .logo{position:absolute;top:18px;left:50%;transform:translateX(-50%);}
+  .cover .logo img{height:20px;opacity:.85;}
+  .cover .body-cover{position:relative;}
+  .chip-lock{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.72);border:1px solid rgba(43,37,48,.1);border-radius:20px;padding:6px 11px;font-weight:600;font-size:10.5px;color:var(--accent-deep);}
+  .chip-lock .ic{font-size:11px;}
+  .cover .photo-chip{position:absolute;top:16px;right:16px;}
+  .cover-eyebrow{font-weight:700;font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-deep);opacity:.75;}
+  .cover-name{font-weight:500;font-size:34px;line-height:1.05;color:#3a2f42;margin-top:6px;}
+  .cover-real-dates{font-weight:600;font-size:12px;letter-spacing:.04em;color:var(--accent-deep);margin-top:10px;}
+  .cover-real-citation{font-weight:500;font-size:15px;line-height:1.4;font-style:italic;color:#3a2f42;margin-top:8px;max-width:34ch;}
+  .cover-chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px;}
+
+  /* Étiquette « Disponible maintenant » */
+  .now{display:flex;align-items:center;gap:8px;margin-top:4px;}
+  .now .dot{width:7px;height:7px;border-radius:50%;background:var(--green);}
+  .now .txt{font-weight:700;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--green);}
+
+  .eyebrow{font-weight:700;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:20px;display:flex;flex-direction:column;gap:15px;}
+
+  /* Lecteur */
+  .player{box-shadow:0 10px 28px rgba(74,56,69,.08);position:relative;}
+  .player-row{display:flex;align-items:center;gap:15px;}
+  .play-btn{width:56px;height:56px;border:none;border-radius:50%;background:var(--accent);color:#fff;flex:none;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;padding-left:2px;box-shadow:0 6px 16px color-mix(in srgb,var(--accent) 40%,transparent);transition:transform .2s;}
+  @media(hover:hover){.play-btn:not([disabled]):hover{transform:scale(1.06);}}
+  .play-btn[disabled]{opacity:.5;cursor:default;}
+  .player-title{font-weight:500;font-size:20px;line-height:1.1;color:var(--ink);}
+  .player-sub{font-weight:500;font-size:11px;color:var(--muted);margin-top:3px;}
+  .waveform{position:relative;height:30px;cursor:pointer;-webkit-mask:repeating-linear-gradient(90deg,#000 0 3px,transparent 3px 7px);mask:repeating-linear-gradient(90deg,#000 0 3px,transparent 3px 7px);}
+  .waveform .wbg{position:absolute;inset:0;background:color-mix(in srgb,var(--accent) 20%,var(--bg));}
+  .waveform .wfill{position:absolute;top:0;bottom:0;left:0;width:0%;background:var(--accent);}
+
+  /* Paroles */
+  .lyrics{padding:22px;gap:12px;}
+  .lyrics p{font-weight:400;font-size:16px;line-height:1.85;color:var(--ink);white-space:pre-line;}
+  .lyrics-toggle{align-self:flex-start;background:none;border:none;padding:0;cursor:pointer;font-weight:700;font-size:12px;color:var(--accent);font-family:inherit;}
+
+  /* En-tête « Bientôt · Page Vivante » */
+  .soon-head{display:flex;flex-direction:column;gap:8px;margin-top:10px;}
+  .soon-eyebrow{display:flex;align-items:center;gap:8px;}
+  .soon-eyebrow .ic{font-size:13px;}
+  .soon-eyebrow .txt{font-weight:700;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);}
+  .soon-title{font-weight:500;font-size:22px;line-height:1.2;color:var(--ink);}
+  .soon-sub{font-weight:400;font-size:12.5px;line-height:1.55;color:var(--muted);}
+
+  /* Mur de souvenirs (verrouillé) */
+  .wall{position:relative;background:var(--surface);border:1px dashed #D8CFDD;border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:12px;}
+  .wall-head{display:flex;align-items:center;justify-content:space-between;}
+  .wall-head .t{font-weight:700;font-size:13.5px;color:var(--ink);}
+  .badge-soon{display:flex;align-items:center;gap:4px;background:var(--soft);border-radius:20px;padding:4px 8px;font-weight:700;font-size:8.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);}
+  .badge-soon .ic{font-size:10px;}
+  .wall-desc{font-weight:400;font-size:11.5px;line-height:1.45;color:var(--muted);margin-top:-4px;}
+  .wall-grid-wrap{position:relative;border-radius:14px;overflow:hidden;}
+  .wall-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;filter:blur(3px);opacity:.65;pointer-events:none;}
+  .wall-grid .tile{aspect-ratio:1;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:19px;}
+  .wall-lock{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
+  .wall-lock .knob{width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.92);display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 4px 12px rgba(74,56,69,.16);}
+
+  /* Grille de fonctionnalités (verrouillées) */
+  .features{display:grid;grid-template-columns:1fr 1fr;gap:11px;}
+  .feature{position:relative;background:var(--surface);border:1px dashed #D8CFDD;border-radius:18px;padding:15px;display:flex;flex-direction:column;gap:8px;}
+  .feature .lock{position:absolute;top:11px;right:11px;font-size:12px;}
+  .feature .fic{width:38px;height:38px;border-radius:11px;background:var(--soft);display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:17px;}
+  .feature .ft{font-weight:700;font-size:12.5px;line-height:1.2;color:var(--ink);padding-right:16px;}
+  .feature .fd{font-weight:400;font-size:11px;line-height:1.4;color:var(--muted);}
+
+  /* Liste d'attente */
+  .waitlist{background:linear-gradient(155deg,#F1E9F5,#F7F1EB);border:1px solid #E4D6EA;border-radius:24px;padding:24px;display:flex;flex-direction:column;gap:14px;margin-top:6px;}
+  .waitlist .wt{font-weight:500;font-size:22px;line-height:1.2;color:var(--ink);}
+  .waitlist .ws{font-weight:400;font-size:12.5px;line-height:1.55;color:var(--muted);}
+  .wait-form{display:flex;flex-direction:column;gap:9px;}
+  .wait-input{background:#fff;border:1.4px solid var(--line);border-radius:13px;padding:14px;font-size:16px;font-family:inherit;color:var(--ink);outline:none;}
+  .wait-input:focus{border-color:var(--accent);}
+  .btn-accent{border:none;background:var(--accent);color:#fff;border-radius:14px;padding:16px;font-weight:700;font-size:13.5px;cursor:pointer;font-family:inherit;box-shadow:0 8px 20px color-mix(in srgb,var(--accent) 38%,transparent);transition:filter .2s;}
+  @media(hover:hover){.btn-accent:not([disabled]):hover{filter:brightness(1.06);}}
+  .btn-accent[disabled]{opacity:.65;cursor:default;}
+  .wait-ok{display:flex;align-items:center;gap:8px;background:#fff;border-radius:14px;padding:14px;color:var(--green);font-weight:600;font-size:12.5px;}
+  .wait-ok .ic{font-size:16px;}
+
+  /* Pied */
+  .foot{text-align:center;padding:14px 0 6px;display:flex;flex-direction:column;align-items:center;gap:8px;}
+  .foot img{height:20px;opacity:.55;}
+  .foot .txt{font-weight:500;font-size:11px;color:var(--muted);}
+
+  .invalid{padding:60px 24px;text-align:center;}
+  .invalid .serif{font-size:26px;color:var(--accent-deep);}
+</style>
+<!-- Sentry navigateur (erreurs JS), token/PII scrubbes avant envoi (cm-sentry.js). -->
+<script src="/js/cm-sentry.js"></script>
+<link rel="icon" type="image/png" sizes="48x48" href="https://res.cloudinary.com/dcx1tfm47/image/upload/f_auto,q_auto,c_fill,w_48,h_48/v1782682803/Favicon_Chanson_M%C3%A9moire_pftcgs.png">
+<link rel="icon" type="image/png" sizes="96x96" href="https://res.cloudinary.com/dcx1tfm47/image/upload/f_auto,q_auto,c_fill,w_96,h_96/v1782682803/Favicon_Chanson_M%C3%A9moire_pftcgs.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://res.cloudinary.com/dcx1tfm47/image/upload/f_auto,q_auto,c_fill,w_180,h_180/v1782682803/Favicon_Chanson_M%C3%A9moire_pftcgs.png">
+</head>
+<body>
+<div class="page">
+  <div class="frame" id="frame">
+
+    <!-- Bandeau aperçu -->
+    <div class="banner">
+      <div class="lbl"><span class="eye">👁</span>Aperçu, visible seulement par toi</div>
+      <button class="back" id="btnBack" type="button">← Retour</button>
+    </div>
+
+    <div class="body">
+
+      <!-- Cover mémorial -->
+      <div class="cover">
+        <div class="glow"></div>
+        <div class="logo"><img src="https://res.cloudinary.com/dcx1tfm47/image/upload/f_auto,q_auto/v1781659915/Logo_Chanson_M%C3%A9moire_jiq5ce.png" alt="Chanson Mémoire"></div>
+        <div class="chip-lock photo-chip"><span class="ic">🔒</span>Ajouter sa photo</div>
+        <div class="body-cover">
+          <div class="cover-eyebrow" id="coverEyebrow">En mémoire de</div>
+          <div class="cover-name serif" id="coverName">&nbsp;</div>
+          <div id="coverDates"></div>
+          <div id="coverCitation"></div>
+          <div class="cover-chips" id="coverChips"></div>
+        </div>
+      </div>
+
+      <div class="pad">
+
+        <!-- Disponible maintenant -->
+        <div class="now"><span class="dot"></span><span class="txt">Disponible maintenant</span></div>
+
+        <!-- Lecteur -->
+        <div class="card player">
+          <div class="eyebrow">Sa chanson</div>
+          <div class="player-row">
+            <button class="play-btn" id="playBtn" type="button" aria-label="Lire la chanson" disabled><span id="playIcon">▶</span></button>
+            <div style="flex:1;min-width:0;">
+              <div class="player-title serif" id="songTitle">Sa chanson</div>
+              <div class="player-sub" id="songSub">Composée avec amour</div>
+            </div>
+          </div>
+          <div class="waveform" id="waveform"><div class="wbg"></div><div class="wfill" id="wfill"></div></div>
+          <audio id="audio" preload="none"><source id="audioSrc" src="" type="audio/mpeg"></audio>
+        </div>
+
+        <!-- Paroles -->
+        <div class="card lyrics">
+          <div class="eyebrow">Ses paroles</div>
+          <p id="lyricsBody">…</p>
+          <button class="lyrics-toggle" id="lyricsToggle" type="button" style="display:none;">Lire toutes les paroles ▼</button>
+        </div>
+
+        <!-- Bientôt · Page Vivante -->
+        <div class="soon-head">
+          <div class="soon-eyebrow"><span class="ic">🔒</span><span class="txt">Bientôt · Page Vivante</span></div>
+          <div class="soon-title serif">Tout ceci s'ajoutera à sa page</div>
+          <div class="soon-sub">Une page qui grandit avec le temps, enrichie par toute la famille. Sois le premier prévenu à l'ouverture.</div>
+        </div>
+
+        <!-- Mur de souvenirs (verrouillé) -->
+        <div class="wall">
+          <div class="wall-head">
+            <div class="t">Mur de souvenirs des proches</div>
+            <div class="badge-soon"><span class="ic">🔒</span>Bientôt</div>
+          </div>
+          <div class="wall-desc">Photos, vidéos, mots et messages vocaux, déposés par ceux qui l'aimaient.</div>
+          <div class="wall-grid-wrap">
+            <div class="wall-grid">
+              <div class="tile" style="background:linear-gradient(135deg,#E3D6EE,#D3C0E2)"></div>
+              <div class="tile" style="background:linear-gradient(135deg,#EFE1D4,#E0CBB6)">❝</div>
+              <div class="tile" style="background:linear-gradient(135deg,#DCEAE4,#C6DBD0)"></div>
+              <div class="tile" style="background:linear-gradient(135deg,#E9DEEC,#D6C4DB)">🎙</div>
+              <div class="tile" style="background:linear-gradient(135deg,#EDE3D6,#DCC9B4)"></div>
+              <div class="tile" style="background:linear-gradient(135deg,#E2D7EE,#CFBDE1)"></div>
+            </div>
+            <div class="wall-lock"><div class="knob">🔒</div></div>
+          </div>
+        </div>
+
+        <!-- Grille de fonctionnalités (verrouillées) -->
+        <div class="features" id="features"></div>
+
+        <!-- Liste d'attente Page Vivante -->
+        <div class="waitlist">
+          <div class="wt serif">Sois le premier contributeur</div>
+          <div class="ws">On te préviendra dès l'ouverture de la Page Vivante et tu pourras déposer le tout premier souvenir.</div>
+          <div class="wait-form" id="waitForm">
+            <input class="wait-input" id="mailWait" type="email" inputmode="email" autocomplete="email" placeholder="ton@courriel.ca">
+            <button class="btn-accent" id="btnWait" type="button">Rejoindre la liste d'attente →</button>
+          </div>
+          <div class="wait-ok" id="waitOk" style="display:none;"><span class="ic">✓</span>Merci, tu seras le premier prévenu.</div>
+        </div>
+
+        <!-- Pied -->
+        <div class="foot">
+          <img src="https://res.cloudinary.com/dcx1tfm47/image/upload/f_auto,q_auto/v1781659915/Logo_Chanson_M%C3%A9moire_jiq5ce.png" alt="Chanson Mémoire">
+          <div class="txt">Créé avec ♥ pour garder sa mémoire vivante</div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  var UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  var token = (window.cmToken ? window.cmToken() : (new URLSearchParams(window.location.search).get('id') || ''));
+
+  function esc(s){ return String(s == null ? '' : s); }
+  function post(url, payload){
+    return fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+      .then(function(r){ return r.ok ? r.json() : null; });
+  }
+  function fmt(t){ if(!isFinite(t)||t<0) t=0; var m=Math.floor(t/60),s=Math.floor(t%60); return m+':'+(s<10?'0'+s:s); }
+
+  /* Lien invalide : token absent/malformé -> écran neutre (aucune fuite d'info). */
+  if(!UUID_V4.test(token)){
+    document.getElementById('frame').innerHTML =
+      '<div class="invalid"><div class="serif">Lien invalide</div>'
+      + '<p class="soon-sub" style="margin-top:12px;">Ce lien n\'est pas valide ou a expiré.</p></div>';
+    return;
+  }
+
+  /* Retour : historique du même onglet (le token reste en réserve sessionStorage),
+     repli vers la page de livraison si l'onglet n'a pas d'historique. */
+  document.getElementById('btnBack').addEventListener('click', function(){
+    if(window.history.length > 1){ window.history.back(); }
+    else { window.location.href = '/page-memoire'; }
+  });
+
+  /* ── Fonctionnalités à venir (contenu marketing, verrouillé). ── */
+  var FEATURES = [
+    {icon:'❦', title:'Détails personnalisés', desc:'Sa vie, ses passions, ses petites manies.'},
+    {icon:'▶', title:'Vidéos souvenirs', desc:'Ses films de famille, portés par sa chanson.'},
+    {icon:'⏳', title:'Ligne du temps de sa vie', desc:'Les grands moments, du début à aujourd’hui.'},
+    {icon:'♫', title:'Nouvelle chanson chaque année', desc:'Renouvelée avec les nouveaux souvenirs.'},
+    {icon:'🎙', title:'Messages vocaux', desc:'La voix des proches, gardée précieusement.'},
+    {icon:'✦', title:'Bougie du souvenir', desc:'À allumer aux dates qui comptent pour toi.'}
+  ];
+  (function renderFeatures(){
+    var wrap = document.getElementById('features');
+    FEATURES.forEach(function(f){
+      var d = document.createElement('div'); d.className='feature';
+      var lock = document.createElement('div'); lock.className='lock'; lock.textContent='🔒';
+      var ic = document.createElement('div'); ic.className='fic'; ic.textContent=f.icon;
+      var t = document.createElement('div'); t.className='ft'; t.textContent=f.title;
+      var s = document.createElement('div'); s.className='fd'; s.textContent=f.desc;
+      d.appendChild(lock); d.appendChild(ic); d.appendChild(t); d.appendChild(s);
+      wrap.appendChild(d);
+    });
+  })();
+
+  /* ── Cover : nom + dates + citation (données réelles quand présentes, sinon pastilles verrouillées). ── */
+  function chipLock(label){
+    var c = document.createElement('div'); c.className='chip-lock';
+    var i = document.createElement('span'); i.className='ic'; i.textContent='🔒'; c.appendChild(i);
+    c.appendChild(document.createTextNode(label)); return c;
+  }
+  function fillCover(d){
+    var cadeau = (d.song_type === 'cadeau');
+    var prenom = esc(d.prenom).trim();
+    document.getElementById('coverEyebrow').textContent = cadeau ? 'Pour' : 'En mémoire de';
+    if(prenom){ document.getElementById('coverName').textContent = prenom; }
+    else { document.getElementById('coverEyebrow').style.display='none'; document.getElementById('coverName').textContent = esc(d.titre) || 'Sa chanson'; }
+
+    var naissance = esc(d.memoire_naissance).trim(), deces = esc(d.memoire_deces).trim();
+    var datesEl = document.getElementById('coverDates');
+    var chipsEl = document.getElementById('coverChips');
+    if(naissance || deces){
+      var span = document.createElement('div'); span.className='cover-real-dates';
+      span.textContent = [naissance, deces].filter(Boolean).join(' – ');
+      datesEl.appendChild(span);
+    } else {
+      chipsEl.appendChild(chipLock('Dates de naissance et décès'));
+    }
+
+    var citation = esc(d.memoire_citation).trim();
+    if(citation){
+      var c = document.createElement('div'); c.className='cover-real-citation serif';
+      c.textContent = '« ' + citation + ' »';
+      document.getElementById('coverCitation').appendChild(c);
+    } else {
+      chipsEl.appendChild(chipLock('Citation personnalisée'));
+    }
+  }
+
+  /* ── Paroles : extrait (2 premières lignes) + dépliage complet. ── */
+  function fillLyrics(paroles){
+    var body = document.getElementById('lyricsBody');
+    var toggle = document.getElementById('lyricsToggle');
+    var lines = esc(paroles).split(/\r?\n/).map(function(l){ return l.trim(); }).filter(Boolean);
+    if(!lines.length){ body.textContent = 'Tes paroles apparaîtront ici.'; return; }
+    var full = lines.join('\n');
+    var extrait = lines.slice(0, 2).join('\n');
+    var expanded = false;
+    body.textContent = extrait;
+    if(lines.length > 2){
+      toggle.style.display = 'block';
+      toggle.addEventListener('click', function(){
+        expanded = !expanded;
+        body.textContent = expanded ? full : extrait;
+        toggle.textContent = expanded ? 'Réduire ▲' : 'Lire toutes les paroles ▼';
+      });
+    }
+  }
+
+  /* ── Lecteur audio réel (play/pause, progression, recherche par clic). ── */
+  function initPlayer(audioUrl, titre){
+    var audio = document.getElementById('audio'), src = document.getElementById('audioSrc');
+    var btn = document.getElementById('playBtn'), icon = document.getElementById('playIcon');
+    var wave = document.getElementById('waveform'), fill = document.getElementById('wfill');
+    var sub = document.getElementById('songSub');
+    var baseSub = 'Composée avec amour';
+
+    if(titre){ document.getElementById('songTitle').textContent = titre; }
+    if(!audioUrl){ sub.textContent = 'Ta chanson se finalise, reviens dans un instant.'; return; }
+
+    src.src = audioUrl; audio.load();
+
+    audio.addEventListener('loadedmetadata', function(){
+      btn.disabled = false;
+      sub.textContent = baseSub + (isFinite(audio.duration) ? ' · ' + fmt(audio.duration) : '');
+    });
+    audio.addEventListener('error', function(){ sub.textContent = 'Lecture indisponible pour le moment.'; btn.disabled = true; });
+    btn.addEventListener('click', function(){
+      if(btn.disabled) return;
+      if(audio.paused){ audio.play().then(function(){ icon.textContent='❚❚'; btn.setAttribute('aria-label','Mettre en pause'); }).catch(function(){}); }
+      else { audio.pause(); icon.textContent='▶'; btn.setAttribute('aria-label','Lire la chanson'); }
+    });
+    audio.addEventListener('timeupdate', function(){
+      var dur = audio.duration || 0;
+      fill.style.width = (dur ? (audio.currentTime/dur)*100 : 0) + '%';
+    });
+    audio.addEventListener('ended', function(){ icon.textContent='▶'; btn.setAttribute('aria-label','Lire la chanson'); fill.style.width='0%'; audio.currentTime=0; });
+    wave.addEventListener('click', function(e){
+      var dur = audio.duration; if(!isFinite(dur) || dur<=0) return;
+      var rect = wave.getBoundingClientRect();
+      var frac = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+      audio.currentTime = frac * dur;
+      fill.style.width = (frac*100) + '%';
+    });
+  }
+
+  /* ── Liste d'attente Page Vivante -> waitlist_memoire (endpoint existant, gaté purchased). ── */
+  document.getElementById('btnWait').addEventListener('click', function(){
+    var b = this, mail = document.getElementById('mailWait');
+    if(!/.+@.+\..+/.test((mail.value || '').trim())){ mail.style.borderColor = '#c9607a'; mail.focus(); return; }
+    b.disabled = true;
+    /* Enregistre l'intérêt (waitlist_memoire, endpoint existant gaté purchased). Le client est déjà
+       identifié par son lien : on le prévient à son courriel de compte. (Persister le courriel saisi
+       comme adresse distincte = champ Airtable + 1 ligne dans choix-memoire, à faire si voulu.) */
+    post('/api/choix-memoire', {token:token, waitlist_memoire:true}).then(function(res){
+      if(res && res.ok){ document.getElementById('waitForm').style.display='none'; document.getElementById('waitOk').style.display='flex'; }
+      else { b.disabled = false; }
+    }).catch(function(){ b.disabled = false; });
+  });
+
+  /* ── Chargement du projet. Page de livraison = post-achat : si pas acheté, on renvoie à l'aperçu. ── */
+  post('/api/lire-projet', {token:token}).then(function(d){
+    if(!d){ document.getElementById('songSub').textContent = 'Lien introuvable.'; return; }
+    if(d.commercial_status !== 'purchased'){ window.location.replace('/apercu?id=' + encodeURIComponent(token)); return; }
+    if(d.titre){ document.title = d.titre + ' · Chanson Mémoire'; }
+    fillCover(d);
+    fillLyrics(d.paroles);
+    initPlayer(d.audio_url, d.titre);
+  }).catch(function(){ document.getElementById('songSub').textContent = 'Une erreur est survenue.'; });
+
+})();
+</script>
+<script src="/js/cm-pixel.js" defer></script>
+</body>
+</html>
