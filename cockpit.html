@@ -4,104 +4,163 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<title>Cockpit corrections</title>
+<title>Cockpit de révisions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Newsreader:ital,opsz@0,6..72;1,6..72&display=swap" rel="stylesheet">
 <style>
-  :root { --plum:#5C2D4A; --cream:#F5F0EA; --ink:#2E1A28; --muted:#7A6070; --line:#E5DAE0; --propbg:#FCF7FA; --propline:#D8B7CC;
-          --del:#b00020; --delbg:#FBE9EC; --ins:#1E7A43; --insbg:#E7F5EC; --warn:#9A5B00; --warnbg:#FFF4E0; }
-  * { box-sizing:border-box; }
-  body { margin:0; font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; color:var(--ink); background:var(--cream); }
-  header { background:var(--plum); color:#fff; padding:12px 18px; font-size:16px; font-weight:600; display:flex; align-items:center; gap:14px; }
-  header .grow { flex:1; }
-  header button { background:rgba(255,255,255,.16); color:#fff; border:none; padding:7px 12px; border-radius:7px; font-size:13px; cursor:pointer; }
-  @media (hover:hover) { header button:hover { background:rgba(255,255,255,.28); } }
+  :root{
+    --canvas:#F0ECEF; --ink:#2B2430; --muted:#8C8092; --faint:#A99EAF; --line:#E6DEE9;
+    --mauve:#9587A3; --mauve-strong:#8567A6; --mauve-deep:#7E5F9E; --mauve-bg:#EFEAF3;
+    --rose:#B25A72; --rose-bg:#F7E4E9; --rose-line:#EACAD6;
+    --green:#4A7A44; --green-bg:#E9F1E4; --green-line:#CFE2C6;
+    --card:#fff; --delbg:#FBE9EC; --insbg:#E9F1E4;
+    --serif:"Newsreader",Georgia,serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:"Instrument Sans",system-ui,sans-serif;color:var(--ink);background:var(--canvas);font-size:14px;line-height:1.5;}
+  button{font-family:inherit;cursor:pointer;}
 
-  #gate { max-width:360px; margin:80px auto; background:#fff; padding:24px; border-radius:12px; border:1px solid var(--line); }
-  #gate label { font-size:14px; color:var(--muted); }
-  #gate input { width:100%; padding:10px; font-size:15px; border:1px solid var(--line); border-radius:8px; margin:10px 0; }
-  button.btn { background:var(--plum); color:#fff; border:none; padding:10px 16px; border-radius:8px; font-size:14px; cursor:pointer; }
-  @media (hover:hover) { button.btn:hover { opacity:.92; } }
+  /* Gate */
+  #gate{max-width:360px;margin:90px auto;background:#fff;padding:26px;border-radius:14px;border:1px solid var(--line);}
+  #gate label{font-size:14px;color:var(--muted);}
+  #gate input{width:100%;padding:11px;font-size:15px;border:1px solid var(--line);border-radius:9px;margin:10px 0;}
+  .btn{background:var(--mauve-strong);color:#fff;border:none;padding:11px 16px;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;}
+  .err{color:var(--rose);font-size:13px;margin-top:8px;}
 
-  #app { display:none; grid-template-columns:320px 1fr; height:calc(100vh - 47px); transition:grid-template-columns .18s ease; }
-  #app.collapsed { grid-template-columns:0 1fr; }
-  #app.collapsed #liste { display:none; }
-  #liste { border-right:1px solid var(--line); overflow:auto; background:#fff; }
-  .item { padding:12px 16px; border-bottom:1px solid var(--line); cursor:pointer; }
-  @media (hover:hover) { .item:hover { background:var(--cream); } }
-  .item.sel { background:#F3E8EF; }
-  .item .from { font-size:13px; font-weight:600; }
-  .item .subj { font-size:12px; color:var(--muted); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .chip { display:inline-block; font-size:11px; background:#F3E8EF; color:var(--plum); padding:2px 8px; border-radius:10px; margin-top:6px; }
-  .item .arch { float:right; font-size:11px; color:var(--muted); background:#fff; border:1px solid var(--line); border-radius:7px; padding:3px 9px; cursor:pointer; }
-  @media (hover:hover) { .item .arch:hover { border-color:var(--plum); color:var(--plum); background:#F3E8EF; } }
+  /* App shell */
+  #app{display:none;}
+  .rail{position:fixed;left:0;top:0;bottom:0;width:62px;background:var(--mauve-strong);display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:6px;z-index:30;}
+  .rail .logo{width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,.16);color:#fff;display:flex;align-items:center;justify-content:center;font-size:17px;margin-bottom:8px;}
+  .ri{position:relative;width:40px;height:40px;border-radius:11px;border:none;background:transparent;color:rgba(255,255,255,.72);font-size:18px;display:flex;align-items:center;justify-content:center;}
+  @media(hover:hover){.ri:hover{background:rgba(255,255,255,.14);color:#fff;}}
+  .ri.on{background:#fff;color:var(--mauve-deep);}
+  .ri .n{position:absolute;top:2px;right:2px;background:var(--rose);color:#fff;font-size:9px;min-width:15px;height:15px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 3px;}
+  .rail .sp{flex:1;}
+  .rail .me{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.22);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;}
 
-  #detail { overflow:auto; padding:18px 24px 60px; }
-  .meta { font-size:14px; margin-bottom:6px; }
-  .meta b { color:var(--plum); }
-  .demande { background:#fff; border:1px solid var(--line); border-radius:10px; padding:10px 14px; margin:10px 0 18px; font-size:13.5px; line-height:1.55; white-space:pre-wrap; }
-  .demande .label, .sectlabel { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.4px; }
-  .sectlabel { margin:22px 0 8px; font-weight:700; }
+  .main{margin-left:62px;}
+  .topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:14px;height:60px;padding:0 22px;background:var(--card);border-bottom:1px solid var(--line);}
+  .collapse-btn{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:#fff;color:var(--muted);font-size:15px;flex:none;}
+  @media(hover:hover){.collapse-btn:hover{border-color:var(--mauve-strong);color:var(--mauve-deep);}}
+  .brand .t1{font-family:var(--serif);font-size:17px;color:var(--mauve-deep);line-height:1.05;}
+  .brand .t2{font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);}
+  .search{flex:1;max-width:560px;margin:0 auto;display:flex;align-items:center;gap:8px;background:var(--canvas);border:1px solid var(--line);border-radius:10px;padding:0 13px;}
+  .search input{border:none;background:transparent;outline:none;font:inherit;font-size:13.5px;color:var(--ink);width:100%;padding:9px 0;}
+  .who{font-size:12.5px;color:var(--muted);}
 
-  .cols { display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:start; }
-  .col h3 { font-size:12px; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); margin:0 0 8px; }
-  .col.prop h3 { color:var(--plum); }
-  .fieldcard { background:#fff; border:1px solid var(--line); border-radius:10px; padding:12px 14px; margin-bottom:12px; }
-  .label { font-size:11px; color:var(--muted); margin-bottom:6px; text-transform:uppercase; letter-spacing:.4px; }
-  .val { font-size:14px; line-height:1.7; white-space:pre-wrap; word-break:break-word; }
-  .dim { color:#bbb; }
-  /* Le textarea EST la carte du proposé (plus de carte dans une carte) et grandit tout seul a la hauteur du texte. */
-  textarea.edit { display:block; width:100%; min-height:84px; font:inherit; font-size:14px; line-height:1.7; color:var(--ink); border:1px solid var(--propline); border-radius:10px; padding:11px 13px; background:#fff; resize:none; overflow:hidden; }
-  textarea.edit:focus { outline:none; border-color:var(--plum); box-shadow:0 0 0 3px rgba(92,45,74,.10); }
-  .preview { margin-top:10px; padding-top:10px; border-top:1px dashed var(--propline); }
-  .preview .label { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .shell{display:grid;grid-template-columns:330px 1fr;align-items:start;transition:grid-template-columns .18s ease;}
+  .shell.collapsed{grid-template-columns:0 1fr;}
+  .shell.collapsed .list{overflow:hidden;border-right:none;}
 
-  .d-del { color:var(--del); background:var(--delbg); text-decoration:line-through; border-radius:3px; padding:0 1px; }
-  .d-ins { color:var(--ins); background:var(--insbg); border-radius:3px; padding:0 1px; }
-  .legend { font-size:11px; color:var(--muted); margin:2px 0 0; }
-  .legend .s { padding:0 4px; border-radius:3px; }
+  .list{position:sticky;top:61px;height:calc(100vh - 61px);overflow:auto;border-right:1px solid var(--line);background:var(--card);}
+  .listhead{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px;position:sticky;top:0;background:var(--card);border-bottom:1px solid var(--line);}
+  .listhead .h{font-weight:600;font-size:13px;}
+  .listhead .h b{color:var(--mauve-strong);}
+  .item{padding:13px 16px;border-bottom:1px solid var(--line);border-left:3px solid transparent;cursor:pointer;}
+  @media(hover:hover){.item:hover{background:var(--canvas);}}
+  .item.sel{background:var(--mauve-bg);border-left-color:var(--mauve-strong);}
+  .item .row1{display:flex;justify-content:space-between;align-items:baseline;gap:8px;}
+  .item .name{font-weight:600;font-size:13.5px;}
+  .item .age{font-size:12px;color:var(--faint);white-space:nowrap;}
+  .item .song{font-family:var(--serif);font-style:italic;font-size:14px;color:var(--mauve-deep);margin:3px 0 2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .item .snip{font-size:12.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .item .row2{display:flex;align-items:center;gap:8px;margin-top:8px;}
+  .badge{font-size:10px;font-weight:600;letter-spacing:.4px;padding:2px 8px;border-radius:9px;text-transform:uppercase;}
+  .b-modif{background:var(--mauve-bg);color:var(--mauve-deep);}
+  .b-support{background:var(--rose-bg);color:var(--rose);}
+  .arch{margin-left:auto;font-size:11px;color:var(--muted);background:#fff;border:1px solid var(--line);border-radius:7px;padding:3px 8px;}
+  @media(hover:hover){.arch:hover{border-color:var(--mauve-strong);color:var(--mauve-deep);}}
 
-  .actions { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin:6px 0 4px; }
-  .mbtn { border:1px solid var(--plum); background:#fff; color:var(--plum); padding:10px 16px; border-radius:9px; font-size:14px; font-weight:600; cursor:pointer; }
-  @media (hover:hover) { .mbtn:hover { background:#F3E8EF; } }
-  .mbtn.solid { background:var(--plum); color:#fff; }
-  .ghost { background:#fff; border:1px solid var(--muted); color:var(--ink); padding:10px 14px; border-radius:9px; font-size:13px; cursor:pointer; }
-  @media (hover:hover) { .ghost:hover { background:#F3E8EF; border-color:var(--plum); color:var(--plum); } }
-  .hint { font-size:12px; color:var(--muted); }
+  .detail{padding:22px 26px 80px;}
+  .empty{color:var(--muted);padding:60px 24px;text-align:center;}
+  .dhead{display:flex;flex-wrap:wrap;align-items:center;gap:8px;color:var(--muted);font-size:12.5px;}
+  .dtitle{display:flex;align-items:center;gap:10px;margin:10px 0 2px;flex-wrap:wrap;}
+  .dtitle h1{font-family:var(--serif);font-weight:500;font-size:25px;margin:0;color:var(--ink);}
+  .dsub{font-size:13px;color:var(--muted);}
+  .deadline{margin-top:6px;font-size:12.5px;color:var(--rose);}
+  .demande{background:#fff;border:1px solid var(--line);border-radius:12px;padding:11px 14px;margin-top:18px;font-size:13.5px;line-height:1.6;white-space:pre-wrap;}
+  .demande .lbl{font-size:10px;text-transform:uppercase;letter-spacing:.4px;color:var(--faint);margin-bottom:5px;}
 
-  .regen { border:1px solid var(--propline); border-radius:10px; padding:12px 14px; background:#fff; margin:6px 0 4px; }
-  .badge { display:inline-block; font-size:12px; font-weight:600; padding:3px 10px; border-radius:11px; }
-  .badge.prod { background:var(--warnbg); color:var(--warn); }
-  .badge.prete { background:var(--insbg); color:var(--ins); }
-  .regen audio { width:100%; margin-top:10px; }
-  .regen-lyrics { white-space:pre-wrap; font:14px/1.7 Georgia,serif; color:var(--ink); background:var(--insbg); border:1px solid var(--propline); border-radius:8px; padding:12px 14px; margin-top:10px; max-height:340px; overflow:auto; }
+  .dgrid{display:grid;grid-template-columns:1fr 380px;gap:24px;align-items:start;margin-top:20px;}
+  @media(max-width:1100px){.dgrid{grid-template-columns:1fr;}}
+  .sectlabel{font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);margin:0 0 9px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .sectlabel .diffcount{font-weight:500;text-transform:none;letter-spacing:0;color:var(--muted);}
+  .sectlabel .act{margin-left:auto;display:flex;gap:8px;}
+  .blk{margin-bottom:24px;}
+  .side .blk{margin-bottom:16px;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;}
 
-  .analyse { background:#fff; border:1px solid var(--line); border-radius:10px; padding:0 14px; margin:0 0 16px; }
-  .analyse summary { cursor:pointer; padding:11px 0; font-size:11px; text-transform:uppercase; letter-spacing:.4px; color:var(--muted); font-weight:700; }
-  .analyse .val { padding:0 0 12px; font-size:13.5px; }
-  .note { background:var(--propbg); border:1px solid var(--propline); border-radius:10px; padding:10px 14px; margin:8px 0 16px; font-size:13px; line-height:1.55; }
+  .editable{background:#fff;border:1px solid var(--line);border-radius:11px;padding:14px 16px;font-family:var(--serif);font-size:15px;line-height:2;white-space:pre-wrap;outline:none;}
+  .editable:focus{border-color:var(--mauve-strong);box-shadow:0 0 0 3px rgba(133,103,166,.12);}
+  .editable.small{font-size:13.5px;line-height:1.7;font-family:"Instrument Sans",sans-serif;}
+  .del{background:var(--delbg);color:var(--rose);text-decoration:line-through;border-radius:3px;padding:0 2px;}
+  .ins{background:var(--insbg);color:var(--green);border-radius:3px;padding:0 2px;}
+  .legend{font-size:11.5px;color:var(--faint);margin-top:7px;}
+  .legend .s{padding:0 4px;border-radius:3px;}
+  .btn-accept{border:1px solid var(--green-line);background:var(--green-bg);color:var(--green);border-radius:8px;padding:5px 12px;font-size:12px;font-weight:600;}
+  .btn-regen{border:1px solid var(--mauve-strong);background:#fff;color:var(--mauve-deep);border-radius:8px;padding:5px 12px;font-size:12px;font-weight:600;}
+  @media(hover:hover){.btn-regen:hover{background:var(--mauve-bg);}}
 
-  .lexrow { display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding:6px 0; border-top:1px solid var(--line); }
-  .lexrow:first-of-type { border-top:none; }
-  .lexmot { min-width:120px; font-size:13.5px; font-weight:600; }
-  .lexinput { flex:1; min-width:120px; font:inherit; font-size:13px; border:1px solid var(--line); border-radius:7px; padding:6px 9px; }
-  .lexacts { display:flex; gap:6px; flex-wrap:wrap; }
-  .lexacts .ghost { padding:5px 9px; font-size:12px; }
-  .lexbadge { display:inline-block; font-size:10px; padding:1px 6px; border-radius:8px; margin-left:6px; }
-  .lexbadge.ov { background:#F3E8EF; color:var(--plum); }
-  .lexbadge.off { background:var(--delbg); color:var(--del); }
-  .lexadd { margin-top:6px; }
+  .lextable{width:100%;border-collapse:collapse;font-size:12.5px;}
+  .lextable th{text-align:left;font-size:10px;letter-spacing:.3px;text-transform:uppercase;color:var(--faint);font-weight:600;padding:0 0 7px;}
+  .lextable td{padding:7px 0;border-top:1px solid var(--line);vertical-align:middle;}
+  .lexmot{font-weight:600;}
+  .lexphon{font-family:var(--serif);color:var(--mauve-deep);}
+  .src{font-size:10.5px;padding:2px 7px;border-radius:8px;}
+  .src-dict{background:var(--mauve-bg);color:var(--mauve-deep);}
+  .src-man{background:var(--rose-bg);color:var(--rose);}
+  .lexinput{font:inherit;font-size:12.5px;border:1px solid var(--line);border-radius:7px;padding:5px 8px;}
+  .xs{border:1px solid var(--line);background:#fff;border-radius:7px;padding:3px 7px;font-size:11px;color:var(--muted);margin-left:4px;}
+  @media(hover:hover){.xs:hover{border-color:var(--mauve-strong);color:var(--mauve-deep);}}
+  .lock{margin-top:10px;font-size:11.5px;color:var(--muted);background:var(--canvas);border-radius:8px;padding:8px 10px;}
 
-  .send button[disabled] { opacity:.45; cursor:not-allowed; }
-  .empty { color:var(--muted); padding:48px 24px; text-align:center; }
-  .err { color:#b00020; font-size:13px; margin-top:8px; }
-  #toast { position:fixed; left:50%; bottom:26px; transform:translateX(-50%); background:var(--ink); color:#fff; padding:11px 18px; border-radius:9px; font-size:14px; opacity:0; pointer-events:none; transition:opacity .2s; z-index:50; }
-  #toast.show { opacity:1; }
+  .studio{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:15px;}
+  .glab{font-size:12px;color:var(--muted);margin-bottom:8px;}
+  .vbox{border:1px solid var(--line);border-radius:11px;padding:11px 12px;margin-bottom:10px;background:#fff;}
+  .vbox.locked{background:var(--canvas);}
+  .vhead{display:flex;align-items:center;gap:11px;}
+  .play{width:32px;height:32px;border-radius:50%;background:var(--mauve-strong);color:#fff;border:none;font-size:12px;flex:none;}
+  .vt{font-weight:600;font-size:12.5px;}
+  .vs{font-size:11.5px;color:var(--muted);}
+  .vr{margin-left:auto;font-size:11px;color:var(--faint);}
+  .vmeta{font-size:12px;color:var(--muted);margin-top:9px;}
+  .promptdd{margin-top:10px;}
+  .promptdd summary{cursor:pointer;font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);list-style:none;display:flex;align-items:center;gap:6px;}
+  .promptdd summary::-webkit-details-marker{display:none;}
+  .promptdd summary::after{content:'▾';margin-left:auto;color:var(--faint);}
+  .promptdd[open] summary::after{content:'▴';}
+  .promptbox{background:#fff;border:1px solid var(--line);border-radius:11px;padding:12px 14px;font-size:13.5px;line-height:1.7;outline:none;margin-top:9px;}
+  .promptbox:focus{border-color:var(--mauve-strong);box-shadow:0 0 0 3px rgba(133,103,166,.12);}
+  .promptbox.ro{color:var(--muted);background:var(--canvas);}
+  .methods{display:flex;flex-wrap:wrap;gap:9px;margin-top:6px;}
+  .btn-line{border:1px solid var(--mauve-strong);background:#fff;color:var(--mauve-deep);border-radius:9px;padding:9px 13px;font-size:13px;font-weight:600;}
+  @media(hover:hover){.btn-line:hover{background:var(--mauve-bg);}}
+  .btn-line[disabled]{opacity:.45;cursor:not-allowed;}
+  .regen{border:1px solid var(--mauve-strong);border-radius:11px;padding:12px 14px;background:#fff;margin-top:10px;}
+  .rbadge{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:11px;}
+  .rbadge.prod{background:#FFF4E0;color:#9A5B00;}
+  .rbadge.prete{background:var(--green-bg);color:var(--green);}
+  .regen audio{width:100%;margin-top:10px;}
+  .regen-lyrics{white-space:pre-wrap;font:14px/1.7 var(--serif);color:var(--ink);background:var(--green-bg);border:1px solid var(--green-line);border-radius:8px;padding:12px 14px;margin-top:10px;max-height:320px;overflow:auto;}
+  audio.cur{width:100%;margin-top:10px;}
+
+  .mailhead{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;}
+  .ai{font-size:11px;color:var(--mauve-deep);background:var(--mauve-bg);border-radius:8px;padding:3px 9px;}
+  .metaline{font-size:13px;color:var(--muted);padding:6px 0;border-bottom:1px solid var(--line);}
+  .metaline b{color:var(--ink);font-weight:600;}
+  .mailbody{width:100%;border:1px solid var(--line);border-radius:11px;padding:13px 15px;font-size:14px;line-height:1.75;font-family:inherit;color:var(--ink);background:var(--card);outline:none;resize:none;overflow:hidden;min-height:150px;}
+  .mailbody:focus{border-color:var(--mauve-strong);box-shadow:0 0 0 3px rgba(133,103,166,.12);}
+  .sendbar{display:flex;gap:12px;margin-top:12px;align-items:center;flex-wrap:wrap;}
+  .btn-send{border:none;background:var(--rose);color:#fff;border-radius:9px;padding:11px 18px;font-size:14px;font-weight:600;}
+  .btn-send[disabled]{opacity:.45;cursor:not-allowed;}
+  .hint{font-size:12px;color:var(--muted);}
+  .note{font-size:11.5px;color:var(--faint);}
+  #toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 18px;border-radius:9px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:50;}
+  #toast.show{opacity:1;}
 </style>
 </head>
 <body>
-<header>
-  <button id="toggleBtn" onclick="toggleListe()" style="display:none">Masquer la liste</button>
-  <span class="grow">Cockpit corrections</span>
-</header>
 
 <div id="gate">
   <label for="pass">Mot de passe</label>
@@ -111,39 +170,62 @@
 </div>
 
 <div id="app">
-  <div id="liste"></div>
-  <div id="detail"><div class="empty">Choisis une conversation a gauche.</div></div>
+  <div class="rail">
+    <div class="logo">✦</div>
+    <button class="ri on" title="Révisions à traiter">✎</button>
+    <button class="ri" title="Courriels (à venir)">✉</button>
+    <button class="ri" title="Chansons (à venir)">♪</button>
+    <button class="ri" title="En attente (à venir)">◷</button>
+    <button class="ri" title="Traitées (à venir)">✓</button>
+    <div class="sp"></div>
+    <button class="ri" title="Réglages (à venir)">⚙</button>
+    <div class="me">NL</div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <button class="collapse-btn" onclick="toggleList()" title="Masquer / afficher la liste">☰</button>
+      <div class="brand"><div class="t1">Chanson Mémoire</div><div class="t2">Cockpit de révisions</div></div>
+      <div class="search">⌕ <input id="q" type="search" placeholder="Rechercher un client, une chanson…" oninput="filtrer()"></div>
+      <div class="who">Nathalie</div>
+    </div>
+    <div class="shell">
+      <div class="list" id="liste"></div>
+      <div class="detail" id="detail"><div class="empty">Choisis une conversation à gauche.</div></div>
+    </div>
+  </div>
 </div>
 
 <div id="toast"></div>
 
 <script>
-  var KEY_STORE = 'cockpit_key';
-  var KEY = sessionStorage.getItem(KEY_STORE) || '';
-  var CUR = null;   // detail courant (sert au recalcul du diff live)
+  var KEY_STORE='cockpit_key';
+  var KEY=sessionStorage.getItem(KEY_STORE)||'';
+  var CUR=null;         // détail courant
+  var LISTE=[];         // file complète (pour la recherche)
 
-  function esc(s){ return (s == null ? '' : String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-  function toast(msg){ var t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(function(){t.classList.remove('show');},2600); }
+  function esc(s){ return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function toast(m){ var t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(function(){t.classList.remove('show');},2600); }
 
   async function api(params){
-    var r = await fetch('/api/cockpit-data' + (params || ''), { headers: { 'x-cockpit-key': KEY } });
-    if (r.status === 401) throw new Error('401');
+    var r=await fetch('/api/cockpit-data'+(params||''),{headers:{'x-cockpit-key':KEY}});
+    if(r.status===401) throw new Error('401');
     return r.json();
   }
   async function post(payload){
-    var r = await fetch('/api/cockpit-data', { method:'POST', headers:{ 'x-cockpit-key':KEY, 'Content-Type':'application/json' }, body: JSON.stringify(payload) });
-    var d = await r.json().catch(function(){ return {}; });
-    return { ok:r.ok, status:r.status, d:d };
+    var r=await fetch('/api/cockpit-data',{method:'POST',headers:{'x-cockpit-key':KEY,'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    var d=await r.json().catch(function(){return {};});
+    return {ok:r.ok,status:r.status,d:d};
   }
 
-  // ── DIFF AU MOT (miroir de _lib/word-diff.js, testé côté serveur) ────────────────────────────────
-  function tokenize(s){ return String(s==null?'':s).replace(/\r\n/g,'\n').match(/\n|[^\s]+/g) || []; }
-  function diffMots(a, b){
-    var A=tokenize(a), B=tokenize(b), n=A.length, m=B.length;
+  // ── DIFF AU MOT (miroir de _lib/word-diff.js, testé côté serveur) ─────────────────
+  function tokenize(s){ return String(s==null?'':s).replace(/\r\n/g,'\n').match(/\n|[^\s]+/g)||[]; }
+  function diffMots(a,b){
+    var A=tokenize(a),B=tokenize(b),n=A.length,m=B.length;
     var dp=[]; for(var i=0;i<=n;i++){ dp[i]=new Int32Array(m+1); }
-    for(var i=n-1;i>=0;i--) for(var j=m-1;j>=0;j--) dp[i][j]= A[i]===B[j] ? dp[i+1][j+1]+1 : Math.max(dp[i+1][j], dp[i][j+1]);
-    var out=[], i=0, j=0;
-    while(i<n && j<m){
+    for(var i=n-1;i>=0;i--) for(var j=m-1;j>=0;j--) dp[i][j]= A[i]===B[j]?dp[i+1][j+1]+1:Math.max(dp[i+1][j],dp[i][j+1]);
+    var out=[],i=0,j=0;
+    while(i<n&&j<m){
       if(A[i]===B[j]){ out.push({op:'eq',text:A[i]}); i++; j++; }
       else if(dp[i+1][j]>=dp[i][j+1]){ out.push({op:'del',text:A[i]}); i++; }
       else { out.push({op:'ins',text:B[j]}); j++; }
@@ -152,393 +234,329 @@
     while(j<m){ out.push({op:'ins',text:B[j]}); j++; }
     return out;
   }
-  // side : 'actuel' (montre les retraits barrés) | 'propose' (montre les ajouts verts)
-  function renderDiff(actuel, propose, side){
-    var diff=diffMots(actuel, propose), html='', prevWord=false;
-    for(var k=0;k<diff.length;k++){
-      var op=diff[k].op, t=diff[k].text;
-      if(side==='actuel' && op==='ins') continue;
-      if(side==='propose' && op==='del') continue;
-      if(t==='\n'){ html+='<br>'; prevWord=false; continue; }
-      if(prevWord) html+=' ';
-      var cls = op==='del' ? 'd-del' : (op==='ins' ? 'd-ins' : '');
-      html += cls ? '<span class="'+cls+'">'+esc(t)+'</span>' : esc(t);
-      prevWord=true;
+  // Un seul bloc éditable : retiré (barré, non éditable) + gardé/ajouté (éditable) au même endroit.
+  function renderInline(actuel,propose){
+    var d=diffMots(actuel,propose),html='',prev=false;
+    for(var k=0;k<d.length;k++){
+      var op=d[k].op,t=d[k].text;
+      if(t==='\n'){ html+='\n'; prev=false; continue; }
+      if(prev) html+=' ';
+      if(op==='del') html+='<span class="del" contenteditable="false">'+esc(t)+'</span>';
+      else if(op==='ins') html+='<span class="ins">'+esc(t)+'</span>';
+      else html+=esc(t);
+      prev=true;
     }
-    return html || '<span class="dim">vide</span>';
+    return html||'';
   }
+  // Texte proposé = contenu du bloc SANS les mots retirés (.del). Déterministe (ne dépend pas du layout).
+  function collectText(node){
+    var out='';
+    for(var i=0;i<node.childNodes.length;i++){
+      var n=node.childNodes[i];
+      if(n.nodeType===3){ out+=n.nodeValue; }
+      else if(n.nodeType===1){
+        if(n.classList&&n.classList.contains('del')) continue;
+        if(n.tagName==='BR'){ out+='\n'; continue; }
+        if(n.tagName==='DIV'||n.tagName==='P'){ if(out&&out.charAt(out.length-1)!=='\n') out+='\n'; out+=collectText(n); if(out.charAt(out.length-1)!=='\n') out+='\n'; continue; }
+        out+=collectText(n);
+      }
+    }
+    return out;
+  }
+  function texteBloc(id){ var el=document.getElementById(id); return el?collectText(el).replace(/\n{3,}/g,'\n\n').replace(/[ \t]+\n/g,'\n').trim():''; }
 
   async function entrer(){
-    KEY = document.getElementById('pass').value.trim();
-    try {
-      var d = await api('');
-      sessionStorage.setItem(KEY_STORE, KEY);
-      ouvrirApp(); afficher(d);
-    } catch (e) {
-      document.getElementById('gateErr').textContent = 'Mot de passe invalide.';
-    }
+    KEY=document.getElementById('pass').value.trim();
+    try{ var d=await api(''); sessionStorage.setItem(KEY_STORE,KEY); ouvrirApp(); afficher(d); }
+    catch(e){ document.getElementById('gateErr').textContent='Mot de passe invalide.'; }
   }
-  function ouvrirApp(){
-    document.getElementById('gate').style.display = 'none';
-    document.getElementById('app').style.display = 'grid';
-    document.getElementById('toggleBtn').style.display = 'inline-block';
-  }
-  function toggleListe(){
-    var app=document.getElementById('app'), b=document.getElementById('toggleBtn');
-    app.classList.toggle('collapsed');
-    b.textContent = app.classList.contains('collapsed') ? 'Afficher la liste' : 'Masquer la liste';
-  }
+  function ouvrirApp(){ document.getElementById('gate').style.display='none'; document.getElementById('app').style.display='block'; }
+  function toggleList(){ document.querySelector('.shell').classList.toggle('collapsed'); }
 
   function afficher(d){
-    if (d && d.ok === false) {
-      document.getElementById('liste').innerHTML =
-        '<div class="empty">Erreur Airtable (' + esc(d.status) + ' ' + esc(d.detail) + ').<br><br>' +
-        'Verifie dans Netlify que <b>AIRTABLE_TOKEN</b> et <b>AIRTABLE_BASE_ID</b> sont actifs pour les Deploy Previews (ou teste sur la prod apres merge).</div>';
+    if(d&&d.ok===false){
+      document.getElementById('liste').innerHTML='<div class="empty">Erreur Airtable ('+esc(d.status)+' '+esc(d.detail)+').<br><br>Vérifie AIRTABLE_TOKEN / AIRTABLE_BASE_ID / COCKPIT_SECRET dans Netlify.</div>';
       return;
     }
-    rendreListe((d && d.liste) || []);
+    LISTE=(d&&d.liste)||[];
+    rendreListe(LISTE);
+  }
+  function ageDe(recu){
+    if(!recu) return '';
+    var t=Date.parse(recu); if(isNaN(t)) return '';
+    var h=Math.round((Date.now()-t)/3600000);
+    if(h<1) return 'à l’instant'; if(h<24) return h+' h';
+    var j=Math.round(h/24); return j===1?'hier':j+' j';
+  }
+  function badgeType(cat,type){
+    var support = cat && cat!=='modification';
+    var lbl = support ? 'Support' : (type||'Modification');
+    return '<span class="badge '+(support?'b-support':'b-modif')+'">'+esc(lbl)+'</span>';
   }
   function rendreListe(liste){
-    var el = document.getElementById('liste');
-    if (!liste.length) { el.innerHTML = '<div class="empty">Aucune conversation a traiter.</div>'; return; }
-    el.innerHTML = liste.map(function (c) {
-      return '<div class="item" data-id="' + esc(c.id) + '" onclick="ouvrir(\'' + c.id + '\', this)">' +
-        '<button class="arch" title="Deja regle ailleurs : sortir de la liste" onclick="archiver(\'' + c.id + '\', event)">Archiver</button>' +
-        '<div class="from">' + esc(c.expediteur) + '</div>' +
-        '<div class="subj">' + esc(c.sujet) + '</div>' +
-        (c.type_correction ? '<span class="chip">' + esc(c.type_correction) + '</span>' : '') +
-        '</div>';
-    }).join('');
-  }
-
-  // « Archiver » : la conversation est deja reglee ailleurs (ex. repondu depuis Gmail) -> on la sort de la file.
-  async function archiver(id, ev){
-    if (ev) ev.stopPropagation();
-    var r = await post({ id:id, action:'archiver' });
-    if (r.ok && r.d && r.d.ok){
-      var node = document.querySelector('.item[data-id="' + id + '"]');
-      if (node) node.parentNode.removeChild(node);
-      if (CUR && CUR.id === id){ CUR = null; document.getElementById('detail').innerHTML = '<div class="empty">Conversation archivee.</div>'; }
-      if (!document.querySelectorAll('.item').length) document.getElementById('liste').innerHTML = '<div class="empty">Aucune conversation a traiter.</div>';
-      toast('Archive');
-    } else { toast('Echec archivage'); }
-  }
-
-  // ── DÉTAIL ───────────────────────────────────────────────────────────────────────────────────────
-  // 2 colonnes : Actuel (mots retires barres en rouge) | Propose (editable). Pas d'apercu empile dessous.
-  function champEditable(titreActuel, valActuelle, titreProp, idTextarea, valProp, idAct){
-    return '<div class="cols">' +
-      '<div class="col">' +
-        '<h3>' + titreActuel + ' <span class="legend"><span class="s d-del">retire</span></span></h3>' +
-        '<div class="fieldcard"><div class="val" id="' + idAct + '">' + renderDiff(valActuelle, valProp, 'actuel') + '</div></div>' +
-      '</div>' +
-      '<div class="col prop">' +
-        '<h3>' + titreProp + '</h3>' +
-        '<textarea class="edit" id="' + idTextarea + '">' + esc(valProp) + '</textarea>' +
-      '</div>' +
-    '</div>';
-  }
-
-  // Recalcul live de la colonne Actuel (mots retires) + sauvegarde auto.
-  function recalc(){
-    if (!CUR) return;
-    var par = document.getElementById('ta_paroles'), sty = document.getElementById('ta_style');
-    if (par) document.getElementById('dp_act').innerHTML = renderDiff(CUR.paroles_actuelles, par.value, 'actuel');
-    if (sty) document.getElementById('ds_act').innerHTML = renderDiff(CUR.prompt_style_actuel, sty.value, 'actuel');
-    autoSave();
-  }
-
-  // Le textarea grandit a la hauteur de son contenu (lyrics longues lisibles d'un coup, zero scroll interne, zero poignee a tirer).
-  function autoGrow(el){ if(!el) return; el.style.height='auto'; el.style.height=(el.scrollHeight+2)+'px'; }
-  function wireGrow(id, extra){
-    var el=document.getElementById(id); if(!el) return;
-    autoGrow(el);
-    el.addEventListener('input', function(){ if(extra) extra(); autoGrow(el); });
-  }
-
-  // Panneau « raisonnement IA » (analyse de la demande, surtout utile en prononciation). Repliable.
-  function panneauAnalyse(analyse){
-    if (!analyse) return '';
-    return '<details class="analyse" open><summary>Raisonnement IA</summary><div class="val">' + esc(analyse) + '</div></details>';
-  }
-
-  // Recalcul live du diff phonetique (colonne Actuel).
-  function recalcPhon(){
-    if (!CUR) return;
-    var ph = document.getElementById('ta_phon');
-    if (ph) document.getElementById('ph_act').innerHTML = renderDiff(CUR.paroles_actuelles, ph.value, 'actuel');
-  }
-
-  // Bloc PRONONCIATION, affiche DANS la vue modif quand pertinent (gere aussi "prononciation + paroles" ensemble).
-  function blocPrononciation(x){
-    if (!x.est_prononciation) return '';
-    var phonProp = x.lyrics_phonetique || x.paroles_actuelles;
-    return '<div class="sectlabel">Prononciation &mdash; envoye a Suno</div>' +
-      '<div class="note">Suno ne lit que du <b>texte</b> : pour corriger un mot mal prononce, on le <b>reecrit phonetiquement</b> dans ce qui est envoye a Suno. Les paroles AFFICHEES au client restent claires (le phonetique n\'apparait jamais a l\'ecran).</div>' +
-      champEditable('Affichees (claires)', x.paroles_actuelles, 'Phonetique (Suno)', 'ta_phon', phonProp, 'ph_act') +
-      '<div class="actions" id="pronoBar"><button class="mbtn" onclick="demanderProno()">Appliquer la prononciation (regenerer)</button></div>';
-  }
-
-  // Étape 4 : DICTIONNAIRE de prononciation du projet (voir/éditer/désactiver/override). Repliable.
-  function renderLexique(x){
-    var lex = x.lexique || [];
-    var rows = lex.map(function(e){
-      var badges = (e.override ? '<span class="lexbadge ov">override projet</span>' : '') +
-                   (e.desactive ? '<span class="lexbadge off">desactive</span>' : '') +
-                   (e.attempts > 1 ? '<span class="hint"> ' + esc(e.attempts) + ' essais</span>' : '');
-      return '<div class="lexrow">' +
-        '<div class="lexmot">' + esc(e.mot) + badges + '</div>' +
-        '<input class="lexinput" id="lexp_' + esc(e.id) + '" value="' + esc(e.phonetique) + '">' +
-        '<div class="lexacts">' +
-          '<button class="ghost" onclick="lexEnregistrer(\'' + e.id + '\')">Enregistrer</button>' +
-          '<button class="ghost" onclick="lexToggle(\'' + e.id + '\',' + (!e.desactive) + ')">' + (e.desactive ? 'Reactiver' : 'Desactiver') + '</button>' +
-          '<button class="ghost" onclick="lexSupprimer(\'' + e.id + '\')">Supprimer</button>' +
-        '</div>' +
+    var el=document.getElementById('liste');
+    var head='<div class="listhead"><div class="h">À traiter · <b>'+liste.length+'</b></div></div>';
+    if(!liste.length){ el.innerHTML=head+'<div class="empty">Aucune conversation à traiter.</div>'; return; }
+    el.innerHTML=head+liste.map(function(c){
+      return '<div class="item" data-id="'+esc(c.id)+'" onclick="ouvrir(\''+c.id+'\',this)">'+
+        '<div class="row1"><span class="name">'+esc(c.expediteur||'Client')+'</span><span class="age">'+esc(ageDe(c.recu_le))+'</span></div>'+
+        '<div class="song">'+esc(c.sujet||'')+'</div>'+
+        '<div class="row2">'+badgeType(c.categorie_ia,c.type_correction)+
+          '<button class="arch" title="Déjà réglé ailleurs : sortir de la file" onclick="archiver(\''+c.id+'\',event)">Archiver</button></div>'+
       '</div>';
     }).join('');
-    return '<details class="analyse lexdict"' + (lex.length ? ' open' : '') + '>' +
-      '<summary>Dictionnaire de prononciation (' + lex.length + ')</summary>' +
-      '<div class="val">' +
-        '<div class="hint" style="margin-bottom:8px">Ces mots sont reecrits automatiquement quand les paroles partent a Suno (l\'affiche client reste clair). Global par langue (' + esc(x.langue || '') + '), override possible pour ce projet.</div>' +
-        (rows || '<div class="hint">Aucune entree pour cette langue.</div>') +
-        '<div class="lexrow lexadd">' +
-          '<input class="lexinput" id="lex_mot" placeholder="mot (ex. Roxanne)">' +
-          '<input class="lexinput" id="lex_phon" placeholder="reecriture (ex. Roksane)">' +
-          '<label class="hint" style="display:flex;align-items:center;gap:4px"><input type="checkbox" id="lex_override"> override ce projet</label>' +
-          '<button class="mbtn" onclick="lexAjouter()">Ajouter</button>' +
-        '</div>' +
-      '</div>' +
-    '</details>';
+  }
+  function filtrer(){
+    var q=(document.getElementById('q').value||'').toLowerCase().trim();
+    if(!q){ rendreListe(LISTE); return; }
+    rendreListe(LISTE.filter(function(c){
+      return ((c.expediteur||'')+' '+(c.sujet||'')+' '+(c.type_correction||'')).toLowerCase().indexOf(q)>=0;
+    }));
   }
 
-  // ── SAUVEGARDE AUTOMATIQUE (debounce) : les editions se sauvent toutes seules, plus de bouton Enregistrer. ──
+  async function archiver(id,ev){
+    if(ev) ev.stopPropagation();
+    var r=await post({id:id,action:'archiver'});
+    if(r.ok&&r.d&&r.d.ok){
+      LISTE=LISTE.filter(function(c){return c.id!==id;});
+      var node=document.querySelector('.item[data-id="'+id+'"]'); if(node) node.parentNode.removeChild(node);
+      if(CUR&&CUR.id===id){ CUR=null; document.getElementById('detail').innerHTML='<div class="empty">Conversation archivée.</div>'; }
+      filtrer(); toast('Archivé');
+    } else toast('Échec archivage');
+  }
+
+  // Auto-grow d'un textarea (courriel).
+  function autoGrow(el){ if(!el) return; el.style.height='auto'; el.style.height=(el.scrollHeight+2)+'px'; }
+  function wireGrow(id){ var el=document.getElementById(id); if(!el) return; autoGrow(el); el.addEventListener('input',function(){autoGrow(el);}); }
+
+  // ── SAUVEGARDE AUTOMATIQUE (debounce) ──
   var saveTimer=null;
   function setSaveStatut(t){ var el=document.getElementById('saveStatut'); if(el) el.textContent=t; }
-  // Un champ propose EGAL a l'actuel = "pas de changement" -> enregistre vide (sert au bouton "Paroles uniquement").
-  function champPropose(id, actuel){ var el=document.getElementById(id); if(!el) return undefined; return (el.value===actuel) ? '' : el.value; }
+  // proposé == actuel -> enregistre '' (comportement « paroles uniquement » du backend).
+  function champBloc(id,actuel){ var el=document.getElementById(id); if(!el) return undefined; var v=texteBloc(id); return (v===String(actuel||'').trim())?'':v; }
   function payloadSave(){
-    var out={ id: CUR.id, action:'save' };
-    var p=champPropose('ta_paroles', CUR.paroles_actuelles); if(p!==undefined) out.paroles_corrigees=p;
-    var s=champPropose('ta_style', CUR.prompt_style_actuel); if(s!==undefined) out.prompt_style=s;
-    var rp=document.getElementById('ta_reponse'); if(rp) out.reponse=rp.value;
+    var out={id:CUR.id,action:'save'};
+    if(document.getElementById('bloc_paroles')){ var p=champBloc('bloc_paroles',CUR.paroles_actuelles); if(p!==undefined) out.paroles_corrigees=p; }
+    if(document.getElementById('bloc_style')){ var s=champBloc('bloc_style',CUR.prompt_style_actuel); if(s!==undefined) out.prompt_style=s; }
+    var rep=document.getElementById('ta_reponse'); if(rep) out.reponse=rep.value;
     return out;
   }
   function autoSave(){
-    if (!CUR) return;
-    clearTimeout(saveTimer); setSaveStatut('Enregistrement...');
-    saveTimer=setTimeout(async function(){ var r=await post(payloadSave()); setSaveStatut(r.ok?'Enregistre':'Echec sauvegarde'); }, 700);
+    if(!CUR) return;
+    clearTimeout(saveTimer); setSaveStatut('Enregistrement…');
+    saveTimer=setTimeout(async function(){ var r=await post(payloadSave()); setSaveStatut(r.ok?'Enregistré':'Échec sauvegarde'); },700);
   }
-  async function flushSave(){ if(!CUR) return true; clearTimeout(saveTimer); var r=await post(payloadSave()); setSaveStatut(r.ok?'Enregistre':'Echec sauvegarde'); return r.ok; }
+  async function flushSave(){ if(!CUR) return true; clearTimeout(saveTimer); var r=await post(payloadSave()); setSaveStatut(r.ok?'Enregistré':'Échec sauvegarde'); return r.ok; }
+  function wireEdit(id){ var el=document.getElementById(id); if(el) el.addEventListener('input',autoSave); }
 
-  // Confirmation DANS la page (remplace la popup du navigateur) : remplace le contenu d'une barre de boutons.
-  function confirmInline(barId, message, labelOui, onOui){
+  // Confirmation DANS la page (remplace la popup navigateur).
+  function confirmInline(barId,message,labelOui,onOui){
     var bar=document.getElementById(barId); if(!bar) return;
     var prev=bar.innerHTML;
-    bar.innerHTML = '<span class="hint">' + esc(message) + '</span>' +
-      '<button class="mbtn solid" id="ciOui">' + esc(labelOui) + '</button>' +
-      '<button class="ghost" id="ciNon">Annuler</button>';
-    document.getElementById('ciOui').onclick = function(){ onOui(); };
-    document.getElementById('ciNon').onclick = function(){ bar.innerHTML = prev; };
+    bar.innerHTML='<span class="hint">'+esc(message)+'</span> <button class="btn-line" id="ciOui">'+esc(labelOui)+'</button> <button class="btn-regen" id="ciNon">Annuler</button>';
+    document.getElementById('ciOui').onclick=function(){ onOui(); };
+    document.getElementById('ciNon').onclick=function(){ bar.innerHTML=prev; };
   }
 
   function blocRegen(regen){
-    if (!regen || !regen.statut) return '';
-    if (regen.statut === 'en_production') {
-      return '<div class="sectlabel">Version regeneree</div>' +
-        '<div class="regen"><span class="badge prod">Regeneration en cours</span>' +
-        '<div class="hint" style="margin-top:8px">Suno produit la nouvelle version. L\'envoi au client est en pause : il se reactivera quand la version sera prete a revoir.</div></div>';
+    if(!regen||!regen.statut) return '';
+    if(regen.statut==='en_production'){
+      return '<div class="regen"><span class="rbadge prod">Régénération en cours</span>'+
+        '<div class="hint" style="margin-top:8px">Suno produit la nouvelle version. L’envoi au client est en pause ; il se réactive quand la version est prête.</div></div>';
     }
-    // prête
-    return '<div class="sectlabel">Version regeneree a revoir' + (regen.no ? ' (V' + esc(regen.no) + ')' : '') + '</div>' +
-      '<div class="regen"><span class="badge prete">Prete a revoir</span>' +
-      (regen.titre ? ' <span class="hint">' + esc(regen.titre) + '</span>' : '') +
-      (regen.audio_url ? '<audio controls preload="none" src="' + esc(regen.audio_url) + '"></audio>'
-                       : '<div class="hint" style="margin-top:8px">Audio indisponible.</div>') +
-      (regen.paroles ? '<div class="label" style="margin-top:12px">Paroles de cette version</div><div class="regen-lyrics">' + esc(regen.paroles) + '</div>' : '') +
-      '</div>';
+    return '<div class="regen"><span class="rbadge prete">Prête à revoir'+(regen.no?' (V'+esc(regen.no)+')':'')+'</span>'+
+      (regen.audio_url?'<audio controls preload="none" src="'+esc(regen.audio_url)+'"></audio>':'<div class="hint" style="margin-top:8px">Audio indisponible.</div>')+
+      (regen.paroles?'<div class="regen-lyrics">'+esc(regen.paroles)+'</div>':'')+'</div>';
   }
 
-  // Mode MESSAGE SIMPLE (categorie_ia != modification) : pas d'avant/apres, juste le message recu + la reponse IA a valider et envoyer.
+  // MODE MESSAGE SIMPLE.
   function rendreMessage(x){
-    var courrielDefaut = x.reponse || x.brouillon_ia || '';
-    document.getElementById('detail').innerHTML =
-      '<div class="meta">' + esc(x.expediteur) + ' &middot; ' + esc(x.sujet) +
-        (x.categorie_ia ? ' &middot; <b>' + esc(x.categorie_ia) + '</b>' : '') + '</div>' +
-      (x.message ? '<div class="demande"><div class="label">Message du client</div>' + esc(x.message) + '</div>' : '') +
-      '<div class="sectlabel">Reponse au client</div>' +
-      '<div class="hint" style="margin-bottom:8px">Aucune modification de chanson ici : relis le brouillon de l\'IA et envoie. (Sauvegarde automatique.)</div>' +
-      '<div class="send">' +
-        '<textarea class="edit short" id="ta_reponse">' + esc(courrielDefaut) + '</textarea>' +
-        '<div class="actions" id="sendBar" style="margin-top:10px">' +
-          '<button class="mbtn solid" id="sendBtn" onclick="demanderEnvoyer()">Envoyer au client</button>' +
-          '<span id="saveStatut" class="hint"></span>' +
-        '</div>' +
-      '</div>';
-    wireGrow('ta_reponse', autoSave);
+    var courriel=x.reponse||x.brouillon_ia||'';
+    document.getElementById('detail').innerHTML=
+      '<div class="dhead">'+badgeType(x.categorie_ia,x.type_correction)+'</div>'+
+      '<div class="dtitle"><h1>'+esc(x.sujet||'Message')+'</h1></div>'+
+      '<div class="dsub">'+esc(x.expediteur||'')+'</div>'+
+      (x.message?'<div class="demande"><div class="lbl">Message du client</div>'+esc(x.message)+'</div>':'')+
+      '<div class="blk" style="margin-top:20px"><div class="mailhead"><div class="sectlabel" style="margin:0">Réponse au client</div><span class="ai">✦ Rédigé par l’IA</span></div>'+
+      '<div class="hint" style="margin-bottom:8px">Relis le brouillon et envoie. (Sauvegarde automatique.)</div>'+
+      '<textarea class="mailbody" id="ta_reponse">'+esc(courriel)+'</textarea>'+
+      '<div class="sendbar" id="sendBar"><button class="btn-send" id="sendBtn" onclick="demanderEnvoyer()">Envoyer le courriel →</button><span id="saveStatut" class="hint" style="margin-left:auto"></span></div></div>';
+    wireGrow('ta_reponse'); document.getElementById('ta_reponse').addEventListener('input',autoSave);
   }
 
-  async function ouvrir(id, node){
-    stopRegenPoll();   // on change d'item -> on coupe un eventuel sondage de regeneration en cours
-    var items = document.querySelectorAll('.item');
-    for (var i = 0; i < items.length; i++) items[i].classList.remove('sel');
-    if (node) node.classList.add('sel');
-    document.getElementById('detail').innerHTML = '<div class="empty">Chargement...</div>';
-    var d = await api('?id=' + encodeURIComponent(id));
-    var x = (d && d.detail) || {};
-    CUR = x;
+  async function ouvrir(id,node){
+    stopRegenPoll();
+    var items=document.querySelectorAll('.item'); for(var i=0;i<items.length;i++) items[i].classList.remove('sel');
+    if(node) node.classList.add('sel');
+    document.getElementById('detail').innerHTML='<div class="empty">Chargement…</div>';
+    var d=await api('?id='+encodeURIComponent(id));
+    var x=(d&&d.detail)||{}; CUR=x;
+    if(x.mode==='message'){ rendreMessage(x); return; }
 
-    if (x.mode === 'message') { rendreMessage(x); return; }
-    // Plus de vue 'prononciation' separee : c'est un BLOC dans la vue modif (gere aussi le cas combine paroles+prononciation).
+    var enRege=!!(x.regen&&x.regen.statut==='en_production');
+    var courriel=x.reponse||x.brouillon_ia||'';
+    var parProp=x.paroles_corrigees||x.paroles_actuelles||'';
+    var styProp=x.prompt_style||x.prompt_style_actuel||'';
+    var dPar=diffMots(x.paroles_actuelles||'',parProp), nDel=dPar.filter(function(o){return o.op==='del';}).length, nIns=dPar.filter(function(o){return o.op==='ins';}).length;
 
-    var enRege = !!(x.regen && x.regen.statut === 'en_production');
-    var courrielDefaut = x.reponse || x.brouillon_ia || '';
-    // Pas encore de proposition IA ? On part des valeurs ACTUELLES (editables). Diff vide tant que rien n'est edite.
-    var parProp = x.paroles_corrigees || x.paroles_actuelles;
-    var styProp = x.prompt_style       || x.prompt_style_actuel;
+    var lex=x.lexique||[];
+    var lexRows=lex.map(function(e){
+      var src=e.override?'<span class="src src-man">Manuel</span>':'<span class="src src-dict">Dict.</span>';
+      return '<tr><td class="lexmot">'+esc(e.mot)+(e.desactive?' <span class="note">(désactivé)</span>':'')+'</td>'+
+        '<td><input class="lexinput" id="lexp_'+esc(e.id)+'" value="'+esc(e.phonetique)+'"></td>'+
+        '<td>'+src+'</td>'+
+        '<td style="text-align:right">'+
+          '<button class="xs" onclick="lexEnregistrer(\''+e.id+'\')">✎</button>'+
+          '<button class="xs" onclick="lexToggle(\''+e.id+'\','+(!e.desactive)+')">'+(e.desactive?'On':'Off')+'</button>'+
+          '<button class="xs" onclick="lexSupprimer(\''+e.id+'\')">✕</button>'+
+        '</td></tr>';
+    }).join('');
 
-    document.getElementById('detail').innerHTML =
-      '<div class="meta">' + esc(x.expediteur) + ' &middot; ' + esc(x.sujet) +
-        (x.type_correction ? ' &middot; <b>' + esc(x.type_correction) + '</b>' : '') + '</div>' +
-      (x.message ? '<div class="demande"><div class="label">Demande du client</div>' + esc(x.message) + '</div>' : '') +
-      panneauAnalyse(x.analyse_ia) +
+    document.getElementById('detail').innerHTML=
+      '<div class="dhead">'+badgeType(x.categorie_ia,x.type_correction)+
+        (x.voix?' · <span>🎙️ Voix : '+esc(x.voix)+'</span>':'')+'</div>'+
+      '<div class="dtitle"><h1>'+esc(x.sujet||'Chanson')+'</h1></div>'+
+      '<div class="dsub">'+esc(x.expediteur||'')+'</div>'+
 
-      (x.audio_actuel ? '<div class="sectlabel">Ecouter la version actuelle</div><div class="regen"><audio controls preload="none" src="' + esc(x.audio_actuel) + '"></audio></div>' : '') +
+      (x.message?'<div class="demande"><div class="lbl">Demande du client</div>'+esc(x.message)+'</div>':'')+
+      (x.analyse_ia?'<div class="demande"><div class="lbl">Raisonnement IA</div>'+esc(x.analyse_ia)+'</div>':'')+
 
-      '<div class="sectlabel">Paroles &mdash; actuel | propose (editable)</div>' +
-      champEditable('Actuel (en ligne)', x.paroles_actuelles, 'Propose (editable)', 'ta_paroles', parProp, 'dp_act') +
+      '<div class="dgrid">'+
+        '<div class="dmain">'+
+          '<div class="blk"><div class="sectlabel">Paroles <span class="diffcount">· '+nDel+' retrait(s) · '+nIns+' ajout(s)</span>'+
+            '<span class="act" id="parBar"><button class="btn-regen" onclick="scrollStudio()">↻ Studio</button></span></div>'+
+            '<div class="editable" id="bloc_paroles" contenteditable="true" spellcheck="false">'+renderInline(x.paroles_actuelles||'',parProp)+'</div>'+
+            '<div class="legend"><span class="s del">retiré</span> &nbsp; <span class="s ins">ajouté</span> &nbsp; · clique dans le texte pour l’éditer</div>'+
+          '</div>'+
 
-      '<div class="sectlabel">Style &mdash; actuel | propose (editable)</div>' +
-      champEditable('Actuel (en ligne)', x.prompt_style_actuel, 'Propose (editable)', 'ta_style', styProp, 'ds_act') +
+          (x.audio_actuel?'<div class="blk"><div class="sectlabel">Version actuelle en ligne</div><audio class="cur" controls preload="none" src="'+esc(x.audio_actuel)+'"></audio></div>':'')+
+          '<div id="regenSlot">'+blocRegen(x.regen)+'</div>'+
 
-      (x.voix ? '<div class="fieldcard" style="max-width:520px"><div class="label">Voix</div><div class="val">' + esc(x.voix) + '</div></div>' : '') +
+          '<div class="blk"><div class="mailhead"><div class="sectlabel" style="margin:0">Courriel client</div><span class="ai">✦ Rédigé par l’IA</span></div>'+
+            '<div class="hint" style="margin-bottom:8px">Réponse finale OU clarification : envoyer un courriel ne déclenche AUCUNE régénération.</div>'+
+            '<textarea class="mailbody" id="ta_reponse">'+esc(courriel)+'</textarea>'+
+            '<div class="sendbar" id="sendBar"><button class="btn-send" id="sendBtn" onclick="demanderEnvoyer()"'+(enRege?' disabled':'')+'>Envoyer le courriel →</button>'+
+              '<span class="hint">'+(enRege?'En pause : version en régénération.':'')+'</span>'+
+              '<span id="saveStatut" class="hint" style="margin-left:auto"></span></div>'+
+          '</div>'+
+        '</div>'+
 
-      blocPrononciation(x) +
-      renderLexique(x) +
+        '<div class="side">'+
+          '<div class="blk"><div class="sectlabel">Prononciation · Suno <span class="act"><button class="btn-regen" onclick="lexAjouter()">＋ Mot</button></span></div>'+
+            '<div class="card">'+
+              (x.est_prononciation?'<div class="hint" style="margin-bottom:8px">Suno ne lit que du texte : un mot mal prononcé est réécrit phonétiquement. Les paroles affichées au client restent claires.</div>':'')+
+              '<table class="lextable"><tr><th>Mot</th><th>Graphie Suno</th><th>Source</th><th></th></tr>'+(lexRows||'<tr><td colspan="4" class="note">Aucune entrée pour cette langue.</td></tr>')+'</table>'+
+              '<div class="lexadd" style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap"><input class="lexinput" id="lex_mot" placeholder="mot (ex. Réal)"><input class="lexinput" id="lex_phon" placeholder="graphie (ex. Ré-alle)"><label class="note" style="display:flex;align-items:center;gap:4px"><input type="checkbox" id="lex_override"> projet</label></div>'+
+              '<div class="lock">🔒 Ces graphies ne changent que le son envoyé à Suno. Les paroles affichées au client restent inchangées.</div>'+
+            '</div>'+
+            (x.est_prononciation?'<div class="sendbar" id="pronoBar"><button class="btn-line" onclick="demanderProno()">Appliquer la prononciation (régénérer)</button></div>':'')+
+          '</div>'+
 
-      '<div class="sectlabel">Regenerer</div>' +
-      '<div class="hint" style="margin-bottom:8px">Choisis la methode (rien n\'est pre-selectionne). Tes editions sont deja enregistrees (auto).</div>' +
-      '<div class="actions" id="applyBar">' +
-        '<button class="mbtn" onclick="demanderAppliquer(\'rege\')">Nouvelle melodie</button>' +
-        '<button class="mbtn" onclick="demanderAppliquer(\'cover\')">Garder la melodie (cover)</button>' +
-        '<button class="mbtn" onclick="demanderAppliquer(\'paroles\')">Paroles uniquement</button>' +
-      '</div>' +
+          '<div class="blk"><div class="sectlabel">Studio IA</div><div class="studio" id="studio">'+
+            '<div class="glab">Version de référence</div>'+
+            '<div class="vbox locked"><div class="vhead"><div><div class="vt">Version en ligne'+(x.regen&&x.regen.no?' · V'+esc(x.regen.no):'')+'</div><div class="vs">'+(x.voix?'Voix : '+esc(x.voix):'version actuelle')+'</div></div><span class="vr">🔒 réf.</span></div>'+
+              '<details class="promptdd"><summary>Prompt de style utilisé</summary><div class="promptbox ro">'+esc(x.prompt_style_actuel||'(non renseigné)')+'</div></details></div>'+
 
-      blocRegen(x.regen) +
-
-      '<div class="sectlabel">Reponse au client</div>' +
-      '<div class="hint" style="margin-bottom:8px">Reponse finale OU demande de clarification : envoyer un courriel ne declenche AUCUNE regeneration.</div>' +
-      '<div class="send">' +
-        '<textarea class="edit short" id="ta_reponse">' + esc(courrielDefaut) + '</textarea>' +
-        '<div class="actions" id="sendBar" style="margin-top:10px">' +
-          '<button class="mbtn solid" id="sendBtn" onclick="demanderEnvoyer()"' + (enRege ? ' disabled' : '') + '>Envoyer au client</button>' +
-          '<span class="hint">' + (enRege ? 'En pause : version en cours de regeneration.' : '') + '</span>' +
-          '<span id="saveStatut" class="hint" style="margin-left:auto"></span>' +
-        '</div>' +
+            '<div class="glab" style="margin-top:16px">Nouvelle version</div>'+
+            '<div class="vbox">'+
+              '<div class="sectlabel" style="margin:0 0 8px">Prompt de style <span class="act"><button class="btn-regen" onclick="regenPrompt()">↻ Regénérer</button></span></div>'+
+              '<div class="promptbox editable small" id="bloc_style" contenteditable="true" spellcheck="false">'+renderInline(x.prompt_style_actuel||'',styProp)+'</div>'+
+              '<div class="note" style="margin-top:6px">Ajuste-le à la main, ou Regénérer selon les demandes du client (sauvegarde auto).</div>'+
+              '<div class="methods" id="applyBar" style="margin-top:12px">'+
+                '<button class="btn-line" onclick="demanderAppliquer(\'rege\')"'+(enRege?' disabled':'')+'>↻ Nouvelle mélodie</button>'+
+                '<button class="btn-line" onclick="demanderAppliquer(\'cover\')"'+(enRege?' disabled':'')+'>🎨 Cover (garder la mélodie)</button>'+
+                '<button class="btn-line" onclick="demanderAppliquer(\'paroles\')"'+(enRege?' disabled':'')+'>Paroles uniquement</button>'+
+              '</div>'+
+            '</div>'+
+          '</div></div>'+
+        '</div>'+
       '</div>';
 
-    wireGrow('ta_paroles', recalc);
-    wireGrow('ta_style', recalc);
-    if (x.est_prononciation) wireGrow('ta_phon', recalcPhon);
-    wireGrow('ta_reponse', autoSave);
-    if (enRege) pollRegen(id);   // item deja en regeneration -> l'audio + les paroles s'afficheront des que pret
+    wireEdit('bloc_paroles'); wireEdit('bloc_style'); wireGrow('ta_reponse'); document.getElementById('ta_reponse').addEventListener('input',autoSave);
+    if(enRege) pollRegen(id);
   }
+
+  function scrollStudio(){ var s=document.getElementById('studio'); if(s) s.scrollIntoView({behavior:'smooth',block:'center'}); }
+  // Regénérer le prompt selon les demandes du client (réécriture via analyse-modif) : branché au jalon 2.
+  function regenPrompt(){ toast('Regénérer le prompt selon les demandes : branché au jalon 2.'); }
 
   async function appliquer(methode){
-    if (!CUR) return;
+    if(!CUR) return;
     await flushSave();
-    var r = await post({ id: CUR.id, action: 'appliquer', methode: methode });   // le backend lit les editions deja sauvees
-    var bar = document.getElementById('applyBar');
-    if (r.ok) { toast('Regeneration lancee.'); if (bar) bar.innerHTML = '<span class="hint">Regeneration lancee (Suno ~1 min). La version prete s\'affichera ici automatiquement.</span>'; pollRegen(CUR.id); }
-    else { toast('Echec.'); if (bar) bar.innerHTML = '<span class="err">Echec : ' + esc((r.d && r.d.error) || r.status) + '</span>'; }
+    var r=await post({id:CUR.id,action:'appliquer',methode:methode});
+    var bar=document.getElementById('applyBar');
+    if(r.ok){ toast('Régénération lancée.'); if(bar) bar.innerHTML='<span class="hint">Régénération lancée (Suno ~1 min). La version prête s’affichera ici automatiquement.</span>'; pollRegen(CUR.id); }
+    else { toast('Échec.'); if(bar) bar.innerHTML='<span class="err">Échec : '+esc((r.d&&r.d.error)||r.status)+'</span>'; }
   }
   function demanderAppliquer(methode){
-    var lib = methode === 'rege' ? 'nouvelle melodie' : (methode === 'paroles' ? 'paroles uniquement (melodie + style inchanges)' : 'garder la melodie');
-    confirmInline('applyBar', 'Regenerer (' + lib + ') ?', 'Oui, regenerer', function(){ appliquer(methode); });
+    var lib=methode==='rege'?'nouvelle mélodie':(methode==='paroles'?'paroles uniquement (mélodie + style inchangés)':'garder la mélodie (cover)');
+    confirmInline('applyBar','Régénérer ('+lib+') ?','Oui, régénérer',function(){ appliquer(methode); });
   }
 
-  // Auto-rafraichissement apres une regeneration : on sonde la version jusqu'a ce que Suno la livre
-  // ('prête'), puis on recharge le detail -> l'audio + les paroles de la nouvelle version apparaissent
-  // tout seuls (plus besoin de recharger la page). S'arrete si l'admin change d'item ou apres ~10 min.
-  var regenPoll = null;
-  function stopRegenPoll(){ if (regenPoll) { clearInterval(regenPoll); regenPoll = null; } }
+  var regenPoll=null;
+  function stopRegenPoll(){ if(regenPoll){ clearInterval(regenPoll); regenPoll=null; } }
+  function rechargerDetail(){ if(CUR) ouvrir(CUR.id,document.querySelector('.item.sel')); }
+  // pollRegen (repris de #279, éprouvé) : gère flag ON (attend 'prête') ET flag OFF (détecte le changement
+  // d'audio_actuel APRÈS avoir vu 'en_production' -> évite un faux refresh). ~8 min max.
   function pollRegen(id){
-    stopRegenPoll();
-    if (!id) return;
-    var tries = 0, sawProd = false;
-    var baseAudio = (CUR && CUR.audio_actuel) || '';   // audio avant régé -> on detecte quand il change (flag OFF)
-    regenPoll = setInterval(async function(){
-      tries++;
-      if (tries > 40 || !CUR || CUR.id !== id) { stopRegenPoll(); return; }   // ~8 min max, ou item change
-      var d = await api('?id=' + encodeURIComponent(id));
-      var det = d && d.detail; if (!det) return;
-      var rg = det.regen;
-      if (rg && rg.statut === 'en_production') { sawProd = true; return; }
-      // Mode revue (flag ON) : la version attend en 'prête' -> on l'affiche (lecteur + paroles régé).
-      if (rg && rg.statut === 'prête') { stopRegenPoll(); rechargerDetail(); toast('Nouvelle version prete a revoir.'); return; }
-      // Auto-envoi (flag OFF) : la régé s'est publiee -> l'audio de la version actuelle a change -> on rafraichit.
-      if (sawProd && det.audio_actuel && det.audio_actuel !== baseAudio) { stopRegenPoll(); rechargerDetail(); toast('Nouvelle version en ligne.'); return; }
-    }, 12000);
+    stopRegenPoll(); if(!id) return;
+    var tries=0, sawProd=false, baseAudio=(CUR&&CUR.audio_actuel)||'';
+    regenPoll=setInterval(async function(){
+      tries++; if(tries>40||!CUR||CUR.id!==id){ stopRegenPoll(); return; }
+      var d=await api('?id='+encodeURIComponent(id)); var det=d&&d.detail; if(!det) return;
+      var rg=det.regen;
+      if(rg&&rg.statut==='en_production'){ sawProd=true; return; }
+      if(rg&&rg.statut==='prête'){ stopRegenPoll(); rechargerDetail(); toast('Nouvelle version prête à revoir.'); return; }
+      if(sawProd&&det.audio_actuel&&det.audio_actuel!==baseAudio){ stopRegenPoll(); rechargerDetail(); toast('Nouvelle version en ligne.'); return; }
+    },12000);
   }
 
-  // ── DICTIONNAIRE de prononciation (étape 4) : ajouter / éditer / (dés)activer / supprimer une entrée. ──
-  function rechargerDetail(){ if (CUR) ouvrir(CUR.id, document.querySelector('.item.sel')); }
+  // ── PRONONCIATION ──
+  async function appliquerProno(){
+    if(!CUR) return;
+    var phon=texteBloc('bloc_paroles'); // en prononciation, le bloc paroles porte la version phonétique éditée
+    var r=await post({id:CUR.id,action:'appliquer_prononciation',lyrics_phonetique:phon});
+    var bar=document.getElementById('pronoBar');
+    if(r.ok){ toast('Régénération lancée (prononciation).'); if(bar) bar.innerHTML='<span class="hint">Régénération lancée (Suno ~1 min).</span>'; pollRegen(CUR.id); }
+    else { toast('Échec.'); if(bar) bar.innerHTML='<span class="err">Échec : '+esc((r.d&&r.d.error)||r.status)+'</span>'; }
+  }
+  function demanderProno(){ confirmInline('pronoBar','Régénérer avec le son corrigé (paroles affichées inchangées) ?','Oui, régénérer',appliquerProno); }
+
+  // ── DICTIONNAIRE ──
   async function lexAjouter(){
-    if (!CUR) return;
-    var mot = (document.getElementById('lex_mot').value || '').trim();
-    var phon = (document.getElementById('lex_phon').value || '').trim();
-    var scope = document.getElementById('lex_override').checked ? 'projet' : 'global';
-    if (!mot || !phon) { toast('Mot et reecriture requis.'); return; }
-    var r = await post({ id: CUR.id, action: 'lex_save', mot: mot, phonetique: phon, scope: scope });
-    if (r.ok) { toast('Ajoute au dictionnaire.'); rechargerDetail(); } else { toast('Echec.'); }
+    if(!CUR) return;
+    var mot=(document.getElementById('lex_mot').value||'').trim(), phon=(document.getElementById('lex_phon').value||'').trim();
+    var scope=document.getElementById('lex_override').checked?'projet':'global';
+    if(!mot||!phon){ toast('Mot et graphie requis.'); return; }
+    var r=await post({id:CUR.id,action:'lex_save',mot:mot,phonetique:phon,scope:scope});
+    if(r.ok){ toast('Ajouté au dictionnaire.'); rechargerDetail(); } else toast('Échec.');
   }
   async function lexEnregistrer(recId){
-    if (!CUR) return;
-    var phon = (document.getElementById('lexp_' + recId).value || '').trim();
-    var r = await post({ id: CUR.id, action: 'lex_save', recId: recId, phonetique: phon });
-    toast(r.ok ? 'Enregistre.' : 'Echec.');
+    if(!CUR) return; var phon=(document.getElementById('lexp_'+recId).value||'').trim();
+    var r=await post({id:CUR.id,action:'lex_save',recId:recId,phonetique:phon}); toast(r.ok?'Enregistré.':'Échec.');
   }
-  async function lexToggle(recId, desactive){
-    if (!CUR) return;
-    var r = await post({ id: CUR.id, action: 'lex_save', recId: recId, desactive: desactive });
-    if (r.ok) { toast(desactive ? 'Desactive.' : 'Reactive.'); rechargerDetail(); } else { toast('Echec.'); }
+  async function lexToggle(recId,desactive){
+    if(!CUR) return; var r=await post({id:CUR.id,action:'lex_save',recId:recId,desactive:desactive});
+    if(r.ok){ toast(desactive?'Désactivé.':'Réactivé.'); rechargerDetail(); } else toast('Échec.');
   }
   async function lexSupprimer(recId){
-    if (!CUR) return;
-    if (!confirm('Supprimer cette entree du dictionnaire ?')) return;
-    var r = await post({ id: CUR.id, action: 'lex_delete', recId: recId });
-    if (r.ok) { toast('Supprime.'); rechargerDetail(); } else { toast('Echec.'); }
+    if(!CUR) return; var r=await post({id:CUR.id,action:'lex_delete',recId:recId});
+    if(r.ok){ toast('Supprimé.'); rechargerDetail(); } else toast('Échec.');
   }
 
-  async function appliquerProno(){
-    if (!CUR) return;
-    var phon = document.getElementById('ta_phon').value;
-    var r = await post({ id: CUR.id, action: 'appliquer_prononciation', lyrics_phonetique: phon });
-    var bar = document.getElementById('pronoBar');
-    if (r.ok) { toast('Regeneration lancee (prononciation).'); if (bar) bar.innerHTML = '<span class="hint">Regeneration lancee (Suno ~1 min). La version prete s\'affichera ici automatiquement.</span>'; pollRegen(CUR.id); }
-    else { toast('Echec.'); if (bar) bar.innerHTML = '<span class="err">Echec : ' + esc((r.d && r.d.error) || r.status) + '</span>'; }
-  }
-  function demanderProno(){
-    confirmInline('pronoBar', 'Regenerer avec le son corrige (paroles affichees inchangees) ?', 'Oui, regenerer', appliquerProno);
-  }
-
+  // ── ENVOI ──
   async function envoyer(){
-    if (!CUR) return;
-    await flushSave();
-    var rep = document.getElementById('ta_reponse').value;
-    var r = await post({ id: CUR.id, action: 'envoyer', reponse: rep });
-    var b = document.getElementById('sendBtn');
-    if (r.ok) { toast('Reponse programmee (~1 min).'); if (b) b.disabled = true; }
-    else if (r.status === 409 && r.d && r.d.error === 'rege_en_cours') { toast('Envoi en pause : version en cours de regeneration.'); if (b) b.disabled = true; }
-    else { toast('Echec de l\'envoi.'); }
+    if(!CUR) return; await flushSave();
+    var rep=document.getElementById('ta_reponse').value;
+    var r=await post({id:CUR.id,action:'envoyer',reponse:rep});
+    var b=document.getElementById('sendBtn');
+    if(r.ok){ toast('Réponse programmée (~1 min).'); if(b) b.disabled=true; }
+    else if(r.status===409&&r.d&&r.d.error==='rege_en_cours'){ toast('Envoi en pause : version en régénération.'); if(b) b.disabled=true; }
+    else toast('Échec de l’envoi.');
   }
-  function demanderEnvoyer(){
-    confirmInline('sendBar', 'Envoyer ce courriel au client ?', 'Oui, envoyer', envoyer);
-  }
+  function demanderEnvoyer(){ confirmInline('sendBar','Envoyer ce courriel au client ?','Oui, envoyer',envoyer); }
 
-  if (KEY) {
-    api('').then(function (d) { ouvrirApp(); afficher(d); })
-           .catch(function () { /* clef invalide -> on laisse l'ecran mot de passe */ });
-  }
+  if(KEY){ api('').then(function(d){ ouvrirApp(); afficher(d); }).catch(function(){}); }
 </script>
 </body>
 </html>
