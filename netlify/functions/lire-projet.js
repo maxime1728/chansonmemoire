@@ -131,6 +131,7 @@ exports.handler = async (event) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         titre:             gen.song_title || '',
+        prenom:            projet.fields.deceased_name || '',   // nom de la personne honorée — affiché sur le cover de page-souvenir (« En mémoire de … » / « Pour … »). Exposition INTENTIONNELLE (au-delà des 5 champs §6 ; à refléter dans CLAUDE.md §6). Non sensible (prénom saisi par l'acheteur, déjà rendu dans les PDF/signets).
         paroles:           stripSectionTags(gen.lyrics || ''),   // balises [Verse]/[Chorus] masquées au client
         statut:            gen.generation_status || '',     // lyrics_generated / audio_generated / validated
         audio_url:         audioUrl,
