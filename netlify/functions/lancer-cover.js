@@ -117,7 +117,9 @@ exports.handler = async (event) => {
       // DICTIONNAIRE PHONÉTIQUE (étape 3) : Suno reçoit lyricsClean RÉÉCRIT par le dictionnaire (global langue
       // + override projet) -> corrections appliquées partout, pour toujours. L'affiché reste clair (la Gen
       // stocke adjusted_lyrics, pas ce prompt). Best-effort : le dictionnaire ne bloque jamais l'envoi.
-      prompt = lyricsClean;
+      // BASCULE SÛRE (étape 5) : si le dictionnaire est VIDE (ex. vieux projet pas encore appris), on retombe
+      // sur l'ancien lyrics_phonetique par-gen -> activer LEXIQUE_PHON ne peut PAS régresser une prononciation.
+      prompt = (g.lyrics_phonetique && g.lyrics_phonetique.trim()) || lyricsClean;
       try {
         const dict = await lireDictionnaire(API, headers, { langue: p.language || 'fr-CA', projetId: projet.id });
         if (dict.size) prompt = appliquerLexique(lyricsClean, dict);
