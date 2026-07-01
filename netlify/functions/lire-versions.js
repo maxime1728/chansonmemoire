@@ -128,7 +128,7 @@ exports.handler = async (event) => {
       body: JSON.stringify({
         versions:          versions,
         commercial_status: projet.fields.commercial_status || 'preview_only',
-        accepted:          projet.fields.funnel_step === 'delivery_accepted',   // étape courante : apercu redirige un acheteur vers page-chanson/page-memoire (anti-rachat)
+        accepted:          projet.fields.funnel_step === 'delivery_accepted',   // étape courante : apercu redirige un acheteur vers page-chanson/espace-client (anti-rachat)
         // Version « actuelle » (achetée / dernière livrée) -> la page d'acceptation la marque « actuelle ».
         purchased_generation_no: parseInt(projet.fields.purchased_generation_no, 10) || null,
         // Choix A/B (jalon 3c) : "noA,noB" si l'équipe a proposé 2 versions au choix. La page relabelle
