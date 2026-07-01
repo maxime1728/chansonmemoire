@@ -133,7 +133,9 @@ exports.handler = async (event) => {
     if (!prompt.trim()) return { statusCode: 409, body: JSON.stringify({ error: 'Paroles introuvables' }) };
     const style = propStyle || (p.adjusted_style_prompt && p.adjusted_style_prompt.trim())
       || await styleFor({ music_style: g.gen_music_style || p.music_style, mood: g.gen_mood || p.mood, cadeau: p.song_type === 'cadeau', language: p.language });
-    const vocalGender = /Masculin/i.test(g.gen_voice || p.voice || '') ? 'm' : 'f';
+    // Voix : override cockpit A/B (adjusted_voice, jalon 3b) EN PRIORITÉ, sinon la voix de la version source.
+    // Champ optionnel : absent -> undefined -> repli inchangé.
+    const vocalGender = /Masculin/i.test((p.adjusted_voice || '').toString().trim() || g.gen_voice || p.voice || '') ? 'm' : 'f';
 
     // 4. Suno (async -> callback-cover). regenerate=true : /generate (NOUVELLE mélodie, sans source) ;
     //    sinon : /upload-cover (mélodie PRÉSERVÉE, à partir de l'audio source).
@@ -168,7 +170,7 @@ exports.handler = async (event) => {
     await fetch(`${API}/Projects/${projet.id}`, {
       method: 'PATCH',
       headers: { ...headers, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fields: { cover_task_id: String(taskId), cover_launched_at: new Date().toISOString(), pending_cover_style: style, ...(adminCover && !regenerate ? { cover_admin: false } : {}) } })
+      body: JSON.stringify({ fields: { cover_task_id: String(taskId), cover_launched_at: new Date().toISOString(), pending_cover_style: style, ...(adminCover && !regenerate ? { cover_admin: false } : {}), ...(p.adjusted_voice ? { adjusted_voice: '' } : {}) } })
     });
 
     // 5b. MODÈLE GENERATION-LEVEL (cover « mélodie préservée » seulement) : crée la Generation cover en
