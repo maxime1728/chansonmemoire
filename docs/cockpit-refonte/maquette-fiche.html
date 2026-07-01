@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Fiche client — bloc Commande et add-ons (maquette)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Newsreader:ital,opsz@0,6..72;1,6..72&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --canvas:#F0ECEF; --ink:#2B2430; --muted:#8C8092; --faint:#A99EAF; --line:#E6DEE9;
+    --mauve:#9587A3; --mauve-strong:#8567A6; --mauve-deep:#7E5F9E; --mauve-bg:#EFEAF3;
+    --rose:#B25A72; --rose-bg:#F7E4E9;
+    --green:#4A7A44; --green-bg:#E9F1E4; --green-line:#CFE2C6;
+    --warn:#9A5B00; --warn-bg:#FFF4E0;
+    --card:#fff; --serif:"Newsreader",Georgia,serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:"Instrument Sans",system-ui,sans-serif;color:var(--ink);background:var(--canvas);font-size:14px;line-height:1.5;padding:26px;}
+  .wrap{max-width:760px;margin:0 auto;}
+  button{font-family:inherit;cursor:pointer;}
+
+  .dhead{display:flex;flex-wrap:wrap;align-items:center;gap:8px;color:var(--muted);font-size:12.5px;}
+  .badge{font-size:10px;font-weight:600;letter-spacing:.4px;padding:2px 8px;border-radius:9px;text-transform:uppercase;background:var(--mauve-bg);color:var(--mauve-deep);}
+  .dtitle{display:flex;align-items:center;gap:10px;margin:10px 0 2px;}
+  .dtitle h1{font-family:var(--serif);font-weight:500;font-size:25px;margin:0;}
+  .dsub{font-size:13px;color:var(--muted);}
+
+  .sectlabel{font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);margin:26px 0 9px;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;}
+
+  .cmdline{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px;color:var(--ink);padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid var(--line);}
+  .cmdline b{color:var(--mauve-deep);}
+  .statut{border-radius:8px;padding:2px 10px;font-size:12px;font-weight:600;background:var(--green-bg);color:var(--green);}
+
+  .addons{display:flex;flex-direction:column;gap:8px;}
+  .addon{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;flex-wrap:wrap;}
+  .aname{font-weight:600;font-size:13px;min-width:170px;}
+  .astatut{font-size:11px;padding:2px 9px;border-radius:8px;font-weight:600;}
+  .astatut.ok{background:var(--green-bg);color:var(--green);}
+  .astatut.prog{background:var(--warn-bg);color:var(--warn);}
+  .astatut.non{background:var(--canvas);color:var(--muted);}
+  .astatut.fail{background:var(--rose-bg);color:var(--rose);}
+  .aacts{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;}
+  .aacts button{border:1px solid var(--line);background:#fff;color:var(--mauve-deep);border-radius:7px;padding:5px 11px;font-size:12px;font-weight:600;}
+  .aacts button:hover{background:var(--mauve-bg);}
+  .aacts button.relance{border-color:var(--rose);color:var(--rose);}
+  .aacts button.relance:hover{background:var(--rose-bg);}
+  .note{font-size:11.5px;color:var(--faint);margin-top:12px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- En-tête fiche (client + commande) -->
+  <div class="dhead"><span class="badge">Modification</span> <span>CM-2041</span> · <span>🎙️ Voix : Masculin</span></div>
+  <div class="dtitle"><h1>« Pour toujours, Papa »</h1></div>
+  <div class="dsub">Hommage à Réal Tremblay · pour Marie Tremblay &lt;marie.tremblay@courriel.ca&gt;</div>
+
+  <!-- Bloc COMMANDE ET ADD-ONS (nouveau, jalon 2) -->
+  <div class="sectlabel">Commande et add-ons</div>
+  <div class="card">
+    <div class="cmdline">
+      <span><b>Commande CM-2041</b></span> · <span>18 juin 2026</span> · <span>149 $</span> · <span class="statut">Payé</span>
+    </div>
+    <div class="addons">
+      <div class="addon"><span class="aname">🎵 Instrumentale</span><span class="astatut ok">Livré</span><span class="aacts"><button>Écouter</button><button class="relance">↻ Relancer</button></span></div>
+      <div class="addon"><span class="aname">🎬 Vidéo mémoire</span><span class="astatut prog">En cours</span><span class="aacts"><button>Voir</button><button class="relance">↻ Relancer</button></span></div>
+      <div class="addon"><span class="aname">📝 Paroles vivantes</span><span class="astatut fail">Échec</span><span class="aacts"><button class="relance">↻ Relancer</button></span></div>
+      <div class="addon"><span class="aname">📄 PDF des paroles</span><span class="astatut ok">Livré</span><span class="aacts"><button>Voir</button></span></div>
+      <div class="addon"><span class="aname">🎤 Karaoké</span><span class="astatut non">Non acheté</span><span class="aacts"><button>Ajouter</button></span></div>
+      <div class="addon"><span class="aname">🖼️ Photos mémoire</span><span class="astatut ok">4 photos</span><span class="aacts"><button>Voir</button></span></div>
+    </div>
+    <div class="note">Statut lu depuis la Generation achetée (instrumentale / vidéo mémoire / paroles vivantes) + la table Upsells (PDF, karaoké, plaques). « Relancer » redéclenche la vraie génération (crédits) via les fonctions existantes, avec confirmation.</div>
+  </div>
+
+</div>
+</body>
+</html>

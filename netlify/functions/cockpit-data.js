@@ -25,6 +25,15 @@ const CONVOS   = 'tbl3KBgXthCPromxF';
 const PROJECTS = 'tblh7O8eoog7RyTMJ';
 const LEXIQUE  = 'Lexique_Phonetique';   // dictionnaire phonétique (étape 4)
 const REC_ID   = /^rec[A-Za-z0-9]{14}$/;
+const SITE     = process.env.SITE_URL || 'https://chansonmemoire.ca';
+
+// FICHE jalon 2 — add-ons de génération (lus sur la Generation achetée) : url = livré, task = en cours,
+// incident = échec, + lanceur token-gaté pour relancer. (PDF vient de la table Upsells, voir seulement.)
+const ADDONS_GEN = [
+  { type: 'instrumentale',    nom: 'Instrumentale',    url: 'instrumental_url',  task: 'instrumental_task_id',  inc: 'instrumental_incident_at',  lancer: 'lancer-instrumentale' },
+  { type: 'video-memoire',    nom: 'Vidéo mémoire',    url: 'video_memoire_url', task: 'video_memoire_task_id', inc: 'video_memoire_incident_at', lancer: 'lancer-video-memoire' },
+  { type: 'paroles-vivantes', nom: 'Paroles vivantes', url: 'video_url',         task: 'video_task_id',         inc: 'video_incident_at',         lancer: 'lancer-paroles-vivantes' }
+];
 
 const { fullAudioUrl } = require('./_lib/cover');
 const { stripSectionTags } = require('./_lib/lyrics');   // masque les balises [Verse]/[Chorus] pour l'affichage
@@ -181,6 +190,42 @@ async function lireLexiqueBrut(headers, langue, projetId) {
   } catch (_) { return []; }
 }
 
+// FICHE (jalon 2) : commande (statut commercial) + add-ons ACHETÉS avec leur statut. Best-effort (jamais
+// bloquant). Add-ons de génération lus sur la Generation achetée ; PDF depuis la table Upsells (voir seulement).
+async function ficheAddons(headers, projetId) {
+  if (!projetId) return null;
+  try {
+    const rP = await fetch(`${API}/${PROJECTS}/${projetId}`, { headers });
+    if (!rP.ok) return null;
+    const p = (await rP.json()).fields || {};
+    const commande = { statut: str(p.commercial_status) };
+    const addons = [];
+    const purchasedNo = parseInt(p.purchased_generation_no, 10);
+    const lit = formulaLiteral(p.project);
+    if (Number.isInteger(purchasedNo) && lit !== null) {
+      const fG = encodeURIComponent(`AND({project}=${lit},{generation_no}=${purchasedNo})`);
+      const rG = await fetch(`${API}/Generations?filterByFormula=${fG}&maxRecords=1`, { headers });
+      const g = ((((await rG.json().catch(() => ({}))).records) || [])[0] || {}).fields || {};
+      for (const a of ADDONS_GEN) {
+        const url = str(g[a.url]), task = str(g[a.task]), inc = str(g[a.inc]);
+        if (!url && !task) continue;   // pas acheté / pas lancé -> non affiché
+        const etat = url ? 'livre' : (inc ? 'echec' : 'en_cours');
+        addons.push({ type: a.type, nom: a.nom, etat, url: url ? fullAudioUrl(url) : '', relance: true });
+      }
+    }
+    const upIds = Array.isArray(p.upsells) ? p.upsells.slice(0, 12) : [];
+    for (const uid of upIds) {
+      try {
+        const rU = await fetch(`${API}/Upsells/${uid}`, { headers });
+        if (!rU.ok) continue;
+        const uf = (await rU.json()).fields || {};
+        if (str(uf.type) === 'lyrics_pdf') addons.push({ type: 'pdf', nom: 'PDF des paroles', etat: uf.delivery_url ? 'livre' : 'en_cours', url: str(uf.delivery_url), relance: false });
+      } catch (_) {}
+    }
+    return { commande, addons };
+  } catch (_) { return null; }
+}
+
 exports.handler = async (event) => {
   if (!SECRET) { console.error('[cockpit-data] COCKPIT_SECRET manquant'); return fail(500, { error: 'Configuration manquante' }); }
 
@@ -302,6 +347,34 @@ exports.handler = async (event) => {
         return ok({ ok: true, deleted: recId });
       }
 
+      // ── ADD-ONS (jalon 2) : relancer un livrable (instrumentale / vidéo mémoire / paroles vivantes). ──
+      // Effet de bord = vraie génération (crédits). Pattern watchdog : vider le *_task_id (le lanceur est
+      // idempotent) puis POST le lanceur token-gaté (qui exige commercial_status='purchased').
+      if (action === 'relancer_addon') {
+        const a = ADDONS_GEN.find((x) => x.type === (body.type || '').toString());
+        if (!a) return fail(400, { error: 'type add-on invalide' });
+        const convo = await lireConvo(headers, id);
+        if (!convo) return fail(404, { error: 'Conversation introuvable' });
+        const projetId = projetDe(convo);
+        if (!projetId) return fail(409, { error: 'Projet introuvable' });
+        const rP = await fetch(`${API}/${PROJECTS}/${projetId}`, { headers });
+        if (!rP.ok) return fail(502, { error: 'Projet illisible' });
+        const p = (await rP.json()).fields || {};
+        const token = str(p.token);
+        if (!token) return fail(409, { error: 'Token introuvable' });
+        const purchasedNo = parseInt(p.purchased_generation_no, 10);
+        const lit = formulaLiteral(p.project);
+        if (Number.isInteger(purchasedNo) && lit !== null) {
+          const fG = encodeURIComponent(`AND({project}=${lit},{generation_no}=${purchasedNo})`);
+          const rG = await fetch(`${API}/Generations?filterByFormula=${fG}&maxRecords=1`, { headers });
+          const gen = ((((await rG.json().catch(() => ({}))).records) || [])[0]) || null;
+          if (gen) { try { await fetch(`${API}/Generations/${gen.id}`, { method: 'PATCH', headers: { ...headers, ...HJSON }, body: JSON.stringify({ fields: { [a.task]: '' } }) }); } catch (_) {} }
+        }
+        const rL = await fetch(`${SITE}/api/${a.lancer}`, { method: 'POST', headers: HJSON, body: JSON.stringify({ token }) });
+        if (!rL.ok) return fail(502, { error: 'Relance échouée', detail: await rL.text().catch(() => '') });
+        return ok({ ok: true, relance: a.type });
+      }
+
       return fail(400, { error: 'action inconnue' });
     } catch (err) {
       console.error('[cockpit-data] action', err && err.message);
@@ -347,6 +420,7 @@ exports.handler = async (event) => {
     const estModif = str(f.categorie_ia) === 'modification';
     const lexique = await lireLexiqueBrut(headers, corr.langue, corr.projetId).catch(() => []);
     const audio_actuel = await audioVersionCourante(headers, corr.projetId).catch(() => '');   // lecteur « version actuelle »
+    const fiche = await ficheAddons(headers, corr.projetId).catch(() => null);                 // commande + add-ons (jalon 2)
 
     const detail = {
       id,
@@ -377,6 +451,7 @@ exports.handler = async (event) => {
       // est_prononciation reste un FLAG (le bloc phonétique s'affiche DANS la vue modif, géré avec les paroles).
       mode: estModif ? 'modification' : 'message',
       audio_actuel,   // audio de la version en ligne -> lecteur « écouter la version actuelle » dans le cockpit
+      fiche,          // jalon 2 : { commande:{statut}, addons:[{type,nom,etat,url,relance}] }
       regen   // null, ou { statut, titre, no, audio_url, paroles }
     };
     return ok({ ok: true, detail });
