@@ -14,5 +14,5 @@ test('htmlNouvelleVersion : utilise page_url quand fournie + zero tiret cadratin
 
 test('htmlNouvelleVersion : retombe sur site + token quand pas de page_url', () => {
   const html = htmlNouvelleVersion({ token: 'xyz' }, 'https://site');
-  assert.ok(html.includes('https://site/page-memoire?id=xyz'));
+  assert.ok(html.includes('https://site/espace-client?id=xyz'));   // route migrée page-memoire -> espace-client
 });

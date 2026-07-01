@@ -131,6 +131,9 @@ exports.handler = async (event) => {
         accepted:          projet.fields.funnel_step === 'delivery_accepted',   // étape courante : apercu redirige un acheteur vers page-chanson/page-memoire (anti-rachat)
         // Version « actuelle » (achetée / dernière livrée) -> la page d'acceptation la marque « actuelle ».
         purchased_generation_no: parseInt(projet.fields.purchased_generation_no, 10) || null,
+        // Choix A/B (jalon 3c) : "noA,noB" si l'équipe a proposé 2 versions au choix. La page relabelle
+        // alors ces 2 générations « V{n} - A / V{n} - B » dans le sélecteur existant (rien d'autre ne change).
+        ab_offer_nos:      String(projet.fields.ab_offer_nos || ''),
         song_type:         projet.fields.song_type || 'hommage'   // hommage|cadeau -> adapte le copy de l'aperçu (non-PII)
         // PAS d'email, PAS de stripe_*, PAS d'attribution. Volontaire (§6).
       })
