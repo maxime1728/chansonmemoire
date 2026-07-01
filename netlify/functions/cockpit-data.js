@@ -316,8 +316,8 @@ exports.handler = async (event) => {
         if (voix) {
           try {
             const convo = await lireConvo(headers, id);
-            const projetId = projetDe(convo || {});
-            if (projetId) await fetch(`${API}/${PROJECTS}/${projetId}`, { method: 'PATCH', headers: { ...headers, ...HJSON }, body: JSON.stringify({ fields: { adjusted_voice: voix } }) });
+            const genId = (Array.isArray(convo && convo.generation_a_travailler) && convo.generation_a_travailler[0]) || null;
+            if (genId) await fetch(`${API}/Generations/${genId}`, { method: 'PATCH', headers: { ...headers, ...HJSON }, body: JSON.stringify({ fields: { adjusted_voice: voix } }) });
           } catch (_) {}
         }
         return ok({ ok: true, generation: methode, voix: voix || null });
