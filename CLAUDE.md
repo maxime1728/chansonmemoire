@@ -91,8 +91,9 @@ Principe : l'agent opère sur **test/preview avec credentials révocables**. Max
   Désormais **Netlify écrit ET lit** : le sondage (`soumettre-survey`, `SURVEY_DIRECT=1`) et le
   callback Suno (`callback-chanson`, via `CALLBACK_CHANSON`) écrivent directement dans Airtable.
   **Make ne garde que Stripe (MAKE D) + Meta (Insights) + jointures Pub/Hook.** Voir §11.
-- **Endpoint Netlify** : expose seulement `titre / paroles / statut / audio_url / suggestions / commercial_status`.
-  (`suggestions` = JSON string des bulles dynamiques, exposition intentionnelle.)
+- **Endpoint Netlify** : expose seulement `titre / prenom / paroles / statut / audio_url / suggestions / commercial_status`.
+  (`suggestions` = JSON string des bulles dynamiques, exposition intentionnelle. `prenom` = `deceased_name`,
+  affiché sur le cover de `page-souvenir` (« En mémoire de … » / « Pour … »), exposition intentionnelle et non sensible.)
   **Jamais** email, Stripe IDs, ou données d'attribution.
 - **Anthropic** : 1 seul call consolidé → `{"titre": "...", "paroles": "..."}` JSON.
 - **Schéma Airtable canonique** : 4 tables (Clients, Projects, Generations, Upsells).
