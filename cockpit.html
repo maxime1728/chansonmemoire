@@ -378,6 +378,40 @@
     document.getElementById('ciNon').onclick=function(){ bar.innerHTML=prev; };
   }
 
+  // ── TON DU COURRIEL + LIEN (jalon 3d) : régénérer le brouillon dans un ton (chaleureux|factuel) et
+  //    insérer le lien de la page client. Barre d'outils au-dessus du textarea de réponse. ──
+  function mailToolsInner(){
+    var lien = CUR && CUR.lien_client;
+    return '<span class="note">Ton :</span>'+
+      '<button class="btn-line" onclick="demanderRegenDraft(\'chaleureux\')">Chaleureux</button>'+
+      '<button class="btn-line" onclick="demanderRegenDraft(\'factuel\')">Factuel</button>'+
+      (lien?'<button class="btn-line" style="margin-left:auto" onclick="insLien()">Insérer le lien</button>':'');
+  }
+  function demanderRegenDraft(ton){
+    if(!CUR) return;
+    confirmInline('mailTools','Régénérer le courriel en ton '+(ton==='factuel'?'factuel':'chaleureux')+' ? Le texte actuel sera remplacé.','Oui, régénérer',function(){ regenDraft(ton); });
+  }
+  async function regenDraft(ton){
+    if(!CUR) return;
+    var ta=document.getElementById('ta_reponse'), tools=document.getElementById('mailTools');
+    if(tools) tools.innerHTML='<span class="hint">Rédaction en cours (quelques secondes)…</span>';
+    var old=ta?ta.value:'';
+    var r=await post({ id:CUR.id, action:'regen_draft', ton:ton });
+    if(r.ok && r.d && r.d.reponse){ if(ta){ ta.value=r.d.reponse; autoGrow(ta); } toast('Courriel régénéré ('+ton+').'); }
+    else if(r.status===503){ toast('Rédaction IA indisponible.'); }
+    else { toast('Échec : '+esc((r.d&&r.d.error)||r.status)); }
+    if(tools) tools.innerHTML=mailToolsInner();
+  }
+  function insLien(){
+    var ta=document.getElementById('ta_reponse'); if(!ta || !CUR || !CUR.lien_client) return;
+    if(ta.value.indexOf(CUR.lien_client)!==-1){ toast('Le lien est déjà dans le courriel.'); return; }
+    var md='[votre page Chanson Mémoire]('+CUR.lien_client+')';
+    var pos=(ta.selectionStart!=null)?ta.selectionStart:ta.value.length;
+    var avant=ta.value.slice(0,pos), apres=ta.value.slice(pos);
+    ta.value=avant+((avant && avant.slice(-1)!=='\n')?'\n':'')+md+apres;
+    autoGrow(ta); autoSave(); toast('Lien inséré.');
+  }
+
   function blocRegen(regen){
     if(!regen||!regen.statut) return '';
     if(regen.statut==='en_production'){
@@ -455,6 +489,7 @@
 
           '<div class="blk"><div class="mailhead"><div class="sectlabel" style="margin:0">Courriel client</div><span class="ai">✦ Rédigé par l’IA</span></div>'+
             '<div class="hint" style="margin-bottom:8px">Réponse finale OU clarification : envoyer un courriel ne déclenche AUCUNE régénération.</div>'+
+            '<div class="mailtools" id="mailTools" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px">'+mailToolsInner()+'</div>'+
             '<textarea class="mailbody" id="ta_reponse">'+esc(courriel)+'</textarea>'+
             '<div class="sendbar" id="sendBar"><button class="btn-send" id="sendBtn" onclick="demanderEnvoyer()"'+(enRege?' disabled':'')+'>Envoyer le courriel →</button>'+
               '<span class="hint">'+(enRege?'En pause : version en régénération.':'')+'</span>'+

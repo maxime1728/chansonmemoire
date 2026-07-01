@@ -40,6 +40,9 @@ const ADDONS_GEN = [
 
 const { fullAudioUrl } = require('./_lib/cover');
 const { stripSectionTags } = require('./_lib/lyrics');   // masque les balises [Verse]/[Chorus] pour l'affichage
+const { construireContexts, genererBrouillon } = require('./_lib/brouillon');   // regen_draft : ton du courriel
+const { piedAuto } = require('./_lib/pied-courriel');
+const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
 
 // action_modif : valeurs EXACTES attendues par appliquer-cron / appliquer-modification.
 const ACTION_MODIF = { cover: 'Refaire le cover (même mélodie)', rege: 'Régénérer (nouvelle mélodie)', paroles: 'Refaire le cover (même mélodie)' };
@@ -304,6 +307,25 @@ exports.handler = async (event) => {
         const r = await patchConvo(headers, id, edits);
         if (!r.ok) return fail(502, { error: 'Enregistrement échoué', detail: await r.text().catch(() => '') });
         return ok({ ok: true, saved: Object.keys(edits) });
+      }
+
+      // ── TON DU COURRIEL (jalon 3d) : régénère le brouillon de réponse dans le ton choisi (chaleureux |
+      // factuel), même voix de marque + même insertion auto du lien de page (logique partagée avec
+      // brouillon-cron via _lib/brouillon). Écrit dans `reponse` (le champ éditable) et le renvoie.
+      if (action === 'regen_draft') {
+        if (!ANTHROPIC_KEY) return fail(503, { error: 'Rédaction IA indisponible (clé manquante)' });
+        const ton = (body.ton === 'factuel') ? 'factuel' : 'chaleureux';
+        const convo = await lireConvo(headers, id);
+        if (!convo) return fail(404, { error: 'Conversation introuvable' });
+        const projectIds = Array.isArray(convo.Projet) ? convo.Projet
+                         : (Array.isArray(convo.projet_a_travailler) ? convo.projet_a_travailler : []);
+        const contexts = await construireContexts({ api: API, headers, projectsTable: PROJECTS, site: SITE, projectIds });
+        const ia = await genererBrouillon({ key: ANTHROPIC_KEY, fields: convo, contexts, ton });
+        if (!ia || !ia.brouillon) return fail(502, { error: 'Génération indisponible, réessaie dans un instant' });
+        const corps = `${ia.brouillon}\n\n${piedAuto()}`;   // pied auto (salutation + signature), comme brouillon-cron
+        const r = await patchConvo(headers, id, { reponse: corps });
+        if (!r.ok) return fail(502, { error: 'Enregistrement échoué', detail: await r.text().catch(() => '') });
+        return ok({ ok: true, reponse: corps, ton });
       }
 
       if (action === 'appliquer') {
