@@ -16,13 +16,10 @@ const API     = `https://api.airtable.com/v0/${BASE_ID}`;
 
 const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-// Listes blanches = options EXACTES du survey (doivent matcher les single-selects Airtable au
-// caractère près, sinon 422). Empêche aussi d'écrire une valeur arbitraire dans le Project.
-const STYLES = ['Pop', 'Country', 'R&B', 'Rock', 'Jazz', 'Acoustique', 'Douce Mélodie',
-  'Orchestre Gospel', 'Hip-Hop', 'Cinématographique', 'Latin / Salsa', 'Reggae', 'Électronique / Dance'];
-const MOODS  = ['Émotionnelle', 'Tendre', 'Paisible', 'Inspirante', 'Reconnaissante', 'Festive', 'Optimiste', 'Mélancolique',
-  'Romantique', 'Joyeuse et entrainante', 'Drôle et enjouée', 'Énergique'];   // + ambiances CADEAU (union)
-const VOICES = ['Masculin', 'Féminin'];
+// Listes blanches = options EXACTES du survey (doivent matcher les single-selects Airtable au caractère
+// près, sinon 422). Empêche aussi d'écrire une valeur arbitraire dans le Project. Source UNIQUE partagée
+// avec le studio cockpit (mêmes choix que le client). Voir _lib/options-survey.js.
+const { STYLES, MOODS, VOICES } = require('./_lib/options-survey');
 
 function formulaLiteral(v) {
   const s = String(v);

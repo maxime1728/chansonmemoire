@@ -557,16 +557,20 @@
   // ── STUDIO A/B (jalon 3b) : Version A puis B, chacune style/ambiance/voix + prompt éditable + générer. ──
   function val(id){ var e=document.getElementById(id); return e?e.value:''; }
   function boxVersion(L, promptDef, voixDef, enRege){
-    var styles=['Ballade folk','Pop douce','Chanson française','Country doux','Gospel'];
-    var ambiances=['Nostalgique','Apaisé','Tendre','Lumineux','Solennel'];
-    function opt(arr,def){ return arr.map(function(o){return '<option'+(o===def?' selected':'')+'>'+esc(o)+'</option>';}).join(''); }
+    // VRAIS choix offerts au client (menus identiques au survey), fournis par le backend. Pré-sélection sur
+    // le style/ambiance ACTUELS du projet ; repli sur la 1re option si le backend ne les a pas envoyés.
+    var o=(CUR&&CUR.options)||{};
+    var styles=o.styles||[], ambiances=o.moods||[], voices=o.voices||['Masculin','Féminin'];
+    var defStyle=(CUR&&CUR.music_style_actuel)||'', defAmb=(CUR&&CUR.mood_actuel)||'';
+    function opt(arr,def){ return arr.map(function(oo){return '<option'+(oo===def?' selected':'')+'>'+esc(oo)+'</option>';}).join(''); }
     var estFem=/Fém/i.test(voixDef||'');
+    var optVoix=voices.map(function(vx){ var sel=estFem?/Fém/i.test(vx):/Masc/i.test(vx); return '<option'+(sel?' selected':'')+'>'+esc(vx)+'</option>'; }).join('');
     return '<div class="vbox">'+
       '<div class="vhead"><div class="vt">Version '+L+'</div><div class="vs">à générer</div></div>'+
       '<div class="vsel">'+
-        '<label>Style<select id="style_'+L+'">'+opt(styles,'Ballade folk')+'</select></label>'+
-        '<label>Ambiance<select id="amb_'+L+'">'+opt(ambiances,'Nostalgique')+'</select></label>'+
-        '<label>Voix<select id="voix_'+L+'"><option'+(estFem?'':' selected')+'>Masculin</option><option'+(estFem?' selected':'')+'>Féminin</option></select></label>'+
+        '<label>Style<select id="style_'+L+'">'+opt(styles,defStyle)+'</select></label>'+
+        '<label>Ambiance<select id="amb_'+L+'">'+opt(ambiances,defAmb)+'</select></label>'+
+        '<label>Voix<select id="voix_'+L+'">'+optVoix+'</select></label>'+
       '</div>'+
       '<div style="display:flex;justify-content:flex-end;margin:2px 0 6px"><button class="btn-regen" onclick="composeStyle(\''+L+'\')">✨ Composer le prompt</button></div>'+
       '<textarea class="promptta" id="prompt_'+L+'">'+esc(promptDef||'')+'</textarea>'+
@@ -590,8 +594,16 @@
     await flushSave();
     var r=await post({ id:CUR.id, action:'generer_version', methode:methode, prompt_style:val('prompt_'+L), voix:val('voix_'+L) });
     var bar=document.getElementById('genBar_'+L);
-    if(r.ok){ toast('Version '+L+' lancée (Suno ~1 min).'); if(bar) bar.innerHTML='<span class="hint">Version '+L+' en génération. Elle apparaîtra dans le sélecteur de versions une fois prête.</span>'; pollRegen(CUR.id); }
+    if(r.ok){ toast('Version '+L+' lancée (Suno ~1 min).'); if(bar) bar.innerHTML='<span class="hint">Version '+L+' en génération. Elle apparaîtra (écoutable) dans le sélecteur de versions une fois prête.</span>'; marquerRegeUI(); pollRegen(CUR.id); }
     else { toast('Échec.'); if(bar) bar.innerHTML='<span class="err">Échec : '+esc((r.d&&r.d.error)||r.status)+'</span>'; }
+  }
+
+  // Feedback IMMÉDIAT quand une régé/cover est lancée : bloque l'envoi du courriel et affiche « en
+  // régénération » au niveau des versions, sans attendre le prochain rafraîchissement (pollRegen).
+  function marquerRegeUI(){
+    var sb=document.getElementById('sendBtn'); if(sb) sb.disabled=true;
+    var slot=document.getElementById('regenSlot');
+    if(slot) slot.innerHTML='<div class="regen"><span class="rbadge prod">Régénération en cours</span><div class="hint" style="margin-top:8px">Suno produit la nouvelle version. L\'envoi au client est en pause ; elle apparaîtra ici (écoutable) une fois prête.</div></div>';
   }
 
   // ── ENVOI AU CLIENT (jalon 3c) : envoyer UNE version (livrée directement) ou LES DEUX au choix du client
@@ -679,6 +691,7 @@
   function pollRegen(id){
     stopRegenPoll(); if(!id) return;
     var tries=0, sawProd=false, baseAudio=(CUR&&CUR.audio_actuel)||'';
+    var baseNos=((CUR&&CUR.versions)||[]).map(function(v){return v.no;});   // versions présentes AVANT la régé
     regenPoll=setInterval(async function(){
       tries++; if(tries>40||!CUR||CUR.id!==id){ stopRegenPoll(); return; }
       var d=await api('?id='+encodeURIComponent(id)); var det=d&&d.detail; if(!det) return;
@@ -686,6 +699,10 @@
       if(rg&&rg.statut==='en_production'){ sawProd=true; return; }
       if(rg&&rg.statut==='prête'){ stopRegenPoll(); rechargerDetail(); toast('Nouvelle version prête à revoir.'); return; }
       if(sawProd&&det.audio_actuel&&det.audio_actuel!==baseAudio){ stopRegenPoll(); rechargerDetail(); toast('Nouvelle version en ligne.'); return; }
+      // Studio A/B : une version CANDIDATE (non promue) n'a ni statut 'prête' ni changement d'audio_actuel.
+      // On détecte une NOUVELLE version jouable (generation_no inédit + audio) -> refresh pour l'écouter.
+      var neuve=(det.versions||[]).filter(function(v){ return v.audio && baseNos.indexOf(v.no)===-1; });
+      if(sawProd&&neuve.length){ stopRegenPoll(); rechargerDetail(); toast('Nouvelle version prête à écouter (sélecteur de versions).'); return; }
     },12000);
   }
 
@@ -695,7 +712,7 @@
     var phon=texteBloc('bloc_paroles'); // en prononciation, le bloc paroles porte la version phonétique éditée
     var r=await post({id:CUR.id,action:'appliquer_prononciation',lyrics_phonetique:phon});
     var bar=document.getElementById('pronoBar');
-    if(r.ok){ toast('Régénération lancée (prononciation).'); if(bar) bar.innerHTML='<span class="hint">Régénération lancée (Suno ~1 min).</span>'; pollRegen(CUR.id); }
+    if(r.ok){ toast('Régénération lancée (prononciation).'); if(bar) bar.innerHTML='<span class="hint">Régénération lancée (Suno ~1 min).</span>'; marquerRegeUI(); pollRegen(CUR.id); }
     else { toast('Échec.'); if(bar) bar.innerHTML='<span class="err">Échec : '+esc((r.d&&r.d.error)||r.status)+'</span>'; }
   }
   function demanderProno(){ confirmInline('pronoBar','Régénérer avec le son corrigé (paroles affichées inchangées) ?','Oui, régénérer',appliquerProno); }
