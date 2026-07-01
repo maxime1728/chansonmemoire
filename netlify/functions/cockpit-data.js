@@ -42,6 +42,7 @@ const { fullAudioUrl } = require('./_lib/cover');
 const { stripSectionTags } = require('./_lib/lyrics');   // masque les balises [Verse]/[Chorus] pour l'affichage
 const { construireContexts, genererBrouillon } = require('./_lib/brouillon');   // regen_draft : ton du courriel
 const { piedAuto } = require('./_lib/pied-courriel');
+const { STYLES, MOODS, VOICES } = require('./_lib/options-survey');   // vrais choix client -> menus du studio
 const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
 
 // action_modif : valeurs EXACTES attendues par appliquer-cron / appliquer-modification.
@@ -263,19 +264,23 @@ async function versionsProjet(headers, projetId) {
   } catch (_) { return []; }
 }
 
-// Choix A/B (jalon 3c) : lien vers la page client (page-chanson, par token) + choix A/B en cours. Best-effort.
+// Projet (jalon 3c/3d/fix studio) : lien page client + choix A/B en cours + style/ambiance ACTUELS
+// (pour pré-sélectionner les menus du studio sur les vrais choix du client). Best-effort.
 async function abEtatProjet(headers, projetId) {
-  if (!projetId) return { lien_client: '', ab_offer_nos: '' };
+  const vide = { lien_client: '', ab_offer_nos: '', music_style_actuel: '', mood_actuel: '' };
+  if (!projetId) return vide;
   try {
     const rP = await fetch(`${API}/${PROJECTS}/${projetId}`, { headers });
-    if (!rP.ok) return { lien_client: '', ab_offer_nos: '' };
+    if (!rP.ok) return vide;
     const p = (await rP.json()).fields || {};
     const token = str(p.token);
     return {
       lien_client: token ? `${SITE}/page-chanson?id=${encodeURIComponent(token)}` : '',
-      ab_offer_nos: str(p.ab_offer_nos)
+      ab_offer_nos: str(p.ab_offer_nos),
+      music_style_actuel: str(p.music_style),
+      mood_actuel: str(p.mood)
     };
-  } catch (_) { return { lien_client: '', ab_offer_nos: '' }; }
+  } catch (_) { return vide; }
 }
 
 exports.handler = async (event) => {
@@ -615,6 +620,10 @@ exports.handler = async (event) => {
       versions,       // jalon 3a : [{no,achetee,type,statut,voix,titre,style_prompt,audio}]
       lien_client:  ab.lien_client,   // jalon 3c : lien page-chanson (par token) pour le courriel de choix
       ab_offer_nos: ab.ab_offer_nos,  // jalon 3c : "noA,noB" si un choix A/B est en attente, sinon ''
+      // Studio : VRAIS choix offerts au client (menus style/ambiance/voix) + ceux du projet (pré-sélection).
+      options: { styles: STYLES, moods: MOODS, voices: VOICES },
+      music_style_actuel: ab.music_style_actuel,
+      mood_actuel:        ab.mood_actuel,
       regen   // null, ou { statut, titre, no, audio_url, paroles }
     };
     return ok({ ok: true, detail });
