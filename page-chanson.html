@@ -319,7 +319,11 @@
     if(!d){ erreur('Lien introuvable', "On n'a pas retrouvé ta chanson. Réessaie dans un instant."); return; }
     /* Étape courante (anti-rachat) : pas encore acheté -> aperçu ; déjà accepté -> espace client. */
     if(d.commercial_status !== 'purchased'){ location.replace('/apercu?id=' + encodeURIComponent(token)); return; }
-    if(d.accepted){ location.replace(ESPACE_CLIENT + '?id=' + encodeURIComponent(token)); return; }
+    /* Choix A/B (jalon 3c) : si l'équipe a proposé 2 versions (ab_offer_nos), on relabelle le sélecteur
+       « V{n} - A / V{n} - B » et on NE redirige PAS un client déjà accepté (il doit pouvoir garder sa préférée). */
+    var abNos = String(d.ab_offer_nos||'').split(',').map(function(s){return parseInt(s.trim(),10);}).filter(function(n){return !isNaN(n);});
+    var isAB = abNos.length === 2;
+    if(d.accepted && !isAB){ location.replace(ESPACE_CLIENT + '?id=' + encodeURIComponent(token)); return; }
 
     var all = Array.isArray(d.versions) ? d.versions : [];
     var curNo = d.purchased_generation_no;
@@ -333,10 +337,17 @@
     }
     if(!post.length){ erreur('Ta chanson se finalise', "Ta chanson se termine en coulisses. Reviens dans un petit instant."); return; }
 
-    versions = post.map(function(v, i){
+    var vCount = 0, abSlot = null;
+    versions = post.map(function(v){
+      /* Étiquette : « V1, V2… » normalement. Pour une paire A/B, les deux versions partagent le même numéro
+         de base et se distinguent par le suffixe : « V3 - A » / « V3 - B ». La paire consomme un seul cran. */
+      var abIdx = isAB ? abNos.indexOf(v.generation_no) : -1;   // 0 = A, 1 = B, -1 = version normale
+      var label;
+      if(abIdx === -1){ vCount++; label = 'V' + vCount; }
+      else { if(abSlot === null){ vCount++; abSlot = vCount; } label = 'V' + abSlot + ' - ' + (abIdx === 0 ? 'A' : 'B'); }
       return {
         no:        v.generation_no,
-        label:     'V' + (i+1),
+        label:     label,
         titre:     v.titre || 'Ta chanson',
         sub:       [v.style, v.ambiance].filter(Boolean).join(' · '),
         audio_url: v.audio_url || '',

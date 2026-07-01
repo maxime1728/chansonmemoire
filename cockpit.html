@@ -485,6 +485,8 @@
             boxVersion('A', styProp, x.voix, enRege)+
             '<div class="note" style="margin:2px 0 8px">Optionnel · une 2ᵉ version si le client hésite entre deux</div>'+
             boxVersion('B', styProp, x.voix, enRege)+
+            '<div class="glab" style="margin-top:16px">Envoyer au client <span class="note">(la version choisie devient la version livrée)</span></div>'+
+            sendClientPanel(x)+
           '</div></div>'+
         '</div>'+
       '</div>';
@@ -554,6 +556,46 @@
     var r=await post({ id:CUR.id, action:'generer_version', methode:methode, prompt_style:val('prompt_'+L), voix:val('voix_'+L) });
     var bar=document.getElementById('genBar_'+L);
     if(r.ok){ toast('Version '+L+' lancée (Suno ~1 min).'); if(bar) bar.innerHTML='<span class="hint">Version '+L+' en génération. Elle apparaîtra dans le sélecteur de versions une fois prête.</span>'; pollRegen(CUR.id); }
+    else { toast('Échec.'); if(bar) bar.innerHTML='<span class="err">Échec : '+esc((r.d&&r.d.error)||r.status)+'</span>'; }
+  }
+
+  // ── ENVOI AU CLIENT (jalon 3c) : envoyer UNE version (livrée directement) ou LES DEUX au choix du client
+  //    (il écoute et garde sa préférée via le sélecteur de versions de sa page). Réutilise le courriel éditable
+  //    (ta_reponse) + le lien token. Les versions offertes = celles générées au studio (déjà prêtes, audio). ──
+  function sendClientPanel(x){
+    var vs=(x.versions||[]).filter(function(v){return v.audio;});   // seules les versions prêtes (audio) sont envoyables
+    if(!vs.length) return '<div class="vbox"><div class="note">Aucune version prête à envoyer pour l\'instant.</div></div>';
+    var enAttente=(x.ab_offer_nos||'').split(',').map(function(s){return s.trim();}).filter(Boolean);
+    function opts(sel,avecVide){
+      var o=avecVide?'<option value="">(aucune)</option>':'';
+      return o+vs.map(function(v){ return '<option value="'+v.no+'"'+(String(sel)===String(v.no)?' selected':'')+'>V'+v.no+(v.achetee?' · en ligne':'')+(v.titre?' · '+esc(v.titre):'')+'</option>'; }).join('');
+    }
+    return '<div class="vbox">'+
+      (enAttente.length===2 ? '<div class="note" style="color:var(--rose);margin-bottom:8px">⏳ Choix déjà proposé au client : V'+esc(enAttente[0])+' vs V'+esc(enAttente[1])+' (en attente de sa réponse).</div>' : '')+
+      '<div class="vsel">'+
+        '<label>Version A<select id="send_a">'+opts(vs[0].no,false)+'</select></label>'+
+        '<label>Version B <span class="note">(optionnel)</span><select id="send_b">'+opts(null,true)+'</select></label>'+
+      '</div>'+
+      '<div class="note" style="margin:2px 0 8px">B vide = on envoie une seule version, livrée directement. B remplie = on envoie les deux, le client garde sa préférée.</div>'+
+      '<div class="methods" id="sendClientBar"><button class="btn-send" onclick="demanderOffrir()">Envoyer au client →</button></div>'+
+    '</div>';
+  }
+  function demanderOffrir(){
+    var noA=val('send_a'), noB=val('send_b');
+    if(!noA){ toast('Choisis au moins la Version A.'); return; }
+    var deux=!!noB;
+    if(deux && noA===noB){ toast('Choisis deux versions différentes pour A et B.'); return; }
+    var lib=deux ? 'Envoyer les 2 versions au CHOIX du client' : 'Envoyer cette version au client (livrée directement)';
+    confirmInline('sendClientBar', lib+' ? Le courriel part au client (brouillon éditable + lien).', 'Oui, envoyer', offrirAB);
+  }
+  async function offrirAB(){
+    if(!CUR) return;
+    await flushSave();
+    var noB=val('send_b');
+    var r=await post({ id:CUR.id, action:'offrir_ab', no_a:val('send_a'), no_b:noB||undefined, reponse:val('ta_reponse') });
+    var bar=document.getElementById('sendClientBar');
+    if(r.ok){ toast(r.d&&r.d.mode==='choix'?'Les 2 versions envoyées au choix du client.':'Version envoyée au client.'); if(bar) bar.innerHTML='<span class="hint">Courriel envoyé au client.</span>'; }
+    else if(r.status===409){ toast('Une version n\'est pas prête (ou une régé est en cours).'); }
     else { toast('Échec.'); if(bar) bar.innerHTML='<span class="err">Échec : '+esc((r.d&&r.d.error)||r.status)+'</span>'; }
   }
 

@@ -12,6 +12,9 @@
 //                          -> enregistre puis pose `action_modif` (appliquer-cron relance Suno)
 //       action:'envoyer'   { reponse? }   -> enregistre la réponse puis pose `envoi_reponse`
 //                          (envoyer-cron envoie le courriel). Refusé si une version est encore en régé (#3/#19).
+//       action:'offrir_ab' { no_a, no_b?, reponse? }  -> ENVOI AU CLIENT (jalon 3c). Une seule version
+//                          (no_a) = promue en version livrée ; deux (no_a+no_b) = offertes au CHOIX du
+//                          client sur page-chanson (ab_offer_nos). Envoie le courriel éditable + lien token.
 //
 // On NE fait que poser les MÊMES champs déclencheurs que Maxime cochait à la main dans Airtable : les crons
 // existants (appliquer-cron / envoyer-cron) prennent le relais. Aucune logique métier dupliquée ici.
@@ -257,6 +260,21 @@ async function versionsProjet(headers, projetId) {
   } catch (_) { return []; }
 }
 
+// Choix A/B (jalon 3c) : lien vers la page client (page-chanson, par token) + choix A/B en cours. Best-effort.
+async function abEtatProjet(headers, projetId) {
+  if (!projetId) return { lien_client: '', ab_offer_nos: '' };
+  try {
+    const rP = await fetch(`${API}/${PROJECTS}/${projetId}`, { headers });
+    if (!rP.ok) return { lien_client: '', ab_offer_nos: '' };
+    const p = (await rP.json()).fields || {};
+    const token = str(p.token);
+    return {
+      lien_client: token ? `${SITE}/page-chanson?id=${encodeURIComponent(token)}` : '',
+      ab_offer_nos: str(p.ab_offer_nos)
+    };
+  } catch (_) { return { lien_client: '', ab_offer_nos: '' }; }
+}
+
 exports.handler = async (event) => {
   if (!SECRET) { console.error('[cockpit-data] COCKPIT_SECRET manquant'); return fail(500, { error: 'Configuration manquante' }); }
 
@@ -310,13 +328,20 @@ exports.handler = async (event) => {
         if (typeof body.prompt_style === 'string') champs.prompt_style = body.prompt_style;   // -> adjusted_style_prompt (appliquer-modification)
         const r = await patchConvo(headers, id, champs);
         if (!r.ok) return fail(502, { error: 'Génération échouée', detail: await r.text().catch(() => '') });
-        // Override de voix sur le Projet (best-effort : le champ adjusted_voice peut ne pas exister encore ->
-        // dans ce cas l'override est ignoré, le reste marche ; lancer-cover le consomme et le vide).
+        const convo = await lireConvo(headers, id);
+        const projetId = convo ? projetDe(convo) : null;
+        // Jalon 3c (découplage) : une version générée AU STUDIO est TENUE (livrée mais NI promue NI annoncée)
+        // jusqu'à l'envoi explicite. On pose le marqueur transitoire sur le Projet ; livrerCover le consomme.
+        // Best-effort : si le champ n'existe pas, la génération marche quand même (auto-livraison comme avant).
+        if (projetId) {
+          try { await fetch(`${API}/${PROJECTS}/${projetId}`, { method: 'PATCH', headers: { ...headers, ...HJSON }, body: JSON.stringify({ fields: { pending_ab_candidate: true } }) }); } catch (_) {}
+        }
+        // Override de voix sur la génération source (best-effort : le champ adjusted_voice peut ne pas exister
+        // encore -> dans ce cas l'override est ignoré, le reste marche ; lancer-cover le consomme et le vide).
         const voix = (body.voix || '').toString().trim();
-        if (voix) {
+        if (voix && convo) {
           try {
-            const convo = await lireConvo(headers, id);
-            const genId = (Array.isArray(convo && convo.generation_a_travailler) && convo.generation_a_travailler[0]) || null;
+            const genId = (Array.isArray(convo.generation_a_travailler) && convo.generation_a_travailler[0]) || null;
             if (genId) await fetch(`${API}/Generations/${genId}`, { method: 'PATCH', headers: { ...headers, ...HJSON }, body: JSON.stringify({ fields: { adjusted_voice: voix } }) });
           } catch (_) {}
         }
@@ -351,6 +376,64 @@ exports.handler = async (event) => {
         const r = await patchConvo(headers, id, { ...edits, envoi_reponse: ENVOI_VAL });
         if (!r.ok) return fail(502, { error: 'Envoi échoué', detail: await r.text().catch(() => '') });
         return ok({ ok: true, queued: true });
+      }
+
+      // ── ENVOI AU CLIENT (jalon 3c) : envoyer UNE version (promue directement) ou LES DEUX au choix
+      // (le client écoute et accepte sa préférée sur page-chanson). Réutilise le courriel éditable + le
+      // déclencheur envoi_reponse (envoyer-cron -> repondre-courriel). Le lien token est garanti dans le corps.
+      if (action === 'offrir_ab') {
+        const convo = await lireConvo(headers, id);
+        if (!convo) return fail(404, { error: 'Conversation introuvable' });
+        const projetId = projetDe(convo);
+        if (!projetId) return fail(409, { error: 'Aucun projet lié à cette conversation' });
+
+        const noA = parseInt(body.no_a, 10);
+        const hasB = body.no_b != null && String(body.no_b).trim() !== '';
+        const noB = hasB ? parseInt(body.no_b, 10) : null;
+        if (!Number.isInteger(noA)) return fail(400, { error: 'no_a requis' });
+        if (hasB && !Number.isInteger(noB)) return fail(400, { error: 'no_b invalide' });
+        if (hasB && noB === noA) return fail(400, { error: 'Les deux versions doivent être différentes' });
+
+        // Les versions offertes doivent exister ET être prêtes (audio présent, pas en cours de rendu).
+        const versions = await versionsProjet(headers, projetId);
+        const vA = versions.find((v) => v.no === noA);
+        const vB = hasB ? versions.find((v) => v.no === noB) : null;
+        if (!vA || !vA.audio) return fail(409, { error: 'Version A pas encore prête' });
+        if (hasB && (!vB || !vB.audio)) return fail(409, { error: 'Version B pas encore prête' });
+        if (await regeEnCours(headers, convo)) return fail(409, { error: 'rege_en_cours' });
+
+        // Lien client (page-chanson) à partir du token du projet.
+        const rP = await fetch(`${API}/${PROJECTS}/${projetId}`, { headers });
+        const pf = rP.ok ? ((await rP.json()).fields || {}) : {};
+        const token = str(pf.token);
+        const lien = token ? `${SITE}/page-chanson?id=${encodeURIComponent(token)}` : '';
+
+        // Corps du courriel : la réponse éditée sinon le brouillon ; on GARANTIT la présence du lien de choix.
+        let corps = (typeof body.reponse === 'string' && body.reponse.trim())
+          ? body.reponse
+          : (str(convo.reponse) || str(convo.brouillon_ia));
+        corps = (corps || '').trim();
+        if (lien && corps.indexOf(token) === -1) {
+          const invite = hasB
+            ? `On a préparé deux versions de votre chanson. Écoutez-les et gardez celle que vous préférez ici : [écouter et choisir votre version](${lien})`
+            : `Votre nouvelle version est prête. Écoutez-la ici : [écouter votre version](${lien})`;
+          corps = corps ? `${corps}\n\n${invite}` : invite;
+        }
+
+        if (hasB) {
+          // CHOIX A/B : on offre les 2 ; le client tranche (accepter-livraison posera purchased_generation_no).
+          const rO = await fetch(`${API}/${PROJECTS}/${projetId}`, { method: 'PATCH', headers: { ...headers, ...HJSON }, body: JSON.stringify({ fields: { ab_offer_nos: `${noA},${noB}` } }) });
+          if (!rO.ok) return fail(502, { error: 'Offre A/B non enregistrée', detail: await rO.text().catch(() => '') });
+        } else {
+          // ENVOI D'UNE SEULE : on la promeut comme version livrée et on annule tout choix en attente.
+          const rPr = await fetch(`${API}/${PROJECTS}/${projetId}`, { method: 'PATCH', headers: { ...headers, ...HJSON }, body: JSON.stringify({ fields: { purchased_generation_no: noA, purchased_song_title: vA.titre || '', ab_offer_nos: '' } }) });
+          if (!rPr.ok) return fail(502, { error: 'Promotion de version échouée', detail: await rPr.text().catch(() => '') });
+        }
+
+        // Envoi du courriel via le déclencheur habituel (envoyer-cron -> repondre-courriel).
+        const r = await patchConvo(headers, id, { reponse: corps, envoi_reponse: ENVOI_VAL });
+        if (!r.ok) return fail(502, { error: 'Envoi du courriel échoué', detail: await r.text().catch(() => '') });
+        return ok({ ok: true, mode: hasB ? 'choix' : 'envoi', no_a: noA, no_b: noB });
       }
 
       if (action === 'archiver') {
@@ -475,6 +558,7 @@ exports.handler = async (event) => {
     const audio_actuel = await audioVersionCourante(headers, corr.projetId).catch(() => '');   // lecteur « version actuelle »
     const fiche = await ficheAddons(headers, corr.projetId).catch(() => null);                 // commande + add-ons (jalon 2)
     const versions = await versionsProjet(headers, corr.projetId).catch(() => []);             // sélecteur version de référence (jalon 3a)
+    const ab = await abEtatProjet(headers, corr.projetId).catch(() => ({ lien_client: '', ab_offer_nos: '' }));  // choix A/B (jalon 3c)
 
     const detail = {
       id,
@@ -507,6 +591,8 @@ exports.handler = async (event) => {
       audio_actuel,   // audio de la version en ligne -> lecteur « écouter la version actuelle » dans le cockpit
       fiche,          // jalon 2 : { commande:{statut}, addons:[{type,nom,etat,url,relance}] }
       versions,       // jalon 3a : [{no,achetee,type,statut,voix,titre,style_prompt,audio}]
+      lien_client:  ab.lien_client,   // jalon 3c : lien page-chanson (par token) pour le courriel de choix
+      ab_offer_nos: ab.ab_offer_nos,  // jalon 3c : "noA,noB" si un choix A/B est en attente, sinon ''
       regen   // null, ou { statut, titre, no, audio_url, paroles }
     };
     return ok({ ok: true, detail });

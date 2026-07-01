@@ -90,7 +90,8 @@ exports.handler = async (event) => {
     if (!projet.fields.recevoir_clicked_at) fields.recevoir_clicked_at = now;
     // La version livrée = purchased_generation_no. Si le client a choisi une autre version post-achat
     // comme finale, on bascule dessus ici (validée en 2b). Sinon, on garde la dernière livrée.
-    if (finalNo !== null) fields.purchased_generation_no = finalNo;
+    // Jalon 3c : un choix tranché consomme l'offre A/B (ab_offer_nos vidé -> le sélecteur redevient normal).
+    if (finalNo !== null) { fields.purchased_generation_no = finalNo; fields.ab_offer_nos = ''; }
 
     const rPatch = await fetch(`${API}/Projects/${projet.id}`, {
       method: 'PATCH',
