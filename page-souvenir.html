@@ -389,10 +389,9 @@
     var b = this, mail = document.getElementById('mailWait');
     if(!/.+@.+\..+/.test((mail.value || '').trim())){ mail.style.borderColor = '#c9607a'; mail.focus(); return; }
     b.disabled = true;
-    /* Enregistre l'intérêt (waitlist_memoire, endpoint existant gaté purchased). Le client est déjà
-       identifié par son lien : on le prévient à son courriel de compte. (Persister le courriel saisi
-       comme adresse distincte = champ Airtable + 1 ligne dans choix-memoire, à faire si voulu.) */
-    post('/api/choix-memoire', {token:token, waitlist_memoire:true}).then(function(res){
+    /* Inscription dans la vraie liste (table Airtable Waitlist) + drapeau waitlist_memoire sur le
+       Project. Endpoint gaté purchased, anti-doublon par token+type. */
+    post('/api/rejoindre-waitlist', {token:token, email:mail.value.trim(), type:'page_vivante'}).then(function(res){
       if(res && res.ok){ document.getElementById('waitForm').style.display='none'; document.getElementById('waitOk').style.display='flex'; }
       else { b.disabled = false; }
     }).catch(function(){ b.disabled = false; });
