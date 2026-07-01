@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Cockpit de révisions (maquette)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Newsreader:ital,opsz@0,6..72;1,6..72&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --canvas:#F0ECEF; --ink:#2B2430; --muted:#8C8092; --faint:#A99EAF; --line:#E6DEE9;
+    --mauve:#9587A3; --mauve-strong:#8567A6; --mauve-deep:#7E5F9E; --mauve-bg:#EFEAF3;
+    --rose:#B25A72; --rose-bg:#F7E4E9; --rose-line:#EACAD6;
+    --green:#4A7A44; --green-bg:#E9F1E4; --green-line:#CFE2C6;
+    --card:#fff; --delbg:#FBE9EC; --insbg:#E9F1E4;
+    --serif:"Newsreader",Georgia,serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:"Instrument Sans",system-ui,sans-serif;color:var(--ink);background:var(--canvas);font-size:14px;line-height:1.5;}
+  .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);}
+  button{font-family:inherit;cursor:pointer;}
+
+  /* ── RAIL GAUCHE (nav, futures vues data) ─────────────── */
+  .rail{position:fixed;left:0;top:0;bottom:0;width:62px;background:var(--mauve-strong);display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:6px;z-index:30;}
+  .rail .logo{width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,.16);color:#fff;display:flex;align-items:center;justify-content:center;font-size:17px;margin-bottom:8px;}
+  .ri{position:relative;width:40px;height:40px;border-radius:11px;border:none;background:transparent;color:rgba(255,255,255,.72);font-size:18px;display:flex;align-items:center;justify-content:center;}
+  .ri:hover{background:rgba(255,255,255,.14);color:#fff;}
+  .ri.on{background:#fff;color:var(--mauve-deep);}
+  .ri .n{position:absolute;top:2px;right:2px;background:var(--rose);color:#fff;font-size:9px;min-width:15px;height:15px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 3px;}
+  .rail .sp{flex:1;}
+  .rail .me{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.22);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;}
+
+  /* ── MAIN ─────────────────────────────────────────────── */
+  .main{margin-left:62px;}
+  .topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:14px;height:60px;padding:0 22px;background:var(--card);border-bottom:1px solid var(--line);}
+  .collapse-btn{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:#fff;color:var(--muted);font-size:15px;flex:none;}
+  .collapse-btn:hover{border-color:var(--mauve-strong);color:var(--mauve-deep);}
+  .brand .t1{font-family:var(--serif);font-size:17px;color:var(--mauve-deep);line-height:1.05;}
+  .brand .t2{font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);}
+  .search{flex:1;max-width:560px;margin:0 auto;display:flex;align-items:center;gap:8px;background:var(--canvas);border:1px solid var(--line);border-radius:10px;padding:9px 13px;color:var(--faint);font-size:13.5px;}
+  .who{font-size:12.5px;color:var(--muted);}
+
+  .shell{display:grid;grid-template-columns:330px 1fr;align-items:start;transition:grid-template-columns .18s ease;}
+  .shell.collapsed{grid-template-columns:0 1fr;}
+  .shell.collapsed .list{overflow:hidden;border-right:none;}
+
+  /* ── LISTE (rétractable) ──────────────────────────────── */
+  .list{position:sticky;top:61px;height:calc(100vh - 61px);overflow:auto;border-right:1px solid var(--line);background:var(--card);}
+  .listhead{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px;position:sticky;top:0;background:var(--card);border-bottom:1px solid var(--line);}
+  .listhead .h{font-weight:600;font-size:13px;}
+  .listhead .h b{color:var(--mauve-strong);}
+  .sortsel{font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:8px;padding:4px 9px;background:#fff;}
+  .item{padding:13px 16px;border-bottom:1px solid var(--line);border-left:3px solid transparent;}
+  .item:hover{background:var(--canvas);}
+  .item.sel{background:var(--mauve-bg);border-left-color:var(--mauve-strong);}
+  .item .row1{display:flex;justify-content:space-between;align-items:baseline;gap:8px;}
+  .item .name{font-weight:600;font-size:13.5px;}
+  .item .age{font-size:12px;color:var(--faint);white-space:nowrap;}
+  .item .song{font-family:var(--serif);font-style:italic;font-size:14px;color:var(--mauve-deep);margin:3px 0 2px;}
+  .item .snip{font-size:12.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .item .row2{display:flex;align-items:center;gap:8px;margin-top:8px;}
+  .badge{font-size:10px;font-weight:600;letter-spacing:.4px;padding:2px 8px;border-radius:9px;text-transform:uppercase;}
+  .b-modif{background:var(--mauve-bg);color:var(--mauve-deep);}
+  .b-support{background:var(--rose-bg);color:var(--rose);}
+  .cmid{font-size:11px;color:var(--faint);}
+  .mailn{font-size:11px;color:var(--muted);margin-left:auto;}
+
+  /* ── DÉTAIL ───────────────────────────────────────────── */
+  .detail{padding:22px 26px 80px;}
+  .dhead{display:flex;flex-wrap:wrap;align-items:center;gap:8px;color:var(--muted);font-size:12.5px;}
+  .dtitle{display:flex;align-items:center;gap:10px;margin:10px 0 2px;}
+  .dtitle h1{font-family:var(--serif);font-weight:500;font-size:26px;margin:0;color:var(--ink);}
+  .btn-ghost{border:1px solid var(--line);background:#fff;color:var(--muted);border-radius:8px;padding:5px 10px;font-size:12px;}
+  .btn-ghost:hover{border-color:var(--mauve-strong);color:var(--mauve-deep);background:var(--mauve-bg);}
+  .dsub{font-size:13px;color:var(--muted);}
+  .deadline{margin-top:6px;font-size:12.5px;color:var(--rose);}
+
+  .thread{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-top:20px;}
+  .thread .th{display:flex;align-items:center;gap:8px;padding:11px 15px;background:var(--mauve-bg);color:var(--mauve-deep);font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;}
+  .thread .th .red{margin-left:auto;font-weight:500;text-transform:none;letter-spacing:0;color:var(--mauve-strong);cursor:pointer;}
+  .msg{padding:11px 15px;border-top:1px solid var(--line);font-size:13.5px;}
+  .msg .d{color:var(--faint);font-size:12px;margin-right:6px;}
+  .msg .q{font-family:var(--serif);font-style:italic;color:var(--ink);}
+
+  .dgrid{display:grid;grid-template-columns:1fr 380px;gap:24px;align-items:start;margin-top:22px;}
+  /* colonne de droite : elle te suit quand tu défiles (sticky), avec son propre défilement si elle dépasse */
+  .side{padding-right:2px;}
+
+  .sectlabel{font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);margin:0 0 9px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .sectlabel .diffcount{font-weight:500;text-transform:none;letter-spacing:0;color:var(--muted);}
+  .sectlabel .act{margin-left:auto;display:flex;gap:8px;}
+  .blk{margin-bottom:26px;}
+  .side .blk{margin-bottom:14px;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;}
+
+  /* bloc éditable unique avec diff en place */
+  .editable{background:#fff;border:1px solid var(--line);border-radius:11px;padding:14px 16px;font-family:var(--serif);font-size:15px;line-height:2;white-space:pre-wrap;outline:none;}
+  .editable:focus{border-color:var(--mauve-strong);box-shadow:0 0 0 3px rgba(133,103,166,.12);}
+  .editable.small{font-size:13.5px;line-height:1.7;font-family:"Instrument Sans",sans-serif;}
+  .del{background:var(--delbg);color:var(--rose);text-decoration:line-through;border-radius:3px;padding:0 2px;}
+  .ins{background:var(--insbg);color:var(--green);border-radius:3px;padding:0 2px;}
+  .legend{font-size:11.5px;color:var(--faint);margin-top:7px;}
+  .legend .s{padding:0 4px;border-radius:3px;}
+  .btn-accept{border:1px solid var(--green-line);background:var(--green-bg);color:var(--green);border-radius:8px;padding:5px 12px;font-size:12px;font-weight:600;}
+  .btn-regen{border:1px solid var(--mauve-strong);background:#fff;color:var(--mauve-deep);border-radius:8px;padding:5px 12px;font-size:12px;font-weight:600;}
+  .btn-regen:hover{background:var(--mauve-bg);}
+
+  /* prononciation (colonne de droite) */
+  .lextable{width:100%;border-collapse:collapse;font-size:12.5px;}
+  .lextable th{text-align:left;font-size:10px;letter-spacing:.3px;text-transform:uppercase;color:var(--faint);font-weight:600;padding:0 0 7px;}
+  .lextable td{padding:7px 0;border-top:1px solid var(--line);vertical-align:middle;}
+  .lexmot{font-weight:600;}
+  .lexphon{font-family:var(--serif);color:var(--mauve-deep);}
+  .src{font-size:10.5px;padding:2px 7px;border-radius:8px;}
+  .src-dict{background:var(--mauve-bg);color:var(--mauve-deep);}
+  .src-man{background:var(--rose-bg);color:var(--rose);}
+  .xs{border:1px solid var(--line);background:#fff;border-radius:7px;padding:3px 7px;font-size:11px;color:var(--muted);margin-left:4px;}
+  .xs:hover{border-color:var(--mauve-strong);color:var(--mauve-deep);}
+  .lock{margin-top:10px;font-size:11.5px;color:var(--muted);background:var(--canvas);border-radius:8px;padding:8px 10px;}
+
+  /* prompt + studio (colonne de droite) */
+  .promptbox{background:#fff;border:1px solid var(--line);border-radius:11px;padding:12px 14px;font-size:13.5px;line-height:1.75;outline:none;}
+  .promptbox:focus{border-color:var(--mauve-strong);box-shadow:0 0 0 3px rgba(133,103,166,.12);}
+  .studio{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:15px;}
+  .glab{font-size:12px;color:var(--muted);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;}
+  .seg button{border:none;background:#fff;padding:7px 12px;font-size:12.5px;color:var(--muted);}
+  .seg button.on{background:var(--mauve-strong);color:#fff;}
+  .cur{font-size:12.5px;color:var(--ink);display:inline-flex;align-items:center;gap:6px;background:var(--canvas);border-radius:8px;padding:5px 10px;}
+  .btns{display:flex;flex-wrap:wrap;gap:9px;margin-top:14px;}
+  .btn-line{border:1px solid var(--mauve-strong);background:#fff;color:var(--mauve-deep);border-radius:9px;padding:9px 13px;font-size:13px;font-weight:600;}
+  .btn-solid{border:none;background:var(--mauve-strong);color:#fff;border-radius:9px;padding:9px 13px;font-size:13px;font-weight:600;}
+  .versions{border-top:1px dashed var(--line);margin-top:15px;padding-top:14px;}
+  .vbox{border:1px solid var(--line);border-radius:11px;padding:11px 12px;margin-bottom:10px;background:#fff;}
+  .vbox.locked{background:var(--canvas);}
+  .vhead{display:flex;align-items:center;gap:11px;}
+  .play{width:32px;height:32px;border-radius:50%;background:var(--mauve-strong);color:#fff;border:none;font-size:12px;flex:none;}
+  .vt{font-weight:600;font-size:12.5px;}
+  .vs{font-size:11.5px;color:var(--muted);}
+  .vr{margin-left:auto;font-size:11px;color:var(--faint);}
+  .promptdd{margin-top:10px;border-top:1px solid var(--line);padding-top:9px;}
+  .promptdd summary{cursor:pointer;font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);list-style:none;display:flex;align-items:center;gap:6px;}
+  .promptdd summary::-webkit-details-marker{display:none;}
+  .promptdd summary::after{content:'▾';margin-left:auto;color:var(--faint);}
+  .promptdd[open] summary::after{content:'▴';}
+  .promptdd .promptbox{margin-top:9px;}
+  .promptdd.solo{margin-top:0;border-top:none;padding-top:0;}
+  .opt{font-size:11.5px;color:var(--faint);margin:2px 0 8px;}
+  .vacts{display:flex;gap:8px;margin:0 0 14px;}
+  .vacts .btn-line{flex:1;padding:7px 8px;font-size:12px;}
+  .vsel{display:flex;gap:8px;margin:2px 0 8px;flex-wrap:wrap;}
+  .vsel label{flex:1;min-width:86px;font-size:10px;color:var(--faint);text-transform:uppercase;letter-spacing:.3px;display:flex;flex-direction:column;gap:3px;}
+  .vsel select{font-family:inherit;font-size:12px;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px 8px;background:#fff;}
+  .vpick{flex:1;font-family:inherit;font-size:12.5px;font-weight:600;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px 9px;background:#fff;}
+  .vmeta{font-size:12px;color:var(--muted);margin-top:9px;}
+  .promptbox.ro{color:var(--muted);background:var(--canvas);}
+  .clientchoice{display:flex;gap:8px;flex-wrap:wrap;}
+  .chip-so{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:7px 11px;font-size:12.5px;color:var(--ink);}
+
+  /* courriel (colonne principale) */
+  .mailhead{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;}
+  .ai{font-size:11px;color:var(--mauve-deep);background:var(--mauve-bg);border-radius:8px;padding:3px 9px;}
+  .tone{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);}
+  .metaline{font-size:13px;color:var(--muted);padding:6px 0;border-bottom:1px solid var(--line);}
+  .metaline b{color:var(--ink);font-weight:600;}
+  .linkbox{display:flex;align-items:center;gap:9px;background:var(--canvas);border-radius:9px;padding:9px 12px;margin:11px 0;font-size:12.5px;flex-wrap:wrap;}
+  .linkbox .u{font-family:var(--serif);color:var(--mauve-deep);}
+  .linkbox .ok{margin-left:auto;color:var(--green);font-size:12px;}
+  .mailbody{width:100%;border:1px solid var(--line);border-radius:11px;padding:13px 15px;font-size:14px;line-height:1.75;font-family:inherit;color:var(--ink);background:var(--card);white-space:pre-wrap;outline:none;}
+  .mailbody:focus{border-color:var(--mauve-strong);box-shadow:0 0 0 3px rgba(133,103,166,.12);}
+  .sendbar{display:flex;gap:12px;margin-top:12px;}
+  .btn-send{border:none;background:var(--rose);color:#fff;border-radius:9px;padding:11px 18px;font-size:14px;font-weight:600;}
+  .note{font-size:11.5px;color:var(--faint);}
+</style>
+</head>
+<body>
+<h2 class="sr-only">Maquette du cockpit de révisions Chanson Mémoire : rail de navigation, liste rétractable, détail avec paroles éditables à gauche et prompt, prononciation, studio à droite.</h2>
+
+<!-- RAIL GAUCHE -->
+<div class="rail">
+  <div class="logo">✦</div>
+  <button class="ri on" title="Révisions à traiter">✎</button>
+  <button class="ri" title="Courriels">✉<span class="n">7</span></button>
+  <button class="ri" title="Chansons">♪</button>
+  <button class="ri" title="En attente">◷</button>
+  <button class="ri" title="Traitées">✓</button>
+  <div class="sp"></div>
+  <button class="ri" title="Réglages">⚙</button>
+  <div class="me">NL</div>
+</div>
+
+<div class="main">
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <button class="collapse-btn" onclick="toggleList()" title="Masquer / afficher la liste">☰</button>
+    <div class="brand"><div class="t1">Chanson Mémoire</div><div class="t2">Cockpit de révisions</div></div>
+    <div class="search">⌕ <span>Rechercher un client, une commande…</span></div>
+    <div class="who">Nathalie</div>
+  </div>
+
+  <div class="shell">
+    <!-- LISTE (rétractable via ☰) -->
+    <div class="list">
+      <div class="listhead">
+        <div class="h">À traiter · <b>4</b></div>
+        <div class="sortsel">Échéance ▾</div>
+      </div>
+      <div class="item sel">
+        <div class="row1"><span class="name">Marie Tremblay</span><span class="age">31 h</span></div>
+        <div class="song">« Pour toujours, Papa »</div>
+        <div class="snip">…ajouter un passage sur ses petits-enfants et une fin plus douce ?</div>
+        <div class="row2"><span class="badge b-modif">Modification</span><span class="cmid">CM-2041</span><span class="mailn">✉ 3</span></div>
+      </div>
+      <div class="item">
+        <div class="row1"><span class="name">Jean-Guy Bélanger</span><span class="age">2 j</span></div>
+        <div class="song">« Ma belle Denise »</div>
+        <div class="snip">Le lien de téléchargement ne fonctionne pas…</div>
+        <div class="row2"><span class="badge b-support">Support</span><span class="cmid">CM-2039</span></div>
+      </div>
+      <div class="item">
+        <div class="row1"><span class="name">Sophie Gagnon</span><span class="age">2 j</span></div>
+        <div class="song">« Notre premier printemps »</div>
+        <div class="snip">J'aimerais changer la voix pour une voix féminine…</div>
+        <div class="row2"><span class="badge b-modif">Modification</span><span class="cmid">CM-2036</span><span class="mailn">✉ 2</span></div>
+      </div>
+      <div class="item">
+        <div class="row1"><span class="name">Robert Fortin</span><span class="age">hier</span></div>
+        <div class="song">« Mon frère, mon complice »</div>
+        <div class="snip">Corriger le nom au 2ᵉ couplet : c'est Marcel, pas Michel.</div>
+        <div class="row2"><span class="badge b-modif">Modification</span><span class="cmid">CM-2031</span></div>
+      </div>
+    </div>
+
+    <!-- DÉTAIL -->
+    <div class="detail">
+      <div class="dhead">
+        <span class="badge b-modif">Modification</span>
+        <span class="cmid">CM-2041</span> ·
+        <span>🎙️ Voix : Masculin</span>
+      </div>
+      <div class="dtitle"><h1>« Pour toujours, Papa »</h1><button class="btn-ghost">✎ Renommer</button></div>
+      <div class="dsub">Hommage à Réal Tremblay · pour Marie Tremblay &lt;marie.tremblay@courriel.ca&gt;</div>
+      <div class="deadline">⏳ Échéance dans 31 h</div>
+
+      <!-- FIL CLIENT FUSIONNÉ (pleine largeur) -->
+      <div class="thread">
+        <div class="th">📨 Fil client · 3 courriels fusionnés <span class="red">Réduire ▲</span></div>
+        <div class="msg"><span class="d">18 juin</span><span class="q">« Serait-il possible d'ajouter un passage sur ses petits-enfants, Léa et Tom ? Il les adorait. »</span></div>
+        <div class="msg"><span class="d">19 juin</span><span class="q">« Et si possible, une fin un peu plus douce, plus apaisée. Merci ♥ »</span></div>
+        <div class="msg"><span class="d">20 juin</span><span class="q">« Petite précision : c'est bien Réal, avec un accent. »</span></div>
+      </div>
+
+      <!-- 2 COLONNES : GAUCHE = paroles + courriel · DROITE = prompt + prononciation + studio -->
+      <div class="dgrid">
+        <div class="dmain">
+
+          <!-- PAROLES : un seul bloc éditable, retiré + nouveau en place -->
+          <div class="blk">
+            <div class="sectlabel">Paroles <span class="diffcount">· 2 retraits · 5 ajouts</span>
+              <span class="act"><button class="btn-accept">Accepter</button><button class="btn-regen">↻ Regénérer</button></span>
+            </div>
+            <div class="editable" contenteditable="true" spellcheck="false">[Couplet 1]
+Tu étais là chaque matin,
+<span class="del">Ton café, ton vieux journal,</span> <span class="ins">Ton café fumant, ton journal,</span>
+Le sourire tranquille et certain,
+<span class="del">Les mains usées par le chemin,</span> <span class="ins">Ces mains qui ont tracé mon chemin,</span>
+Un roc contre vents et marées.
+
+[Refrain]
+Papa, tu restes dans nos cœurs,
+Comme une chanson qui ne s'éteint pas,
+Dans le silence et dans les pleurs,
+Ta voix nous guide encore là.
+
+[Couplet 2]
+Tu parlais peu, mais tu disais tout,
+Dans un regard, dans un bras tendu.
+Tu nous portais, tu tenais debout,
+Même fatigué, jamais rendu.
+
+<span class="ins">[Pont]</span>
+<span class="ins">Pour Léa et Tom, tu chantais,</span>
+<span class="ins">Les soirs d'été sous le grand chêne,</span>
+<span class="ins">Et ton sourire les gardera,</span>
+<span class="ins">Bien après que le vent nous prenne.</span>
+
+[Refrain]
+Papa, tu restes dans nos cœurs,
+Comme une chanson qui ne s'éteint pas,
+Dans le silence et dans les pleurs,
+Ta voix nous guide encore là.
+
+[Finale]
+<span class="del">Adieu n'est pas le mot qu'on dit,</span> <span class="ins">On ne dira jamais adieu,</span>
+Juste à bientôt, tout doucement.</div>
+            <div class="legend"><span class="s del">retiré</span> &nbsp; <span class="s ins">ajouté</span> &nbsp; · clique dans le texte pour l'éditer</div>
+          </div>
+
+          <!-- COURRIEL CLIENT -->
+          <div class="blk">
+            <div class="mailhead">
+              <div class="sectlabel" style="margin:0">Courriel client</div>
+              <span class="ai">✦ Rédigé par l'IA</span>
+              <span class="tone">Ton : <span class="seg"><button class="on">Chaleureux</button><button>Factuel</button></span></span>
+            </div>
+            <div class="metaline"><b>À :</b> marie.tremblay@courriel.ca</div>
+            <div class="metaline"><b>Objet :</b> Votre chanson « Pour toujours, Papa », nouvelle version</div>
+            <div class="linkbox">🔗 <span class="u">chansonmemoire.ca/…</span> <span class="note">(lien token sécurisé, inséré automatiquement)</span> <span class="ok">✓ Actif</span></div>
+            <div class="mailbody" contenteditable="true" spellcheck="false">Bonjour Marie,
+
+Merci pour votre message, et pour ces mots si touchants. Nous avons apporté les changements demandés avec beaucoup de soin. 🕊️
+
+Prenez le temps de l'écouter ici :
+👉 (le lien sécurisé de votre page)
+
+Avec toute ma douceur,
+Nathalie · Chanson Mémoire</div>
+            <div class="sendbar">
+              <button class="btn-send">Envoyer le courriel →</button>
+              <button class="btn-line">Enregistrer le brouillon</button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- COLONNE DE CÔTÉ (te suit au défilement) : prompt + prononciation + studio -->
+        <div class="side">
+
+          <!-- PRONONCIATION -->
+          <div class="blk">
+            <div class="sectlabel">Prononciation · Suno
+              <span class="act"><button class="btn-ghost">＋ Mot</button></span>
+            </div>
+            <div class="card">
+              <table class="lextable">
+                <tr><th>Mot</th><th>Graphie Suno</th><th>Source</th><th></th></tr>
+                <tr><td class="lexmot">Réal</td><td class="lexphon">Ré-alle</td><td><span class="src src-dict">Dict.</span></td><td style="text-align:right"><button class="xs">✎</button><button class="xs">✕</button></td></tr>
+                <tr><td class="lexmot">Léa</td><td class="lexphon">Lé-a</td><td><span class="src src-dict">Dict.</span></td><td style="text-align:right"><button class="xs">✎</button><button class="xs">✕</button></td></tr>
+                <tr><td class="lexmot">Tom</td><td class="lexphon">Tomme</td><td><span class="src src-man">Manuel</span></td><td style="text-align:right"><button class="xs">↺</button><button class="xs">✕</button></td></tr>
+              </table>
+              <div class="lock">🔒 Ces graphies ne changent que le son envoyé à Suno. Les paroles affichées au client restent inchangées.</div>
+            </div>
+          </div>
+
+          <!-- STUDIO IA -->
+          <div class="blk">
+            <div class="sectlabel">Studio IA</div>
+            <div class="studio">
+              <div class="glab">Version de référence <span class="note">(sélectionne celle dont parle le client)</span></div>
+              <div class="vbox locked">
+                <div class="vhead">
+                  <button class="play">▶</button>
+                  <select class="vpick"><option>Version 3 (achetée) · 3:04</option><option>Version 2 · 3:12</option><option>Version 1 · 2:58</option></select>
+                  <span class="vr">🔒 réf.</span>
+                </div>
+                <div class="vmeta">Style : Ballade folk · Ambiance : Nostalgique · Voix : Masculin</div>
+                <details class="promptdd solo">
+                  <summary>Prompt de style utilisé</summary>
+                  <div class="promptbox small ro">Ballade folk douce, voix masculine chaleureuse, hommage à un père, ton nostalgique, guitare acoustique, ~3 min.</div>
+                </details>
+              </div>
+
+              <div class="glab" style="margin-top:16px">Nouvelles versions à comparer <span class="note">(si le client hésite)</span></div>
+
+              <div class="vbox">
+                <div class="vhead"><button class="play">▶</button><div><div class="vt">Version A</div><div class="vs">à générer</div></div></div>
+                <div class="vsel">
+                  <label>Style<select><option>Ballade folk</option><option>Pop douce</option><option>Chanson française</option><option>Country doux</option><option>Gospel</option></select></label>
+                  <label>Ambiance<select><option>Nostalgique</option><option>Apaisé</option><option>Tendre</option><option>Lumineux</option><option>Solennel</option></select></label>
+                  <label>Voix<select><option>Masculin</option><option>Féminin</option></select></label>
+                </div>
+                <details class="promptdd solo">
+                  <summary>Prompt de style · éditable</summary>
+                  <div class="promptbox editable small" contenteditable="true" spellcheck="false">Ballade folk douce, voix masculine chaleureuse, hommage à un père, ton nostalgique, guitare acoustique, léger piano, finale lumineuse et apaisée, ~3 min. Mentionner les petits-enfants Léa et Tom.</div>
+                  <div class="note" style="margin-top:6px">Ajuste-le à la main, ou Regénérer selon les demandes du client.</div>
+                  <button class="btn-regen" style="margin-top:8px">↻ Regénérer le prompt</button>
+                </details>
+                <div class="vacts"><button class="btn-line">↻ Regénérer la mélodie</button><button class="btn-line">🎨 Cover</button></div>
+              </div>
+
+              <div class="opt">Optionnel · une 2ᵉ version si le client hésite entre deux</div>
+              <div class="vbox">
+                <div class="vhead"><button class="play">▶</button><div><div class="vt">Version B</div><div class="vs">à générer</div></div></div>
+                <div class="vsel">
+                  <label>Style<select><option>Ballade folk</option><option selected>Pop douce</option><option>Chanson française</option><option>Country doux</option><option>Gospel</option></select></label>
+                  <label>Ambiance<select><option>Nostalgique</option><option>Apaisé</option><option>Tendre</option><option selected>Lumineux</option><option>Solennel</option></select></label>
+                  <label>Voix<select><option>Masculin</option><option selected>Féminin</option></select></label>
+                </div>
+                <details class="promptdd solo">
+                  <summary>Prompt de style · éditable</summary>
+                  <div class="promptbox editable small" contenteditable="true" spellcheck="false">Pop douce et lumineuse, voix féminine délicate, hommage à un père, guitare et piano, refrain plus enveloppant, ~3 min. Mentionner les petits-enfants Léa et Tom.</div>
+                  <div class="note" style="margin-top:6px">Ajuste-le à la main, ou Regénérer selon les demandes du client.</div>
+                  <button class="btn-regen" style="margin-top:8px">↻ Regénérer le prompt</button>
+                </details>
+                <div class="vacts"><button class="btn-line">↻ Regénérer la mélodie</button><button class="btn-line">🎨 Cover</button></div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function toggleList(){ document.querySelector('.shell').classList.toggle('collapsed'); }
+</script>
+</body>
+</html>
