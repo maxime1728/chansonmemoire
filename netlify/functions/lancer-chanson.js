@@ -15,6 +15,7 @@
 
 const { styleFor } = require('./_lib/style');
 const { compteAvantAchat, nbAppelsSuno, PLAFOND_SUNO } = require('./_lib/comptage');
+const { appliquerLexique, lireDictionnaire } = require('./_lib/lexique');   // dictionnaire phonétique (étape 3)
 
 const BASE_ID  = process.env.AIRTABLE_BASE_ID;
 const AT_TOKEN = process.env.AIRTABLE_TOKEN;
@@ -170,7 +171,16 @@ exports.handler = async (event) => {
     // #12 — Paroles ENVOYÉES À SUNO : version phonétique (corrections de prononciation) si elle
     // existe, sinon les paroles propres. Le client voit TOUJOURS lyricsClean ; Suno chante la phonétique.
     const phon       = (mode !== 'cover' && gen.lyrics_phonetique && gen.lyrics_phonetique.trim()) ? gen.lyrics_phonetique.trim() : '';
-    const lyricsSuno = phon || lyricsClean;
+    let lyricsSuno = phon || lyricsClean;
+    // DICTIONNAIRE PHONÉTIQUE (étape 3, flag LEXIQUE_PHON) : Suno reçoit lyricsClean RÉÉCRIT via le dictionnaire
+    // (global par langue + override projet) -> les corrections de prononciation s'appliquent à TOUTES les
+    // paroles, pour toujours. L'affiché client (Gen.lyrics = lyricsClean) reste inchangé. Flag OFF -> ancien.
+    if (process.env.LEXIQUE_PHON === '1') {
+      try {
+        const dict = await lireDictionnaire(API, headers, { langue: p.language || 'fr-CA', projetId: projet.id });
+        if (dict.size) lyricsSuno = appliquerLexique(lyricsClean, dict);
+      } catch (_) { /* le dictionnaire ne bloque jamais l'envoi Suno */ }
+    }
 
     const title       = (gen.song_title || `Pour ${p.deceased_name || 'toi'}`).slice(0, 100);
     const dernierNo   = num(gen.generation_no, 0);
