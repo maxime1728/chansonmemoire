@@ -24,8 +24,13 @@
 
 | Usage | Port | Où elle vit | Garde-fou |
 |---|---|---|---|
-| **Migrations** (drizzle-kit, CI) | **5432** direct | Secret GitHub `SUPABASE_DB_URL_DIRECT` (Environment `production-db`) | le job migrate REFUSE une URL :6543 |
+| **Migrations** (drizzle-kit, CI) | **5432** — « Session pooler » (recommandé : compatible IPv4/GitHub Actions) ou « Direct connection » (IPv6/add-on IPv4) | Secret GitHub `SUPABASE_DB_URL_DIRECT` (Environment `production-db`) | le job migrate REFUSE une URL :6543 |
 | **Runtime** (fonctions Netlify) | **6543** pooler transaction | Env Netlify `SUPABASE_DB_URL` | `_lib/db.ts` REFUSE une URL :5432, `prepare: false` en dur |
+
+Où copier la string : dashboard Supabase → bouton **« Connect »** en haut → « Connection
+String » → choisir la méthode (Session pooler / Transaction pooler) → remplacer
+`[YOUR-PASSWORD]` par le mot de passe de la base (réinitialisable dans Settings →
+Database → Reset database password).
 
 ## Fichiers
 
